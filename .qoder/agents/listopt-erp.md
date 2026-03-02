@@ -200,6 +200,17 @@ npx nx graph                   # Dependency graph visualization
 - **SSH Key:** `listopt_erp_deploy` (ed25519, passwordless)
 - **Nginx:** Reverse proxy with `client_max_body_size 10M`
 
+## Security & Quality Standards
+
+- **Authentication:** HMAC-SHA256 signed tokens (no expiration currently - TODO: add exp field)
+- **Authorization:** RBAC with 4 roles, 28 permissions via `requirePermission()`
+- **Input Validation:** All API endpoints use Zod schemas
+- **SQL Injection:** Protected via Prisma ORM (no raw SQL)
+- **Password Hashing:** bcrypt with cost factor 12
+- **Test Coverage:** 12% (Goal: 60%) - Priority: business logic, document confirmation, stock calculations
+- **Vulnerabilities:** 48 npm vulnerabilities detected - run `npm audit fix`
+- **Dead Code:** Minimal TODOs (2 items in ecommerce module for external API integrations)
+
 ## Important Notes
 
 - **Never set NODE_ENV in .env files** - Next.js handles this automatically. Setting it causes build failures (useContext null during prerendering).
@@ -208,3 +219,24 @@ npx nx graph                   # Dependency graph visualization
 - **Tests run sequentially** - `fileParallelism: false` in vitest.config.ts to avoid DB race conditions
 - **Russian UI language** - All user-facing text is in Russian
 - **middleware.ts deprecation** - Next.js 16 deprecated middleware in favor of "proxy". Migration needed eventually.
+
+## Quality Metrics (Last Audit: 2026-03-02)
+
+**Code Quality:** A (Excellent)  
+**Security:** B+ (Good, needs hardening)  
+**Test Coverage:** C+ (12% - needs improvement to 60%)  
+**Architecture:** A+ (Exceptional)  
+**Documentation:** A (Comprehensive - 7 Wiki pages)  
+**Overall Grade:** A-
+
+**Critical TODOs:**
+1. Add session expiration to tokens
+2. Implement rate limiting on /api/auth/login
+3. Add CSRF protection (SameSite cookies)
+4. Increase test coverage to 30% (focus on document confirmation, stock recalc)
+5. Fix 48 npm vulnerabilities via `npm audit fix`
+
+**Reference:** See Wiki pages:
+- [Security Audit](https://github.com/nzey11/erp-new/wiki/Security-Audit)
+- [Project Audit](https://github.com/nzey11/erp-new/wiki/Project-Audit)
+- [Tech Stack](https://github.com/nzey11/erp-new/wiki/Tech-Stack)
