@@ -10,15 +10,15 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 10 minutes
-setInterval(() => {
+// Cleanup old entries on demand (no setInterval in Edge Runtime)
+function cleanupExpiredEntries() {
   const now = Date.now();
   for (const [key, entry] of store.entries()) {
     if (now > entry.resetAt) {
       store.delete(key);
     }
   }
-}, 10 * 60 * 1000);
+}
 
 export interface RateLimitResult {
   success: boolean;
@@ -38,6 +38,11 @@ export function rateLimit(
   limit: number = 10,
   windowMs: number = 60 * 1000 // 1 minute default
 ): RateLimitResult {
+  // Clean up expired entries on each call (lazy cleanup)
+  if (store.size > 100) { // Only cleanup if map is getting large
+    cleanupExpiredEntries();
+  }
+  
   const now = Date.now();
   const entry = store.get(identifier);
 
