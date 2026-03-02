@@ -69,7 +69,7 @@ jobs:
         run: npx nx affected -t lint
 
       - name: Test (affected)
-        run: npx nx affected -t test
+        run: npx nx affected -t test --parallel=1
 
       - name: E2E Tests
         run: npm run test:e2e
