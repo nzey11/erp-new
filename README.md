@@ -1,36 +1,128 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ListOpt ERP
 
-## Getting Started
+Полнофункциональная ERP-система для управления товарами, складом, документами и электронной коммерцией.
 
-First, run the development server:
+## 🚀 Возможности
+
+- **Управление каталогом** - Товары, варианты, категории, прайс-листы
+- **Складской учёт** - Остатки, резервы, себестоимость
+- **Документооборот** - Закупки, продажи, перемещения, инвентаризация
+- **Финансы** - Платежи, отчёты (P&L, Cash Flow, балансы)
+- **E-commerce** - Интернет-магазин с корзиной, заказами, отзывами
+- **Интеграции** - Telegram боты, webhooks
+
+## 📋 Технологии
+
+- **Frontend:** Next.js 16 (App Router), React 19, TailwindCSS, shadcn/ui
+- **Backend:** Next.js API Routes
+- **База данных:** PostgreSQL 16 + Prisma ORM
+- **Деплой:** PM2 + Nginx
+- **Тесты:** Vitest (unit/integration), Playwright (e2e)
+
+## 🔧 Быстрый старт
+
+### Установка
 
 ```bash
+# Клонировать репозиторий
+git clone https://github.com/nzey11/erp-new.git
+cd erp-new
+
+# Установить зависимости
+npm install
+
+# Настроить базу данных
+cp .env.example .env
+# Отредактируйте .env и укажите DATABASE_URL
+
+# Применить миграции
+npm run db:push
+
+# Заполнить тестовыми данными (опционально)
+npm run db:seed
+
+# Запустить dev-сервер
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Приложение будет доступно по адресу: http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Первый вход
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Логин:** admin  
+**Пароль:** admin123
 
-## Learn More
+## 📚 Документация
 
-To learn more about Next.js, take a look at the following resources:
+- [Архитектура](./ARCHITECTURE.md) - Структура проекта и модули
+- [Wiki](https://github.com/nzey11/erp-new/wiki) - Полная документация
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚢 Деплой
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Проект поддерживает деплой на VPS через SSH (архивный метод):
 
-## Deploy on Vercel
+```bash
+# Создать архив
+tar --exclude='node_modules' --exclude='.next' --exclude='.git' \
+    --exclude='*.db' --exclude='.env' -czf deploy.tar.gz .
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Загрузить на сервер
+scp -i ~/.ssh/key deploy.tar.gz root@your-server:/tmp/
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Развернуть на сервере
+ssh -i ~/.ssh/key root@your-server \
+  "cd /var/www/app && tar -xzf /tmp/deploy.tar.gz && \
+   npm install && npm run build && pm2 restart app"
+```
+
+Подробная инструкция: [Wiki - Deployment](https://github.com/nzey11/erp-new/wiki/Deployment)
+
+## 🧪 Тестирование
+
+```bash
+# Unit и integration тесты
+npm test
+
+# E2E тесты
+npm run test:e2e
+
+# Покрытие кода
+npm run test:coverage
+```
+
+## 📦 Структура проекта
+
+```
+listopt-erp/
+├── app/                    # Next.js App Router
+│   ├── (accounting)/       # Модуль учёта (страницы)
+│   ├── api/               # API endpoints
+│   └── store/             # E-commerce фронт
+├── components/            # React компоненты
+│   ├── accounting/        # Компоненты учёта
+│   ├── ecommerce/         # Компоненты магазина
+│   └── ui/               # UI библиотека (shadcn/ui)
+├── lib/                   # Бизнес-логика
+│   ├── modules/           # Модули (accounting, ecommerce, integrations)
+│   └── shared/            # Общие утилиты
+├── prisma/                # Prisma schema + миграции
+└── tests/                 # Тесты
+```
+
+## 🤝 Участие в разработке
+
+1. Fork репозитория
+2. Создайте feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit изменения (`git commit -m 'Add amazing feature'`)
+4. Push в branch (`git push origin feature/amazing-feature`)
+5. Откройте Pull Request
+
+## 📄 Лицензия
+
+MIT
+
+## 🔗 Ссылки
+
+- [GitHub](https://github.com/nzey11/erp-new)
+- [Wiki](https://github.com/nzey11/erp-new/wiki)
+- [Issues](https://github.com/nzey11/erp-new/issues)
