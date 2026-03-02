@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
+    console.error('[LOGIN ERROR]', error);
     const vErr = validationError(error);
     if (vErr) return vErr;
     return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
