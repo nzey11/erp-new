@@ -10,11 +10,17 @@ function getSessionSecret(): string {
   return secret;
 }
 
-/** Sign a user ID to create a tamper-proof session token. Format: userId.hmacSignature */
-export function signSession(userId: string): string {
+/**
+ * Sign a user ID to create a tamper-proof session token.
+ * Format: userId|expiresAt.hmacSignature
+ * @param expiresInHours - token lifetime in hours (default 168 = 7 days)
+ */
+export function signSession(userId: string, expiresInHours: number = 24 * 7): string {
   const secret = getSessionSecret();
-  const signature = crypto.createHmac("sha256", secret).update(userId).digest("hex");
-  return `${userId}.${signature}`;
+  const expiresAt = Date.now() + expiresInHours * 60 * 60 * 1000;
+  const payload = `${userId}|${expiresAt}`;
+  const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  return `${payload}.${signature}`;
 }
 
 /** Verify a session token and extract the user ID. Returns userId or null. */
@@ -22,12 +28,23 @@ export function verifySessionToken(token: string): string | null {
   const dotIndex = token.lastIndexOf(".");
   if (dotIndex === -1) return null;
 
-  const userId = token.substring(0, dotIndex);
+  const payload = token.substring(0, dotIndex);
   const signature = token.substring(dotIndex + 1);
+
+  const pipeIndex = payload.lastIndexOf("|");
+  if (pipeIndex === -1) return null;
+
+  const userId = payload.substring(0, pipeIndex);
+  const expiresAt = Number(payload.substring(pipeIndex + 1));
+
+  if (!userId || isNaN(expiresAt)) return null;
+
+  // Check expiry
+  if (Date.now() > expiresAt) return null;
 
   try {
     const secret = getSessionSecret();
-    const expected = crypto.createHmac("sha256", secret).update(userId).digest("hex");
+    const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
 
     if (signature.length !== expected.length) return null;
     const isValid = crypto.timingSafeEqual(

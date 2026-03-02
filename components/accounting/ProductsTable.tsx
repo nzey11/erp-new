@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataGrid } from "@/components/ui/data-grid";
@@ -8,10 +9,9 @@ import type { DataGridColumn } from "@/components/ui/data-grid";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuSeparator, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Pencil, ImageIcon, Link2, Globe, MoreHorizontal, Archive, ArchiveRestore, Copy, Trash2, Download, Upload, Crown, GitBranch } from "lucide-react";
+import { ImageIcon, Link2, Globe, MoreHorizontal, Archive, ArchiveRestore, Copy, Trash2, Download, Upload, Crown, GitBranch, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
-import { ProductEditDialog } from "./catalog/ProductEditDialog";
 import { ProductFiltersBar, toApiValue, type ProductFilters } from "./catalog/ProductFilters";
 import { CSVImportWizard } from "./catalog/CSVImportWizard";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -47,7 +47,6 @@ export interface Product {
   variantGroupName: string | null;
 }
 
-interface Unit { id: string; name: string; shortName: string; }
 interface Category { id: string; name: string; parentId: string | null; }
 
 interface ProductsTableProps {
@@ -58,9 +57,7 @@ interface ProductsTableProps {
 const ALL = "__all__";
 
 export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [units, setUnits] = useState<Unit[]>([]);
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -95,13 +92,9 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId]);
 
-  // Load reference data
+  // Load reference data (categories needed for filter bar)
   useEffect(() => {
-    Promise.all([
-      fetch("/api/accounting/units").then((r) => r.ok ? r.json() : []),
-      fetch("/api/accounting/categories").then((r) => r.ok ? r.json() : []),
-    ]).then(([u, c]) => {
-      setUnits(Array.isArray(u) ? u : []);
+    fetch("/api/accounting/categories").then((r) => r.ok ? r.json() : []).then((c) => {
       setCategories(Array.isArray(c) ? c : []);
     });
   }, []);
@@ -144,16 +137,6 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
     grid.setSort("name", "asc");
   };
 
-  const openCreate = () => {
-    setEditingProduct(null);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (product: Product) => {
-    setEditingProduct(product);
-    setDialogOpen(true);
-  };
-
   const handleArchive = async (product: Product) => {
     try {
       const res = await fetch(`/api/accounting/products/${product.id}`, { method: "DELETE" });
@@ -189,9 +172,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
       }
       const duplicated = await res.json();
       toast.success("Товар скопирован");
-      grid.mutate.refresh();
-      setEditingProduct(duplicated);
-      setDialogOpen(true);
+      router.push(`/products/${duplicated.id}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка дублирования товара");
     }
@@ -310,7 +291,13 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
         return (
           <div className="font-medium">
             <div className="flex items-center gap-1.5 flex-wrap">
-              {p.name}
+              <button
+                type="button"
+                className="text-left hover:text-primary hover:underline underline-offset-2 transition-colors"
+                onClick={(e) => { e.stopPropagation(); router.push(`/products/${p.id}`); }}
+              >
+                {p.name}
+              </button>
               {!p.isActive && (
                 <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0 text-muted-foreground">
                   Архив
@@ -413,8 +400,8 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}>
-              <Pencil className="h-4 w-4 mr-2" />Редактировать
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/products/${row.original.id}`); }}>
+              <ExternalLink className="h-4 w-4 mr-2" />Открыть карточку
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDuplicate(row.original); }}>
               <Copy className="h-4 w-4 mr-2" />Дублировать
@@ -453,7 +440,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
           <Button variant="outline" size="icon" title="Импорт из CSV" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4" />
           </Button>
-          <Button onClick={openCreate}>Добавить товар</Button>
+          <Button onClick={() => router.push("/products/new")}>Добавить товар</Button>
         </div>
       </div>
 
@@ -493,16 +480,6 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
         }}
         sorting={grid.sort ? [{ id: grid.sort.field, desc: grid.sort.order === "desc" }] : undefined}
         pagination={grid.gridProps.pagination}
-      />
-
-      {/* Create/Edit Dialog */}
-      <ProductEditDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        editingProduct={editingProduct}
-        units={units}
-        categories={categories}
-        onSaved={grid.mutate.refresh}
       />
 
       {/* CSV Import Wizard */}

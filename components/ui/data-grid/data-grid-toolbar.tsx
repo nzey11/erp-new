@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Search, Settings2 } from "lucide-react";
+import { Search, Settings2, X } from "lucide-react";
 import type { Table as TanStackTable } from "@tanstack/react-table";
 import type { DataGridToolbar as ToolbarConfig, DataGridSelection } from "./data-grid-types";
 
@@ -35,8 +35,18 @@ export function DataGridToolbar<TData>({ toolbar, table }: DataGridToolbarProps<
               placeholder={toolbar.search.placeholder ?? "Поиск..."}
               value={toolbar.search.value}
               onChange={(e) => toolbar.search!.onChange(e.target.value)}
-              className="pl-10"
+              className="pl-10 pr-8"
             />
+            {toolbar.search.value && (
+              <button
+                type="button"
+                onClick={() => toolbar.search!.onChange("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Очистить поиск"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         )}
 
@@ -74,17 +84,24 @@ function ColumnVisibilityMenu<TData>({ table }: { table: TanStackTable<TData> })
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Показать колонки</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {columns.map((column) => (
-          <DropdownMenuCheckboxItem
-            key={column.id}
-            checked={column.getIsVisible()}
-            onCheckedChange={(checked) => column.toggleVisibility(checked)}
-          >
-            {typeof column.columnDef.header === "string"
-              ? column.columnDef.header
-              : column.id}
-          </DropdownMenuCheckboxItem>
-        ))}
+        {columns.map((column) => {
+          // Resolve display name: meta.label > string header > column id
+          const meta = column.columnDef.meta;
+          const header = column.columnDef.header;
+          const displayName =
+            meta?.label ??
+            (typeof header === "string" ? header : undefined) ??
+            column.id;
+          return (
+            <DropdownMenuCheckboxItem
+              key={column.id}
+              checked={column.getIsVisible()}
+              onCheckedChange={(checked) => column.toggleVisibility(checked)}
+            >
+              {displayName}
+            </DropdownMenuCheckboxItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );

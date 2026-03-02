@@ -14,6 +14,10 @@ export interface UseDataGridConfig<TData> {
   searchDebounce?: number;      // default: 300
   sortable?: boolean;           // default: false
   defaultSort?: { field: string; order: "asc" | "desc" };
+  /** Allow user to change page size in the pagination bar. Default: false */
+  enablePageSizeChange?: boolean;
+  /** Available page-size choices shown in the selector. Default: [10, 25, 50, 100] */
+  pageSizeOptions?: number[];
   /** Sync state to URL query params. Disable for embedded/child components. Default: true */
   syncUrl?: boolean;
 
@@ -38,6 +42,8 @@ export interface UseDataGridReturn<TData> {
   // State controls
   page: number;
   setPage: (p: number) => void;
+  pageSize: number;
+  setPageSize: (size: number) => void;
   search: string;
   setSearch: (s: string) => void;
   filters: Record<string, string>;

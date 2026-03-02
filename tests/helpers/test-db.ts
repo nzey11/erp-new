@@ -2,49 +2,45 @@ import { db } from "@/lib/shared/db";
 
 /**
  * Clean all data from the database.
- * Uses TRUNCATE CASCADE to ignore foreign key constraints.
+ * Uses deleteMany in dependency order (children before parents).
+ * Note: $executeRawUnsafe is not supported with PrismaPg adapter.
  */
 export async function cleanDatabase(): Promise<void> {
-  // Use raw SQL TRUNCATE with CASCADE to properly clear all tables
-  // This ignores foreign key constraints
-  await db.$executeRawUnsafe(`
-    TRUNCATE TABLE 
-      "OrderItem",
-      "Order",
-      "OrderCounter",
-      "CartItem",
-      "Review",
-      "Favorite",
-      "CustomerAddress",
-      "Customer",
-      "DocumentItem",
-      "Document",
-      "DocumentCounter",
-      "StockRecord",
-      "CounterpartyBalance",
-      "CounterpartyInteraction",
-      "PurchasePrice",
-      "SalePrice",
-      "PriceList",
-      "ProductCustomField",
-      "CustomFieldDefinition",
-      "ProductVariant",
-      "ProductVariantLink",
-      "VariantOption",
-      "VariantType",
-      "ProductDiscount",
-      "SkuCounter",
-      "PromoBlock",
-      "Integration",
-      "StorePage",
-      "Product",
-      "ProductCategory",
-      "Counterparty",
-      "Warehouse",
-      "Unit",
-      "User"
-    CASCADE
-  `);
+  // Delete in reverse FK dependency order
+  await db.orderItem.deleteMany();
+  await db.order.deleteMany();
+  await db.orderCounter.deleteMany();
+  await db.cartItem.deleteMany();
+  await db.review.deleteMany();
+  await db.favorite.deleteMany();
+  await db.customerAddress.deleteMany();
+  await db.customer.deleteMany();
+  await db.documentItem.deleteMany();
+  await db.document.deleteMany();
+  await db.documentCounter.deleteMany();
+  await db.stockRecord.deleteMany();
+  await db.counterpartyBalance.deleteMany();
+  await db.counterpartyInteraction.deleteMany();
+  await db.purchasePrice.deleteMany();
+  await db.salePrice.deleteMany();
+  await db.priceList.deleteMany();
+  await db.productCustomField.deleteMany();
+  await db.customFieldDefinition.deleteMany();
+  await db.productVariantLink.deleteMany();
+  await db.productVariant.deleteMany();
+  await db.variantOption.deleteMany();
+  await db.variantType.deleteMany();
+  await db.productDiscount.deleteMany();
+  await db.skuCounter.deleteMany();
+  await db.promoBlock.deleteMany();
+  await db.integration.deleteMany();
+  await db.storePage.deleteMany();
+  await db.product.deleteMany();
+  await db.productCategory.deleteMany();
+  await db.counterparty.deleteMany();
+  await db.warehouse.deleteMany();
+  await db.unit.deleteMany();
+  await db.user.deleteMany();
 }
 
 /**

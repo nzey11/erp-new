@@ -45,9 +45,13 @@ interface CounterpartiesTableProps {
 export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTableProps) {
   const grid = useDataGrid<Counterparty>({
     endpoint: "/api/accounting/counterparties",
-    pageSize: 50,
+    pageSize: 25,
     enablePagination: true,
     enableSearch: true,
+    sortable: true,
+    defaultSort: { field: "name", order: "asc" },
+    enablePageSizeChange: true,
+    pageSizeOptions: [10, 25, 50, 100],
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -132,6 +136,7 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
       accessorKey: "name",
       header: "Название",
       size: 220,
+      enableSorting: true,
       meta: { canHide: false },
       cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
     },
@@ -139,6 +144,7 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
       accessorKey: "type",
       header: "Тип",
       size: 160,
+      enableSorting: true,
       cell: ({ row }) => (
         <Badge variant="outline">{TYPE_LABELS[row.original.type] || row.original.type}</Badge>
       ),
@@ -147,6 +153,7 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
       accessorKey: "inn",
       header: "ИНН",
       size: 140,
+      enableSorting: true,
       cell: ({ row }) => <span className="text-muted-foreground">{row.original.inn || "—"}</span>,
     },
     {
@@ -159,6 +166,7 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
       id: "balance",
       header: "Баланс",
       size: 140,
+      enableSorting: true,
       meta: { align: "right" as const },
       cell: ({ row }) => {
         const b = row.original.balance;

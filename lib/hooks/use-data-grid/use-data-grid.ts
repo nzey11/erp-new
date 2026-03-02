@@ -19,7 +19,7 @@ export function useDataGrid<TData extends { id: string }>(
 ): UseDataGridReturn<TData> {
   const {
     endpoint,
-    pageSize = 50,
+    pageSize: initialPageSize = 50,
     enablePagination = true,
     enableSearch = true,
     searchDebounce = 300,
@@ -30,6 +30,8 @@ export function useDataGrid<TData extends { id: string }>(
     responseAdapter,
     dependencies = [],
     syncUrl = true,
+    enablePageSizeChange = false,
+    pageSizeOptions,
   } = config;
 
   const adapter = responseAdapter ?? (defaultAdapter as (json: unknown) => { data: TData[]; total: number });
@@ -62,6 +64,7 @@ export function useDataGrid<TData extends { id: string }>(
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPageState] = useState(initial.p);
+  const [pageSize, setPageSizeState] = useState(initialPageSize);
   const [searchInput, setSearchInput] = useState(initial.s);
   const [debouncedSearch, setDebouncedSearch] = useState(initial.s);
   const [filters, setFiltersState] = useState<Record<string, string>>(initial.f);
@@ -175,13 +178,18 @@ export function useDataGrid<TData extends { id: string }>(
   }, [endpoint, buildParams, adapter]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchData(); }, [page, debouncedSearch, sort, filters, ...dependencies]);
+  useEffect(() => { fetchData(); }, [page, pageSize, debouncedSearch, sort, filters, ...dependencies]);
 
   // Cleanup abort on unmount
   useEffect(() => () => { if (abortRef.current) abortRef.current.abort(); }, []);
 
   // --- Public state setters ---
   const setPage = useCallback((p: number) => setPageState(p), []);
+
+  const setPageSize = useCallback((size: number) => {
+    setPageSizeState(size);
+    setPageState(1);
+  }, []);
 
   const setSearch = useCallback((s: string) => {
     setSearchInput(s);
@@ -264,17 +272,25 @@ export function useDataGrid<TData extends { id: string }>(
   const gridProps = useMemo(() => ({
     data,
     loading,
-    pagination: enablePagination ? { page, pageSize, total, onPageChange: setPage } : undefined,
+    pagination: enablePagination ? {
+      page,
+      pageSize,
+      total,
+      onPageChange: setPage,
+      onPageSizeChange: enablePageSizeChange ? setPageSize : undefined,
+      pageSizeOptions: enablePageSizeChange ? pageSizeOptions : undefined,
+    } : undefined,
     toolbar: {
       search: enableSearch ? { value: searchInput, onChange: setSearch } : undefined,
     } as import("@/components/ui/data-grid").DataGridToolbarConfig,
     sorting: sort ? [{ id: sort.field, desc: sort.order === "desc" }] : undefined,
     onSortingChange: sortable ? setSort : undefined,
-  }), [data, loading, enablePagination, page, pageSize, total, setPage, enableSearch, searchInput, setSearch, sort, sortable, setSort]);
+  }), [data, loading, enablePagination, page, pageSize, total, setPage, enablePageSizeChange, setPageSize, pageSizeOptions, enableSearch, searchInput, setSearch, sort, sortable, setSort]);
 
   return {
     data, total, loading,
     page, setPage,
+    pageSize, setPageSize,
     search: searchInput, setSearch,
     filters, setFilter, setFilters, resetFilters,
     sort, setSort,

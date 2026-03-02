@@ -6,10 +6,11 @@ describe("Rate Limiter", () => {
 
   it("should allow requests within limit", () => {
     const limit = 5;
+    const id = `test-within-${Date.now()}`; // fixed id for all iterations
     
     // First 5 requests should succeed
     for (let i = 0; i < limit; i++) {
-      const result = rateLimit(`test-within-${Date.now()}`, limit);
+      const result = rateLimit(id, limit);
       expect(result.success).toBe(true);
       expect(result.remaining).toBe(limit - i - 1);
     }

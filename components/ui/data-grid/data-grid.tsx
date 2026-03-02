@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { cn } from "@/lib/shared/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { DataGridToolbar } from "./data-grid-toolbar";
 import { DataGridPaginationBar } from "./data-grid-pagination";
 import { DataGridBulkBar } from "./data-grid-bulk-bar";
@@ -233,8 +234,13 @@ export function DataGrid<TData>({
                         {header.isPlaceholder
                           ? null
                           : flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === "asc" && <span className="text-xs">&#9650;</span>}
-                        {header.column.getIsSorted() === "desc" && <span className="text-xs">&#9660;</span>}
+                        {header.column.getCanSort() && (
+                          header.column.getIsSorted() === "asc"
+                            ? <ArrowUp className="h-3.5 w-3.5 shrink-0 text-foreground" />
+                            : header.column.getIsSorted() === "desc"
+                              ? <ArrowDown className="h-3.5 w-3.5 shrink-0 text-foreground" />
+                              : <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+                        )}
                       </div>
                       {/* Resize Handle */}
                       {header.column.getCanResize() && (
@@ -259,7 +265,7 @@ export function DataGrid<TData>({
           {/* Body */}
           <tbody className="[&_tr:last-child]:border-0">
             {loading ? (
-              [...Array(8)].map((_, i) => (
+              [...Array(pagination?.pageSize ?? 8)].map((_, i) => (
                 <tr key={`skeleton-${i}`} className="border-b">
                   {table.getVisibleFlatColumns().map((col) => (
                     <td key={col.id} className="align-middle">
@@ -353,6 +359,8 @@ export function DataGrid<TData>({
           pageSize={pagination.pageSize}
           total={pagination.total}
           onPageChange={pagination.onPageChange}
+          onPageSizeChange={pagination.onPageSizeChange}
+          pageSizeOptions={pagination.pageSizeOptions}
         />
       )}
     </div>

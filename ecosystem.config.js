@@ -12,6 +12,9 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 3001,
+        // Required secrets — set actual values on the server or via CI/CD secrets
+        // DATABASE_URL: "postgresql://user:pass@localhost:5432/listopt_erp",
+        // SESSION_SECRET: "your-64-char-random-hex-secret",
       },
     },
   ],

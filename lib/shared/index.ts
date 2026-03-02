@@ -5,3 +5,4 @@ export { db } from "./db";
 export * from "./utils";
 export * from "./validation";
 export * from "./rate-limit";
+export { logger } from "./logger";

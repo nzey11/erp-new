@@ -6,6 +6,8 @@ declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     align?: "left" | "center" | "right";
+    /** Display name used in column-visibility menu. Falls back to header string, then column id. */
+    label?: string;
     canHide?: boolean;
     pin?: "left" | "right";
     editable?: EditableConfig;
@@ -13,7 +15,7 @@ declare module "@tanstack/react-table" {
 }
 
 export interface EditableConfig {
-  type: "text" | "number" | "select";
+  type: "text" | "number" | "select" | "date";
   onSave: (rowId: string, value: unknown) => Promise<void>;
   validate?: (value: unknown) => boolean | string;
   options?: Array<{ value: string; label: string }>;
@@ -28,6 +30,10 @@ export interface DataGridPagination {
   pageSize: number;
   total: number;
   onPageChange: (page: number) => void;
+  /** Called when the user changes page size. Supply pageSizeOptions to show the selector. */
+  onPageSizeChange?: (size: number) => void;
+  /** Available page-size choices. Default: [10, 25, 50, 100] */
+  pageSizeOptions?: number[];
 }
 
 export interface DataGridSelection {

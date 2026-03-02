@@ -67,9 +67,13 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
   // Build extra params for group/type/status filters
   const grid = useDataGrid<Document>({
     endpoint: "/api/accounting/documents",
-    pageSize: 50,
+    pageSize: 25,
     enablePagination: true,
     enableSearch: true,
+    sortable: true,
+    defaultSort: { field: "date", order: "desc" },
+    enablePageSizeChange: true,
+    pageSizeOptions: [10, 25, 50, 100],
     defaultFilters: {
       type: defaultTypeFilter,
       status: "",
@@ -138,6 +142,7 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
       accessorKey: "number",
       header: "Номер",
       size: 120,
+      enableSorting: true,
       meta: { canHide: false },
       cell: ({ row }) => <span className="font-mono font-medium">{row.original.number}</span>,
     },
@@ -145,11 +150,13 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
       accessorKey: "typeName",
       header: "Тип",
       size: 180,
+      enableSorting: true,
     },
     {
       accessorKey: "date",
       header: "Дата",
       size: 110,
+      enableSorting: true,
       cell: ({ row }) => formatDate(row.original.date),
     },
     {
@@ -172,6 +179,7 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
       accessorKey: "totalAmount",
       header: "Сумма",
       size: 130,
+      enableSorting: true,
       meta: { align: "right" as const },
       cell: ({ row }) => formatRub(row.original.totalAmount),
     },
@@ -179,6 +187,7 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
       accessorKey: "status",
       header: "Статус",
       size: 130,
+      enableSorting: true,
       cell: ({ row }) => (
         <Badge variant={STATUS_COLORS[row.original.status] || "outline"}>
           {row.original.statusName}
