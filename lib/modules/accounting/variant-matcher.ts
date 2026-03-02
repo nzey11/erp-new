@@ -428,7 +428,7 @@ export async function findVariantSuggestions(
     take: 100, // Limit candidates for performance
   });
 
-  let suggestions: VariantSuggestion[] = [];
+  const suggestions: VariantSuggestion[] = [];
 
   // Run matching strategies
   if (strategy === "all" || strategy === "sku") {

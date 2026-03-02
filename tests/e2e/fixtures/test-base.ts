@@ -23,6 +23,7 @@ export const test = base.extend<TestFixtures>({
     ]);
 
     const page = await context.newPage();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
 
     await context.close();
