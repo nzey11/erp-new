@@ -1,0 +1,22 @@
+{
+  "name": "lib-ecommerce",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "lib/modules/ecommerce",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint lib/modules/ecommerce"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run tests/integration/catalog --passWithNoTests"
+      }
+    }
+  },
+  "tags": ["type:lib", "scope:ecommerce"],
+  "implicitDependencies": ["lib-shared", "lib-accounting"]
+}

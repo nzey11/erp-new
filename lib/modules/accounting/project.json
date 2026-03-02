@@ -1,0 +1,22 @@
+{
+  "name": "lib-accounting",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "lib/modules/accounting",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint lib/modules/accounting"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run tests/integration/documents --passWithNoTests"
+      }
+    }
+  },
+  "tags": ["type:lib", "scope:accounting"],
+  "implicitDependencies": ["lib-shared"]
+}

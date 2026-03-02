@@ -1,0 +1,119 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/shared/db";
+import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
+import { parseBody, validationError } from "@/lib/shared/validation";
+import { createDiscountSchema } from "@/lib/modules/accounting/schemas/products.schema";
+
+type Params = { params: Promise<{ id: string }> };
+
+export async function GET(_request: NextRequest, { params }: Params) {
+  try {
+    await requirePermission("products:read");
+    const { id: productId } = await params;
+
+    const discounts = await db.productDiscount.findMany({
+      where: { productId, isActive: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(discounts);
+  } catch (error) {
+    return handleAuthError(error);
+  }
+}
+
+export async function POST(request: NextRequest, { params }: Params) {
+  try {
+    await requirePermission("pricing:write");
+    const { id: productId } = await params;
+    const data = await parseBody(request, createDiscountSchema);
+    const { name, type, value, validFrom, validTo } = data;
+
+    if (type === "percentage" && (value <= 0 || value > 100)) {
+      return NextResponse.json({ error: "Процент скидки должен быть от 0 до 100" }, { status: 400 });
+    }
+
+    // Get product with current purchase price (cost) to validate
+    const product = await db.product.findUnique({
+      where: { id: productId },
+      include: {
+        purchasePrices: {
+          where: { isActive: true },
+          orderBy: { validFrom: "desc" },
+          take: 1,
+        },
+        salePrices: {
+          where: { isActive: true },
+          orderBy: { validFrom: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+    }
+
+    const purchasePrice = product.purchasePrices[0]?.price ?? 0;
+    const salePrice = product.salePrices[0]?.price ?? 0;
+
+    // Calculate discounted price and validate it doesn't go below cost
+    let discountedPrice: number;
+    if (type === "percentage") {
+      discountedPrice = salePrice * (1 - value / 100);
+    } else {
+      discountedPrice = salePrice - value;
+    }
+
+    if (purchasePrice > 0 && discountedPrice < purchasePrice) {
+      return NextResponse.json(
+        {
+          error: `Скидка снижает цену до ${discountedPrice.toFixed(2)}, что ниже себестоимости ${purchasePrice.toFixed(2)}`,
+          discountedPrice,
+          purchasePrice,
+        },
+        { status: 400 }
+      );
+    }
+
+    const discount = await db.productDiscount.create({
+      data: {
+        productId,
+        name,
+        type,
+        value,
+        validFrom: validFrom ? new Date(validFrom) : new Date(),
+        validTo: validTo ? new Date(validTo) : null,
+      },
+    });
+
+    return NextResponse.json(discount, { status: 201 });
+  } catch (error) {
+    const vErr = validationError(error);
+    if (vErr) return vErr;
+    return handleAuthError(error);
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: Params) {
+  try {
+    await requirePermission("pricing:write");
+    await params;
+
+    const { searchParams } = new URL(request.url);
+    const discountId = searchParams.get("discountId");
+
+    if (!discountId) {
+      return NextResponse.json({ error: "discountId обязателен" }, { status: 400 });
+    }
+
+    await db.productDiscount.update({
+      where: { id: discountId },
+      data: { isActive: false },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleAuthError(error);
+  }
+}

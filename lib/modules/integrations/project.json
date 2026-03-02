@@ -1,0 +1,22 @@
+{
+  "name": "lib-integrations",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "lib/modules/integrations",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint lib/modules/integrations"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run tests/integration/integrations --passWithNoTests"
+      }
+    }
+  },
+  "tags": ["type:lib", "scope:integrations"],
+  "implicitDependencies": ["lib-shared"]
+}
