@@ -26,7 +26,7 @@ export function signSession(userId: string, expiresInHours: number = 24): string
   return `${dataB64}.${signature}`;
 }
 
-/** Verify a session token and extract the user ID. Returns userId or null. Checks expiration. */
+/** Verify a session token and extract the user ID. Returns userId or null. Checks expiration. Supports legacy format. */
 export function verifySessionToken(token: string): string | null {
   const dotIndex = token.lastIndexOf(".");
   if (dotIndex === -1) return null;
@@ -36,26 +36,45 @@ export function verifySessionToken(token: string): string | null {
 
   try {
     const secret = getSessionSecret();
-    const expected = crypto.createHmac("sha256", secret).update(dataB64).digest("hex");
+    
+    // Try new format first (base64 JSON with expiration)
+    try {
+      const expected = crypto.createHmac("sha256", secret).update(dataB64).digest("hex");
 
-    if (signature.length !== expected.length) return null;
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(signature, "hex"),
-      Buffer.from(expected, "hex")
-    );
+      if (signature.length === expected.length) {
+        const isValid = crypto.timingSafeEqual(
+          Buffer.from(signature, "hex"),
+          Buffer.from(expected, "hex")
+        );
 
-    if (!isValid) return null;
+        if (isValid) {
+          // Decode and check expiration
+          const dataStr = Buffer.from(dataB64, "base64").toString("utf-8");
+          const data: SessionData = JSON.parse(dataStr);
 
-    // Decode and check expiration
-    const dataStr = Buffer.from(dataB64, "base64").toString("utf-8");
-    const data: SessionData = JSON.parse(dataStr);
+          // Check if token is expired
+          if (Date.now() > data.exp) {
+            return null; // Token expired
+          }
 
-    // Check if token is expired
-    if (Date.now() > data.exp) {
-      return null; // Token expired
+          return data.userId;
+        }
+      }
+    } catch {
+      // Not new format, try legacy format
     }
 
-    return data.userId;
+    // Legacy format: userId.signature (no base64, no expiration)
+    const userId = dataB64;
+    const expectedLegacy = crypto.createHmac("sha256", secret).update(userId).digest("hex");
+
+    if (signature.length !== expectedLegacy.length) return null;
+    const isValidLegacy = crypto.timingSafeEqual(
+      Buffer.from(signature, "hex"),
+      Buffer.from(expectedLegacy, "hex")
+    );
+
+    return isValidLegacy ? userId : null;
   } catch {
     return null;
   }
