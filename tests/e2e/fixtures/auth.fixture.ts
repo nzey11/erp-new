@@ -4,10 +4,12 @@ import { createUser } from "./database.fixture";
 
 const SESSION_SECRET = process.env.SESSION_SECRET ?? "test-session-secret-for-testing-only";
 
-/** Sign a userId into a session token (mirrors lib/shared/auth.ts) */
+/** Sign a userId into a session token (mirrors lib/shared/auth.ts format: userId|expiresAt.signature) */
 export function signSession(userId: string): string {
-  const signature = crypto.createHmac("sha256", SESSION_SECRET).update(userId).digest("hex");
-  return `${userId}.${signature}`;
+  const expiresAt = Date.now() + 24 * 7 * 60 * 60 * 1000; // 7 days
+  const payload = `${userId}|${expiresAt}`;
+  const signature = crypto.createHmac("sha256", SESSION_SECRET).update(payload).digest("hex");
+  return `${payload}.${signature}`;
 }
 
 /** Create an admin user in the DB and return its session cookie value */
