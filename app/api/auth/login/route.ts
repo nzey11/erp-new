@@ -7,9 +7,6 @@ import { compare } from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting temporarily disabled due to Edge Runtime compatibility issues
-    // TODO: Implement Redis-based rate limiting
-    
     const { username, password } = await parseBody(request, loginSchema);
 
     const user = await db.user.findUnique({
@@ -40,14 +37,13 @@ export async function POST(request: NextRequest) {
     response.cookies.set("session", token, {
       httpOnly: true,
       secure: process.env.SECURE_COOKIES === "true",
-      sameSite: "lax", // CSRF protection
+      sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 24 hours (matches token expiration)
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
     return response;
   } catch (error) {
-    console.error('[LOGIN ERROR]', error);
     const vErr = validationError(error);
     if (vErr) return vErr;
     return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
