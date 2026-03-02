@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import type { ReactNode } from "react";
 import {
   Bold,
   Italic,
@@ -24,6 +25,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/shared/utils";
 import { useCallback } from "react";
+
+function ToolButton({
+  onClick,
+  active,
+  children,
+  title,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  children: ReactNode;
+  title: string;
+}) {
+  return (
+    <Button
+      type="button"
+      variant={active ? "default" : "ghost"}
+      size="icon-sm"
+      onClick={onClick}
+      title={title}
+      className="h-8 w-8"
+    >
+      {children}
+    </Button>
+  );
+}
 
 interface RichTextEditorProps {
   content: string;
@@ -88,29 +114,6 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
   }, [editor]);
 
   if (!editor) return null;
-
-  const ToolButton = ({
-    onClick,
-    active,
-    children,
-    title,
-  }: {
-    onClick: () => void;
-    active?: boolean;
-    children: React.ReactNode;
-    title: string;
-  }) => (
-    <Button
-      type="button"
-      variant={active ? "default" : "ghost"}
-      size="icon-sm"
-      onClick={onClick}
-      title={title}
-      className="h-8 w-8"
-    >
-      {children}
-    </Button>
-  );
 
   return (
     <div className="border rounded-lg overflow-hidden">

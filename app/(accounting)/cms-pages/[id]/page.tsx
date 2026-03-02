@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/ecommerce/RichTextEditor";
 import { ChevronLeft, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { generateSlug } from "@/lib/modules/ecommerce/cms";
+import { generateSlug } from "@/lib/modules/ecommerce";
 import Link from "next/link";
 
 export default function CmsPageEditPage() {

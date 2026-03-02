@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
-import { createStorePageSchema } from "@/lib/modules/ecommerce/schemas/cms.schema";
+import { createStorePageSchema } from "@/lib/modules/ecommerce";
 
 export async function GET(request: NextRequest) {
   try {
