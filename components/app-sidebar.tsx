@@ -56,7 +56,7 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Справочники", href: "/references", icon: BookOpen },
   ],
   finance: [
-    { name: "Дашборд", href: "/finance/dashboard", icon: LayoutDashboard },
+    { name: "Дашборд", href: "/finance", icon: LayoutDashboard },
     { name: "Платежи", href: "/finance/payments", icon: Wallet },
     { name: "Отчёты", href: "/finance/reports", icon: TrendingUp },
     { name: "Взаиморасчёты", href: "/finance/balances", icon: Users },
