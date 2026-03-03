@@ -57,9 +57,6 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
   ],
   finance: [
     { name: "Панель", href: "/finance", icon: LayoutDashboard },
-    { name: "Платежи", href: "/finance/payments", icon: Wallet },
-    { name: "Отчёты", href: "/finance/reports", icon: TrendingUp },
-    { name: "Взаиморасчёты", href: "/finance/balances", icon: Users },
   ],
   ecommerce: [
     { name: "Заказы клиентов", href: "/ecommerce/orders", icon: ShoppingCart },
