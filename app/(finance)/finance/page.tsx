@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,11 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
 import { DocumentsTable, DOC_TYPE_OPTIONS } from "@/components/accounting";
+
+// Loading fallback for Suspense
+function DocumentsTableFallback() {
+  return <div className="py-8 text-center text-muted-foreground">Загрузка...</div>;
+}
 
 const FINANCE_TYPES = DOC_TYPE_OPTIONS.filter((t) => t.group === "finance");
 
@@ -346,11 +351,13 @@ export default function FinancePage() {
 
       {/* Document list for non-reports tabs */}
       {tab !== "reports" && (
-        <DocumentsTable
-          key={`${refreshKey}-${tab}`}
-          groupFilter={filterProps.groupFilter}
-          defaultTypeFilter={filterProps.typeFilter}
-        />
+        <Suspense fallback={<DocumentsTableFallback />}>
+          <DocumentsTable
+            key={`${refreshKey}-${tab}`}
+            groupFilter={filterProps.groupFilter}
+            defaultTypeFilter={filterProps.typeFilter}
+          />
+        </Suspense>
       )}
 
       {/* Create Dialog */}
