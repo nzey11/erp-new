@@ -18,5 +18,5 @@
     }
   },
   "tags": ["type:lib", "scope:accounting"],
-  "implicitDependencies": ["lib-shared"]
+  "implicitDependencies": ["lib-shared", "lib-finance"]
 }

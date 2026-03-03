@@ -18,5 +18,5 @@
     }
   },
   "tags": ["type:lib", "scope:ecommerce"],
-  "implicitDependencies": ["lib-shared", "lib-accounting"]
+  "implicitDependencies": ["lib-shared", "lib-accounting", "lib-finance"]
 }

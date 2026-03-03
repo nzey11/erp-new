@@ -39,6 +39,7 @@ import { useState } from "react";
 // Module definitions for the switcher
 const modules = [
   { id: "accounting", name: "Система учёта", icon: Calculator, available: true },
+  { id: "finance", name: "Финансы", icon: Wallet, available: true },
   { id: "ecommerce", name: "E-commerce", icon: ShoppingBag, available: true },
   { id: "ai-office", name: "AI Office", icon: Bot, available: false },
 ];
@@ -51,9 +52,14 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Склад", href: "/stock", icon: Boxes },
     { name: "Закупки", href: "/purchases", icon: ShoppingCart },
     { name: "Продажи", href: "/sales", icon: TrendingUp },
-    { name: "Финансы", href: "/finance", icon: Wallet },
     { name: "Контрагенты", href: "/counterparties", icon: Users },
     { name: "Справочники", href: "/references", icon: BookOpen },
+  ],
+  finance: [
+    { name: "Панель", href: "/finance", icon: LayoutDashboard },
+    { name: "Платежи", href: "/finance/payments", icon: Wallet },
+    { name: "Отчёты", href: "/finance/reports", icon: TrendingUp },
+    { name: "Взаиморасчёты", href: "/finance/balances", icon: Users },
   ],
   ecommerce: [
     { name: "Заказы клиентов", href: "/ecommerce/orders", icon: ShoppingCart },
