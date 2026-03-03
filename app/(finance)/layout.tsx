@@ -1,6 +1,7 @@
+"use client";
+
+import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
-import { Toaster } from "@/components/ui/sonner";
-import { cn } from "@/lib/shared/utils";
 
 export default function FinanceLayout({
   children,
@@ -10,17 +11,13 @@ export default function FinanceLayout({
   return (
     <div className="min-h-screen">
       <AppSidebar />
-      <main
-        className={cn(
-          "transition-all duration-200",
-          "md:ml-16"
-        )}
-      >
-        <div className="p-4 md:p-6 pt-16 md:pt-6">
-          {children}
+      <main className="md:pl-64 transition-all duration-200">
+        <div className="p-4 md:p-6 lg:p-8 pt-14 md:pt-6">
+          <Suspense fallback={<div className="animate-pulse">Loading...</div>}>
+            {children}
+          </Suspense>
         </div>
       </main>
-      <Toaster />
     </div>
   );
 }
