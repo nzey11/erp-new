@@ -31,7 +31,9 @@ export function createTestRequest(
     "Content-Type": "application/json",
   });
 
-  const init: RequestInit = { method, headers };
+  // Build init object compatible with NextRequest constructor
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const init: any = { method, headers };
   if (body && method !== "GET") {
     init.body = JSON.stringify(body);
   }
