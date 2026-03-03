@@ -130,7 +130,10 @@ jobs:
             cd /var/www/listopt-erp
             # Clean up old Next.js build and deleted files
             rm -rf .next
-            rm -rf app/\(accounting\)/finance
+            rm -rf app/
+            rm -rf components/
+            rm -rf lib/
+            rm -rf prisma/
             # Extract new archive
             tar -xzf /tmp/deploy.tar.gz
             npm ci
