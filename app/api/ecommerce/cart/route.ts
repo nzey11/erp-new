@@ -5,7 +5,7 @@ import { parseBody, validationError } from "@/lib/shared/validation";
 import { addToCartSchema } from "@/lib/modules/ecommerce/schemas/cart.schema";
 
 /** GET /api/ecommerce/cart — Get customer cart */
-export async function GET() {
+export async function GET(_request: NextRequest) {
   try {
     const customer = await requireCustomer();
 

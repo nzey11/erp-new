@@ -35,7 +35,7 @@ export const queryProductsSchema = z.object({
   sortBy: z.enum(["name", "sku", "purchasePrice", "salePrice", "createdAt"]).default("name"),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(50),
+  limit: z.coerce.number().int().positive().max(500).default(50),
 });
 
 // POST /api/accounting/products/[id]/variants

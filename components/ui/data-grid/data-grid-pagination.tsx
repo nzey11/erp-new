@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,6 +36,8 @@ export function DataGridPaginationBar({
   const to = Math.min(page * pageSize, total);
 
   const [jumpValue, setJumpValue] = useState("");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const handleJump = () => {
     const n = parseInt(jumpValue, 10);
@@ -55,6 +57,7 @@ export function DataGridPaginationBar({
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-muted-foreground">Строк:</span>
+            {mounted ? (
             <Select
               value={String(pageSize)}
               onValueChange={(v) => {
@@ -73,6 +76,9 @@ export function DataGridPaginationBar({
                 ))}
               </SelectContent>
             </Select>
+            ) : (
+              <span className="h-8 w-[72px] text-sm border rounded-md flex items-center justify-center text-muted-foreground">{pageSize}</span>
+            )}
           </div>
         )}
       </div>

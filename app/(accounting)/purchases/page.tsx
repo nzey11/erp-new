@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,9 +12,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentsTable, DOC_TYPE_OPTIONS } from "@/components/accounting";
+import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 
 const PURCHASE_TYPES = DOC_TYPE_OPTIONS.filter((t) => t.group === "purchases");
 
@@ -25,17 +27,20 @@ export default function PurchasesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createType, setCreateType] = useState("");
   const [creating, setCreating] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+
+  const tableRef = useRef<DocumentsTableHandle>(null);
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
   const [createWarehouseId, setCreateWarehouseId] = useState("");
   const [createCounterpartyId, setCreateCounterpartyId] = useState("");
 
+  const router = useRouter();
+
   useEffect(() => {
     Promise.all([
       fetch("/api/accounting/warehouses").then((r) => r.json()),
-      fetch("/api/accounting/counterparties?limit=100").then((r) => r.json()),
+      fetch("/api/accounting/counterparties?limit=500").then((r) => r.json()),
     ]).then(([wh, cp]) => {
       setWarehouses(wh || []);
       setCounterparties(cp.data || []);
@@ -69,7 +74,7 @@ export default function PurchasesPage() {
       setCreateType("");
       setCreateWarehouseId("");
       setCreateCounterpartyId("");
-      setRefreshKey((k) => k + 1);
+      tableRef.current?.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
@@ -111,7 +116,8 @@ export default function PurchasesPage() {
       </Tabs>
 
       <DocumentsTable
-        key={`${refreshKey}-${tab}`}
+        ref={tableRef}
+        key={tab}
         groupFilter={filterProps.groupFilter}
         defaultTypeFilter={filterProps.typeFilter}
       />
@@ -150,14 +156,25 @@ export default function PurchasesPage() {
             {createType && (
               <div className="grid gap-2">
                 <Label>Контрагент</Label>
-                <Select value={createCounterpartyId} onValueChange={setCreateCounterpartyId}>
-                  <SelectTrigger><SelectValue placeholder="Выберите контрагента" /></SelectTrigger>
-                  <SelectContent>
-                    {counterparties.map((cp) => (
-                      <SelectItem key={cp.id} value={cp.id}>{cp.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={createCounterpartyId} onValueChange={setCreateCounterpartyId}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Выберите контрагента" /></SelectTrigger>
+                    <SelectContent>
+                      {counterparties.map((cp) => (
+                        <SelectItem key={cp.id} value={cp.id}>{cp.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    title="Создать нового контрагента"
+                    onClick={() => router.push("/counterparties/new?redirect=purchases")}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -169,6 +186,8 @@ export default function PurchasesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
     </div>
   );
 }

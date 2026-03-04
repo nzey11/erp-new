@@ -324,6 +324,7 @@ model Counterparty {
   purchasePrices PurchasePrice[]
   documents      Document[]
   balance        CounterpartyBalance?
+  payments       Payment[]
 
   @@index([type])
   @@index([isActive])
@@ -435,6 +436,7 @@ model Document {
 
   // E-commerce relation
   ecommerceOrder    Order?
+  payments          Payment[]
 
   @@index([type, status, date])
   @@index([warehouseId, date])
@@ -767,4 +769,52 @@ model Integration {
   updatedAt DateTime @updatedAt
 
   @@index([type, isEnabled])
+}
+
+// =============================================
+// FINANCE: Categories & Payments
+// =============================================
+
+model FinanceCategory {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // "income" | "expense"
+  isSystem  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments Payment[]
+
+  @@index([type, isActive])
+}
+
+model PaymentCounter {
+  id         String @id @default(cuid())
+  prefix     String @unique @default("PAY")
+  lastNumber Int    @default(0)
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  number         String          @unique
+  type           String          // "income" | "expense"
+  categoryId     String
+  counterpartyId String?
+  documentId     String?
+  amount         Float
+  paymentMethod  PaymentType
+  date           DateTime        @default(now())
+  description    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  category     FinanceCategory @relation(fields: [categoryId], references: [id])
+  counterparty Counterparty?   @relation(fields: [counterpartyId], references: [id])
+  document     Document?       @relation(fields: [documentId], references: [id])
+
+  @@index([type, date])
+  @@index([counterpartyId])
+  @@index([documentId])
 }

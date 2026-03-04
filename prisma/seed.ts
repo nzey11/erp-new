@@ -75,6 +75,36 @@ async function main() {
   });
   console.log('  ✓ Admin user (login: admin / admin123)');
 
+  // Finance categories (system defaults)
+  const financeCategories = [
+    { name: "Оплата от покупателя", type: "income", isSystem: true, order: 1 },
+    { name: "Возврат от поставщика", type: "income", isSystem: true, order: 2 },
+    { name: "Прочий доход", type: "income", isSystem: true, order: 3 },
+    { name: "Оплата поставщику", type: "expense", isSystem: true, order: 1 },
+    { name: "Возврат покупателю", type: "expense", isSystem: true, order: 2 },
+    { name: "Аренда", type: "expense", isSystem: true, order: 3 },
+    { name: "Зарплата", type: "expense", isSystem: true, order: 4 },
+    { name: "Налоги", type: "expense", isSystem: true, order: 5 },
+    { name: "Прочий расход", type: "expense", isSystem: true, order: 6 },
+  ];
+
+  for (const cat of financeCategories) {
+    await prisma.financeCategory.upsert({
+      where: { id: `sys-${cat.type}-${cat.order}` },
+      update: {},
+      create: { id: `sys-${cat.type}-${cat.order}`, ...cat },
+    });
+  }
+  console.log(`  ✓ ${financeCategories.length} finance categories`);
+
+  // Payment counter
+  await prisma.paymentCounter.upsert({
+    where: { prefix: "PAY" },
+    update: {},
+    create: { prefix: "PAY", lastNumber: 0 },
+  });
+  console.log("  ✓ Payment counter");
+
   console.log("Seed completed!");
 }
 

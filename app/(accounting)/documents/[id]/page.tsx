@@ -56,7 +56,7 @@ interface DocumentDetail {
   linkedFrom: { id: string; number: string; type: string; typeName?: string }[];
 }
 
-interface Product { id: string; name: string; sku: string | null }
+interface Product { id: string; name: string; sku: string | null; purchasePrice: number | null; salePrice: number | null }
 
 const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "secondary",
@@ -116,10 +116,24 @@ export default function DocumentDetailPage() {
   useEffect(() => { loadDoc(); }, [loadDoc]);
 
   useEffect(() => {
-    fetch("/api/accounting/products?limit=100")
+    fetch("/api/accounting/products?limit=500")
       .then((r) => r.ok ? r.json() : { data: [] })
       .then((data) => setProducts(Array.isArray(data.data) ? data.data : []));
   }, []);
+
+  // When product is selected — auto-fill price based on document type
+  const handleProductSelect = (productId: string) => {
+    setItemProductId(productId);
+    const product = products.find((p) => p.id === productId);
+    if (!product || !doc) return;
+    const isPurchase = ["incoming_shipment", "purchase_order", "supplier_return", "stock_receipt"].includes(doc.type);
+    const isSale = ["outgoing_shipment", "sales_order", "customer_return"].includes(doc.type);
+    if (isPurchase && product.purchasePrice != null) {
+      setItemPrice(String(product.purchasePrice));
+    } else if (isSale && product.salePrice != null) {
+      setItemPrice(String(product.salePrice));
+    }
+  };
 
   const handleConfirm = async () => {
     try {
@@ -244,7 +258,7 @@ export default function DocumentDetailPage() {
         counterpartyId: doc.counterparty?.id || null,
         ...(!isPayment && { warehouseId: doc.warehouse?.id || null }),
         items: isPayment ? [] : doc.items.map((item) => ({
-          productId: item.productId,
+          productId: item.product.id,
           quantity: item.quantity,
           price: item.price,
         })),
@@ -501,7 +515,7 @@ export default function DocumentDetailPage() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>Товар *</Label>
-              <Select value={itemProductId} onValueChange={setItemProductId}>
+              <Select value={itemProductId} onValueChange={handleProductSelect}>
                 <SelectTrigger><SelectValue placeholder="Выберите товар" /></SelectTrigger>
                 <SelectContent>
                   {products.map((p) => (
@@ -524,7 +538,7 @@ export default function DocumentDetailPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Цена</Label>
+                <Label>Цена {products.find(p => p.id === itemProductId)?.purchasePrice != null && doc && ["incoming_shipment","purchase_order","supplier_return","stock_receipt"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(закупочная)</span> : products.find(p => p.id === itemProductId)?.salePrice != null && doc && ["outgoing_shipment","sales_order","customer_return"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(продажная)</span> : null}</Label>
                 <Input
                   type="number"
                   min="0"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataGrid } from "@/components/ui/data-grid";
@@ -50,15 +50,22 @@ const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive" | "o
   cancelled: "destructive",
 };
 
+export interface DocumentsTableHandle {
+  refresh: () => void;
+}
+
 interface DocumentsTableProps {
   groupFilter?: string;
   defaultTypeFilter?: string;
   onRefresh?: () => void;
 }
 
-export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }: DocumentsTableProps) {
+export const DocumentsTable = forwardRef<DocumentsTableHandle, DocumentsTableProps>(
+function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }: DocumentsTableProps, ref) {
   const [typeFilter, setTypeFilter] = useState(defaultTypeFilter);
   const [statusFilter, setStatusFilter] = useState("");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const filteredTypes = groupFilter
     ? DOC_TYPE_OPTIONS.filter((t) => t.group === groupFilter)
@@ -88,6 +95,10 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
     },
     dependencies: [groupFilter],
   });
+
+  useImperativeHandle(ref, () => ({
+    refresh: () => { grid.mutate.refresh(); },
+  }));
 
   const handleTypeChange = (v: string) => {
     const val = v === "all" ? "" : v;
@@ -234,7 +245,7 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
           onChange: grid.setSearch,
           placeholder: "Поиск по номеру...",
         },
-        filters: (
+        filters: mounted ? (
           <>
             <Select value={typeFilter || "all"} onValueChange={handleTypeChange}>
               <SelectTrigger className="w-48"><SelectValue placeholder="Тип документа" /></SelectTrigger>
@@ -255,8 +266,9 @@ export function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRef
               </TabsList>
             </Tabs>
           </>
-        ),
+        ) : null,
       }}
     />
   );
-}
+});
+DocumentsTable.displayName = "DocumentsTable";

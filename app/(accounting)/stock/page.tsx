@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
@@ -17,6 +17,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub, formatNumber } from "@/lib/shared/utils";
 import { DocumentsTable } from "@/components/accounting";
+import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 
 interface StockRow {
@@ -65,7 +66,7 @@ export default function StockPage() {
   const [createType, setCreateType] = useState("");
   const [createWarehouseId, setCreateWarehouseId] = useState("");
   const [creating, setCreating] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const tableRef = useRef<DocumentsTableHandle>(null);
 
   const grid = useDataGrid<StockRow>({
     endpoint: "/api/accounting/stock",
@@ -146,7 +147,7 @@ export default function StockPage() {
       setCreateOpen(false);
       setCreateType("");
       setCreateWarehouseId("");
-      setRefreshKey((k) => k + 1);
+      tableRef.current?.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
@@ -315,7 +316,8 @@ export default function StockPage() {
       {/* Document tabs (Inventory, Write-offs, Receipts) */}
       {tab !== "balances" && (
         <DocumentsTable
-          key={`${refreshKey}-${tab}`}
+          ref={tableRef}
+          key={tab}
           groupFilter={getDocFilterProps().groupFilter}
           defaultTypeFilter={getDocFilterProps().defaultTypeFilter}
         />

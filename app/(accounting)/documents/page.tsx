@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentsTable, DOC_TYPE_OPTIONS } from "@/components/accounting";
+import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 
 interface Warehouse { id: string; name: string }
 interface Counterparty { id: string; name: string }
@@ -29,7 +30,7 @@ export default function DocumentsPage() {
   const [createWarehouseId, setCreateWarehouseId] = useState("");
   const [createTargetWarehouseId, setCreateTargetWarehouseId] = useState("");
   const [createCounterpartyId, setCreateCounterpartyId] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const tableRef = useRef<DocumentsTableHandle>(null);
 
   const filteredTypes = groupFilter
     ? DOC_TYPE_OPTIONS.filter((t) => t.group === groupFilter)
@@ -74,7 +75,7 @@ export default function DocumentsPage() {
       setCreateWarehouseId("");
       setCreateTargetWarehouseId("");
       setCreateCounterpartyId("");
-      setRefreshKey((k) => k + 1);
+      tableRef.current?.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
@@ -105,7 +106,7 @@ export default function DocumentsPage() {
         </TabsList>
       </Tabs>
 
-      <DocumentsTable key={`${refreshKey}-${groupFilter}`} groupFilter={groupFilter} />
+      <DocumentsTable ref={tableRef} key={groupFilter} groupFilter={groupFilter} />
 
       {/* Create Document Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

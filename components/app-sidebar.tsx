@@ -34,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Module definitions for the switcher
 const modules = [
@@ -60,6 +60,7 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Платежи", href: "/finance/payments", icon: Wallet },
     { name: "Отчёты", href: "/finance/reports", icon: TrendingUp },
     { name: "Взаиморасчёты", href: "/finance/balances", icon: Users },
+    { name: "Статьи", href: "/finance/categories", icon: BookOpen },
   ],
   ecommerce: [
     { name: "Заказы клиентов", href: "/ecommerce/orders", icon: ShoppingCart },
@@ -75,7 +76,17 @@ export function AppSidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentModule, setCurrentModuleState] = useState("accounting");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const getModuleFromPath = (path: string) => {
+    if (path.startsWith("/finance")) return "finance";
+    if (path.startsWith("/ecommerce") || path.startsWith("/cms-pages")) return "ecommerce";
+    return "accounting";
+  };
+
+  const [currentModule, setCurrentModuleState] = useState(() => getModuleFromPath(pathname));
 
   const setCurrentModule = (moduleId: string) => {
     setCurrentModuleState(moduleId);
@@ -123,6 +134,15 @@ export function AppSidebar() {
 
       {/* Module Switcher */}
       <div className="p-2 border-b">
+        {!mounted ? (
+          <Button variant="outline" className={cn("w-full justify-between font-normal", collapsed && "px-2")} disabled>
+            <div className="flex items-center gap-2">
+              <currentModuleData.icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>{currentModuleData.name}</span>}
+            </div>
+            {!collapsed && <ChevronDown className="h-4 w-4 opacity-50" />}
+          </Button>
+        ) : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -165,6 +185,7 @@ export function AppSidebar() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
 
       {/* Navigation */}

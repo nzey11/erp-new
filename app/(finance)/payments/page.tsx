@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useRef, useState, Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { DocumentsTable, DOC_TYPE_OPTIONS } from "@/components/accounting";
+import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,7 +22,7 @@ export default function PaymentsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createType, setCreateType] = useState("");
   const [creating, setCreating] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const tableRef = useRef<DocumentsTableHandle>(null);
 
   const handleCreate = async () => {
     if (!createType) {
@@ -46,7 +47,7 @@ export default function PaymentsPage() {
       toast.success("Документ создан");
       setCreateOpen(false);
       setCreateType("");
-      setRefreshKey((k) => k + 1);
+      tableRef.current?.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
@@ -68,7 +69,7 @@ export default function PaymentsPage() {
 
       <Suspense fallback={<DocumentsTableFallback />}>
         <DocumentsTable
-          key={refreshKey}
+          ref={tableRef}
           groupFilter="finance"
           defaultTypeFilter=""
         />

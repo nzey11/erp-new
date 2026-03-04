@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
 import { DocumentsTable, DOC_TYPE_OPTIONS } from "@/components/accounting";
+import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 
 const SALES_TYPES = DOC_TYPE_OPTIONS.filter((t) => t.group === "sales");
 
@@ -51,7 +52,7 @@ export default function SalesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createType, setCreateType] = useState("");
   const [creating, setCreating] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const tableRef = useRef<DocumentsTableHandle>(null);
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
@@ -126,7 +127,7 @@ export default function SalesPage() {
       setCreateType("");
       setCreateWarehouseId("");
       setCreateCounterpartyId("");
-      setRefreshKey((k) => k + 1);
+      tableRef.current?.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
@@ -216,7 +217,8 @@ export default function SalesPage() {
       {/* Document list for non-profitability tabs */}
       {tab !== "profitability" && (
         <DocumentsTable
-          key={`${refreshKey}-${tab}`}
+          ref={tableRef}
+          key={tab}
           groupFilter={filterProps.groupFilter}
           defaultTypeFilter={filterProps.typeFilter}
         />

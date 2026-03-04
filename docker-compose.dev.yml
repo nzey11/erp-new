@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      # Exclude node_modules - use container's version
+      - /app/node_modules
+      # .next is intentionally NOT excluded - written to host mount
+      # so hot reload and cache are always fresh from host filesystem
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/listopt_erp
+      - SESSION_SECRET=dev-secret-key-change-in-production
+      - SECURE_COOKIES=false
+    depends_on:
+      - db
+    command: sh -c "npx prisma generate && npx prisma db push && rm -rf /app/.next && npm run dev"
+
+  db:
+    image: postgres:16-alpine
+    # Port not exposed to host - only accessible within Docker network
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=listopt_erp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

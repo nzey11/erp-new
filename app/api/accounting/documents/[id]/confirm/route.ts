@@ -268,6 +268,43 @@ export async function POST(_request: NextRequest, { params }: Params) {
       await recalculateBalance(doc.counterpartyId);
     }
 
+    // Auto-create finance payment for shipment documents and purchase orders
+    if (doc.type === "incoming_shipment" || doc.type === "outgoing_shipment" || doc.type === "purchase_order") {
+      try {
+        const isPurchase = doc.type === "incoming_shipment" || doc.type === "purchase_order";
+        const paymentType = isPurchase ? "expense" : "income";
+        const categoryName = isPurchase ? "Оплата поставщику" : "Оплата от покупателя";
+
+        const category = await db.financeCategory.findFirst({
+          where: { name: categoryName, type: paymentType, isActive: true },
+        });
+
+        if (category && doc.totalAmount > 0) {
+          const counter = await db.paymentCounter.update({
+            where: { prefix: "PAY" },
+            data: { lastNumber: { increment: 1 } },
+          });
+          const paymentNumber = `${counter.prefix}-${String(counter.lastNumber).padStart(6, "0")}`;
+
+          await db.payment.create({
+            data: {
+              number: paymentNumber,
+              type: paymentType,
+              categoryId: category.id,
+              counterpartyId: doc.counterpartyId ?? null,
+              documentId: doc.id,
+              amount: doc.totalAmount,
+              paymentMethod: doc.paymentType ?? "bank_transfer",
+              date: new Date(),
+              description: `Авто: по документу ${doc.number}`,
+            },
+          });
+        }
+      } catch {
+        // Non-critical: payment creation failure should not block document confirmation
+      }
+    }
+
     return NextResponse.json({
       ...confirmed,
       typeName: getDocTypeName(confirmed.type),

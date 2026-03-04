@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,8 +71,18 @@ function ColumnVisibilityMenu<TData>({ table }: { table: TanStackTable<TData> })
   const columns = table.getAllColumns().filter(
     (col) => col.id !== "__selection" && col.columnDef.meta?.canHide !== false
   );
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   if (columns.length === 0) return null;
+
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="icon" title="Настройка колонок" disabled>
+        <Settings2 className="h-4 w-4" />
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu>
