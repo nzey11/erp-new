@@ -12,7 +12,9 @@ export class DocumentsPage {
   /** Click "+ Новый документ" button */
   async openCreateDialog() {
     await this.page.getByRole("button", { name: "Новый документ" }).click();
-    await this.page.waitForTimeout(300);
+    // Wait for dialog to appear
+    await this.page.locator('[role="dialog"]').waitFor({ state: "visible" });
+    await this.page.waitForTimeout(500);
   }
 
   /** Select a document type in the create dialog */
