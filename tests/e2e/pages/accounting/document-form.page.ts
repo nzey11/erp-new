@@ -17,9 +17,9 @@ export class DocumentsPage {
 
   /** Select a document type in the create dialog (Radix Select) */
   async selectDocumentType(label: string) {
-    // Click the SelectTrigger button that shows "Выберите тип"
+    // Click the SelectTrigger button by role (placeholder is not visible text)
     const dialog = this.page.locator('[role="dialog"]');
-    const trigger = dialog.locator('button').filter({ hasText: "Выберите тип" }).first();
+    const trigger = dialog.locator('[role="combobox"]').first();
     await trigger.waitFor({ state: "visible" });
     await trigger.click();
     // Wait for dropdown to appear and click option
