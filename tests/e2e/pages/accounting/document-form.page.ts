@@ -50,7 +50,7 @@ export class DocumentsPage {
 
   /** Click the "Создать" button in the create dialog */
   async submitCreate() {
-    await this.page.getByRole("button", { name: "Создать" }).click();
+    await this.page.getByRole("button", { name: "Создать", exact: true }).click();
     await this.page.waitForTimeout(500);
   }
 
