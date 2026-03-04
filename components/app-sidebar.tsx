@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/shared/utils";
 import {
   LayoutDashboard,
@@ -72,9 +72,19 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentModule, setCurrentModule] = useState("accounting");
+  const [currentModule, setCurrentModuleState] = useState("accounting");
+
+  const setCurrentModule = (moduleId: string) => {
+    setCurrentModuleState(moduleId);
+    // Redirect to the first page of the selected module
+    const firstNavItem = moduleNavigation[moduleId]?.[0];
+    if (firstNavItem) {
+      router.push(firstNavItem.href);
+    }
+  };
 
   const currentModuleData = modules.find((m) => m.id === currentModule)!;
   const navigation = moduleNavigation[currentModule] || [];
