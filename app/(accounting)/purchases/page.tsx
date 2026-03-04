@@ -132,7 +132,7 @@ export default function PurchasesPage() {
             <div className="grid gap-2">
               <Label>Тип документа *</Label>
               <Select value={createType} onValueChange={setCreateType}>
-                <SelectTrigger><SelectValue placeholder="Выберите тип" /></SelectTrigger>
+                <SelectTrigger data-testid="doc-type-select"><SelectValue placeholder="Выберите тип" /></SelectTrigger>
                 <SelectContent>
                   {PURCHASE_TYPES.map((t) => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
