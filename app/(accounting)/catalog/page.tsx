@@ -12,14 +12,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Plus, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Trash2, Crown, ImageIcon, Search } from "lucide-react";
+
+import { Plus, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
-import { formatRub } from "@/lib/shared/utils";
 import { ProductsTable } from "@/components/accounting";
 import { PriceListsPanel } from "@/components/accounting/catalog/PriceListsPanel";
 import { PriceListDetail } from "@/components/accounting/catalog/PriceListDetail";

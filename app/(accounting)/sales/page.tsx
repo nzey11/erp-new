@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,13 +79,7 @@ export default function SalesPage() {
     });
   }, []);
 
-  useEffect(() => {
-    if (tab === "profitability") {
-      loadProfitability();
-    }
-  }, [tab, dateFrom, dateTo]);
-
-  const loadProfitability = async () => {
+  const loadProfitability = useCallback(async () => {
     setProfitLoading(true);
     try {
       const params = new URLSearchParams({ dateFrom, dateTo });
@@ -98,7 +92,13 @@ export default function SalesPage() {
     } finally {
       setProfitLoading(false);
     }
-  };
+  }, [dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (tab === "profitability") {
+      loadProfitability();
+    }
+  }, [tab, loadProfitability]);
 
   const handleCreate = async () => {
     if (!createType) {

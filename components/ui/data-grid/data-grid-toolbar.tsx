@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,8 +71,11 @@ function ColumnVisibilityMenu<TData>({ table }: { table: TanStackTable<TData> })
   const columns = table.getAllColumns().filter(
     (col) => col.id !== "__selection" && col.columnDef.meta?.canHide !== false
   );
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (columns.length === 0) return null;
 

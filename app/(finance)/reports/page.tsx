@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,11 +76,7 @@ export default function ReportsPage() {
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
   const [reportsLoading, setReportsLoading] = useState(false);
 
-  useEffect(() => {
-    loadReports();
-  }, [reportTab, dateFrom, dateTo, asOfDate]);
-
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     setReportsLoading(true);
     try {
       const params = new URLSearchParams({ dateFrom, dateTo });
@@ -102,7 +98,11 @@ export default function ReportsPage() {
     } finally {
       setReportsLoading(false);
     }
-  };
+  }, [reportTab, dateFrom, dateTo, asOfDate]);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
 
   return (
     <div className="space-y-6">
