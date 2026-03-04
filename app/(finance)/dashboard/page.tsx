@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRub } from "@/lib/shared/utils";
 import { TrendingUp, TrendingDown, Wallet, Users } from "lucide-react";
+import { toast } from "sonner";
 
 interface CashFlow {
   cashIn: number;
@@ -40,7 +41,9 @@ export default function FinanceDashboardPage() {
         setCashFlow(cf);
         setBalances(bal);
       })
-      .catch(() => {})
+      .catch(() => {
+        toast.error("Ошибка загрузки данных");
+      })
       .finally(() => setLoading(false));
   }, []);
 
