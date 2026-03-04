@@ -36,8 +36,8 @@ export function DataGridPaginationBar({
   const to = Math.min(page * pageSize, total);
 
   const [jumpValue, setJumpValue] = useState("");
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  // Check if we're on the client (for Radix UI hydration safety)
+  const isClient = typeof window !== "undefined";
 
   const handleJump = () => {
     const n = parseInt(jumpValue, 10);
@@ -57,7 +57,7 @@ export function DataGridPaginationBar({
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-muted-foreground">Строк:</span>
-            {mounted ? (
+            {isClient ? (
             <Select
               value={String(pageSize)}
               onValueChange={(v) => {

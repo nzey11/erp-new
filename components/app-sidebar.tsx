@@ -76,9 +76,9 @@ export function AppSidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  // Check if we're on the client (for Radix UI hydration safety)
+  const isClient = typeof window !== "undefined";
 
   const getModuleFromPath = (path: string) => {
     if (path.startsWith("/finance")) return "finance";
@@ -134,7 +134,7 @@ export function AppSidebar() {
 
       {/* Module Switcher */}
       <div className="p-2 border-b">
-        {!mounted ? (
+        {!isClient ? (
           <Button variant="outline" className={cn("w-full justify-between font-normal", collapsed && "px-2")} disabled>
             <div className="flex items-center gap-2">
               <currentModuleData.icon className="h-4 w-4 shrink-0" />
