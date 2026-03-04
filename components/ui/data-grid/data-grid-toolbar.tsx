@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,12 +71,12 @@ function ColumnVisibilityMenu<TData>({ table }: { table: TanStackTable<TData> })
   const columns = table.getAllColumns().filter(
     (col) => col.id !== "__selection" && col.columnDef.meta?.canHide !== false
   );
-  // Check if we're on the client (for Radix UI hydration safety)
-  const isClient = typeof window !== "undefined";
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   if (columns.length === 0) return null;
 
-  if (!isClient) {
+  if (!mounted) {
     return (
       <Button variant="outline" size="icon" title="Настройка колонок" disabled>
         <Settings2 className="h-4 w-4" />

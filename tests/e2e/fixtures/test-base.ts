@@ -23,6 +23,13 @@ export const test = base.extend<TestFixtures>({
     ]);
 
     const page = await context.newPage();
+    // Log any page errors for debugging
+    page.on("pageerror", (err) => {
+      console.error("[PAGE ERROR]", err.message);
+    });
+    page.on("crash", () => {
+      console.error("[PAGE CRASH] Page crashed!");
+    });
     // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
 
