@@ -17,9 +17,10 @@ export class DocumentsPage {
 
   /** Select a document type in the create dialog (Radix Select) */
   async selectDocumentType(label: string) {
-    // Click the SelectTrigger button inside dialog (Radix uses role="button")
+    // Click the SelectTrigger — it's a button inside the dialog
     const dialog = this.page.locator('[role="dialog"]');
-    const trigger = dialog.locator('[data-slot="select-trigger"]').first();
+    // Find first button in dialog that is not disabled (SelectTrigger)
+    const trigger = dialog.locator('button:not([disabled])').first();
     await trigger.waitFor({ state: "visible" });
     await trigger.click();
     // Wait for dropdown to appear and click option
