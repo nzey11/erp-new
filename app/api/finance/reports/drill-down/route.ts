@@ -11,6 +11,8 @@ const CATEGORY_DOCUMENT_TYPES: Record<string, DocumentType[]> = {
   // COGS (90.2) is recognised when we ship OUT — cost leaves inventory to 90.2
   cogs: ["outgoing_shipment"],
   supplierReturns: ["supplier_return"],
+  // Selling expenses — outgoing shipments carry selling costs
+  sellingExpenses: ["outgoing_shipment"],
   // Cash Flow
   "operating.in": ["incoming_payment"],
   "operating.out": ["outgoing_payment"],
@@ -72,8 +74,10 @@ export async function GET(request: NextRequest) {
         warehouse: { select: { id: true, name: true } },
       },
       orderBy: { confirmedAt: "desc" },
-      take: 100,
+      take: 500,
     });
+
+    const truncated = documents.length === 500;
 
     // Also fetch payments from Payment table for cash flow
     const payments = [];
@@ -99,10 +103,12 @@ export async function GET(request: NextRequest) {
           document: { select: { id: true, number: true, type: true } },
         },
         orderBy: { date: "desc" },
-        take: 100,
+        take: 500,
       });
       payments.push(...paymentResults);
     }
+
+    const paymentsTruncated = payments.length === 500;
 
     // Format response
     const formattedDocs = documents.map((doc) => ({
@@ -132,6 +138,7 @@ export async function GET(request: NextRequest) {
       documents: formattedDocs, 
       payments: formattedPayments,
       category,
+      truncated: truncated || paymentsTruncated,
     });
   } catch (error) {
     return handleAuthError(error);

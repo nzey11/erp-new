@@ -434,6 +434,7 @@ model Document {
   notes             String?
   createdBy         String?
   confirmedAt       DateTime?
+  confirmedBy       String?
   cancelledAt       DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt

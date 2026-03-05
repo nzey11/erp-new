@@ -16,12 +16,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { formatNumber } from "@/lib/shared/utils";
+import { formatNumber, formatRub } from "@/lib/shared/utils";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 
 interface StockRecord {
   id: string;
   quantity: number;
+  averageCost: number;
   product: { id: string; name: string; sku: string | null };
   warehouse: { id: string; name: string };
 }
@@ -230,12 +231,14 @@ export default function WarehousesPage() {
                   <TableHead>Товар</TableHead>
                   <TableHead>Артикул</TableHead>
                   <TableHead className="text-right">Количество</TableHead>
+                  <TableHead className="text-right">Средн. себест.</TableHead>
+                  <TableHead className="text-right">Стоимость</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {stockRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-4">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
                       Нет остатков
                     </TableCell>
                   </TableRow>
@@ -245,6 +248,12 @@ export default function WarehousesPage() {
                       <TableCell className="font-medium">{r.product.name}</TableCell>
                       <TableCell className="text-muted-foreground">{r.product.sku || "—"}</TableCell>
                       <TableCell className="text-right">{formatNumber(r.quantity)}</TableCell>
+                      <TableCell className="text-right">
+                        {r.averageCost > 0 ? formatRub(r.averageCost) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {r.averageCost > 0 ? formatRub(r.quantity * r.averageCost) : "—"}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

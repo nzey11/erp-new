@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { ExternalLink } from "lucide-react";
@@ -35,6 +39,8 @@ interface CounterpartiesTableProps {
 export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTableProps) {
   const router = useRouter();
 
+  const [typeFilter, setTypeFilter] = useState("all");
+
   const grid = useDataGrid<Counterparty>({
     endpoint: "/api/accounting/counterparties",
     pageSize: 25,
@@ -44,7 +50,17 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
     defaultSort: { field: "name", order: "asc" },
     enablePageSizeChange: true,
     pageSizeOptions: [10, 25, 50, 100],
+    defaultFilters: { type: "" },
+    filterToParam: (key, value) => {
+      if (!value) return null;
+      return value;
+    },
   });
+
+  const handleTypeChange = (value: string) => {
+    setTypeFilter(value);
+    grid.setFilter("type", value === "all" ? "" : value);
+  };
 
   const columns: DataGridColumn<Counterparty>[] = [
     {
@@ -151,6 +167,17 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
           onChange: grid.setSearch,
           placeholder: "Поиск по названию, ИНН, телефону...",
         },
+        filters: (
+          <Select value={typeFilter} onValueChange={handleTypeChange}>
+            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все контрагенты</SelectItem>
+              <SelectItem value="customer">Покупатели</SelectItem>
+              <SelectItem value="supplier">Поставщики</SelectItem>
+              <SelectItem value="both">Покупатель/Поставщик</SelectItem>
+            </SelectContent>
+          </Select>
+        ),
         actions: (
           <Button onClick={() => router.push("/counterparties/new")}>
             Добавить

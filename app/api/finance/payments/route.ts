@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const categoryId = searchParams.get("categoryId");
+    const counterpartyId = searchParams.get("counterpartyId");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const page = parseInt(searchParams.get("page") ?? "1");
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {};
     if (type) where.type = type;
     if (categoryId) where.categoryId = categoryId;
+    if (counterpartyId) where.counterpartyId = counterpartyId;
     if (dateFrom || dateTo) {
       where.date = {
         ...(dateFrom ? { gte: new Date(dateFrom) } : {}),

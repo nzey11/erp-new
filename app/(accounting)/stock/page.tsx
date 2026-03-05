@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useCallback } from "react";
 import { PageHeader } from "@/components/page-header";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { formatRub, formatNumber } from "@/lib/shared/utils";
+import { toast } from "sonner";
 import { DocumentsTable, CreateDocumentDialog } from "@/components/accounting";
 import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -43,6 +44,7 @@ interface Totals {
 }
 
 const STOCK_DOC_TYPES = [
+  { value: "stock_transfer", label: "Перемещение" },
   { value: "inventory_count", label: "Инвентаризация" },
   { value: "write_off", label: "Списание" },
   { value: "stock_receipt", label: "Оприходование" },
@@ -87,6 +89,28 @@ export default function StockPage() {
       totalSaleValue: grid.data.reduce((s, r) => s + (r.saleValue ?? 0), 0),
     };
   }, [grid.data]);
+
+  const handleExport = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (grid.filters.warehouseId) params.set("warehouseId", grid.filters.warehouseId);
+      if (grid.search) params.set("search", grid.search);
+      const res = await fetch(`/api/accounting/stock/export?${params}`);
+      if (!res.ok) throw new Error("Ошибка экспорта");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `stock_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Экспорт завершён");
+    } catch {
+      toast.error("Ошибка экспорта");
+    }
+  }, [grid.filters.warehouseId, grid.search]);
 
   const getDocFilterProps = () => {
     switch (tab) {
@@ -222,9 +246,15 @@ export default function StockPage() {
               </Select>
             ),
             actions: (
-              <Button variant="outline" size="sm" onClick={() => grid.mutate.refresh()}>
-                Обновить
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => grid.mutate.refresh()}>
+                  Обновить
+                </Button>
+              </div>
             ),
           }}
           footer={
@@ -261,6 +291,7 @@ export default function StockPage() {
         warehouses={warehouses}
         counterparties={[]}
         requireWarehouse
+        showTargetWarehouse
         onSuccess={() => tableRef.current?.refresh()}
         onAfterCreate={async (doc, type) => {
           if (type === "inventory_count") {

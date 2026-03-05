@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,6 +83,7 @@ interface DrillDownResponse {
   balances?: DrillDownItem[];
   category: string;
   message?: string;
+  truncated?: boolean;
 }
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -101,7 +102,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 
 // Categories that have drill-down available
 const DRILL_DOWN_CATEGORIES = [
-  "grossRevenue", "customerReturns", "cogs", "supplierReturns",
+  "grossRevenue", "customerReturns", "cogs", "supplierReturns", "sellingExpenses",
   "operating.in", "operating.out",
   "assets.stock.incoming", "assets.stock.outgoing", "assets.receivables", "liabilities.payables",
 ];
@@ -115,6 +116,21 @@ export default function ReportsPage() {
   });
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().split("T")[0]);
   const [asOfDate, setAsOfDate] = useState(() => new Date().toISOString().split("T")[0]);
+
+  // Debounced versions that actually trigger the fetch (600ms delay)
+  const [appliedDateFrom, setAppliedDateFrom] = useState(dateFrom);
+  const [appliedDateTo, setAppliedDateTo] = useState(dateTo);
+  const [appliedAsOf, setAppliedAsOf] = useState(asOfDate);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleApply = (from: string, to: string, asOf: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setAppliedDateFrom(from);
+      setAppliedDateTo(to);
+      setAppliedAsOf(asOf);
+    }, 600);
+  };
   const [profitLoss, setProfitLoss] = useState<ProfitLoss | null>(null);
   const [cashFlow, setCashFlow] = useState<CashFlow | null>(null);
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
@@ -161,6 +177,7 @@ export default function ReportsPage() {
       customerReturns: "Возвраты покупателей",
       cogs: "Себестоимость продаж",
       supplierReturns: "Возвраты поставщикам",
+      sellingExpenses: "Расходы на продажу (Дт 44)",
       "operating.in": "Поступления от покупателей",
       "operating.out": "Выплаты поставщикам",
       "assets.stock.incoming": "Поступление товаров",
@@ -189,7 +206,7 @@ export default function ReportsPage() {
   const loadReports = useCallback(async () => {
     setReportsLoading(true);
     try {
-      const params = new URLSearchParams({ dateFrom, dateTo });
+      const params = new URLSearchParams({ dateFrom: appliedDateFrom, dateTo: appliedDateTo });
 
       if (reportTab === "cashflow") {
         const res = await fetch(`/api/finance/reports/cash-flow?${params}`);
@@ -200,7 +217,7 @@ export default function ReportsPage() {
         if (res.ok) setProfitLoss(await res.json());
       }
       if (reportTab === "balance") {
-        const res = await fetch(`/api/finance/reports/balance-sheet?asOfDate=${asOfDate}`);
+        const res = await fetch(`/api/finance/reports/balance-sheet?asOfDate=${appliedAsOf}`);
         if (res.ok) setBalanceSheet(await res.json());
       }
     } catch {
@@ -208,7 +225,7 @@ export default function ReportsPage() {
     } finally {
       setReportsLoading(false);
     }
-  }, [reportTab, dateFrom, dateTo, asOfDate]);
+  }, [reportTab, appliedDateFrom, appliedDateTo, appliedAsOf]);
 
   useEffect(() => {
     loadReports();
@@ -230,11 +247,11 @@ export default function ReportsPage() {
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Label>С</Label>
-              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
+              <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); scheduleApply(e.target.value, dateTo, asOfDate); }} className="w-40" />
             </div>
             <div className="flex items-center gap-2">
               <Label>По</Label>
-              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
+              <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); scheduleApply(dateFrom, e.target.value, asOfDate); }} className="w-40" />
             </div>
           </div>
 
@@ -292,7 +309,7 @@ export default function ReportsPage() {
                       <TableRow className="font-medium"><TableCell>Валовая прибыль</TableCell><TableCell className={`text-right font-bold ${profitLoss.grossProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.grossProfit)}</TableCell></TableRow>
 
                       <TableRow className="bg-muted/50"><TableCell className="font-bold">ОПЕРАЦИОННЫЕ РАСХОДЫ</TableCell><TableCell></TableCell></TableRow>
-                      <TableRow><TableCell className="pl-6">Расходы на продажу (Дт 44)</TableCell><TableCell className="text-right text-red-600">-{formatRub(profitLoss.sellingExpenses)}</TableCell></TableRow>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("sellingExpenses")}><TableCell className="pl-6">Расходы на продажу (Дт 44)</TableCell><TableCell className="text-right text-red-600">-{formatRub(profitLoss.sellingExpenses)}</TableCell></TableRow>
                       <TableRow className="font-medium"><TableCell>Операционная прибыль</TableCell><TableCell className={`text-right font-bold ${profitLoss.operatingProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.operatingProfit)}</TableCell></TableRow>
 
                       <TableRow className="bg-muted/50"><TableCell className="font-bold">ПРОЧИЕ ДОХОДЫ И РАСХОДЫ</TableCell><TableCell></TableCell></TableRow>
@@ -320,11 +337,11 @@ export default function ReportsPage() {
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Label>С</Label>
-              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
+              <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); scheduleApply(e.target.value, dateTo, asOfDate); }} className="w-40" />
             </div>
             <div className="flex items-center gap-2">
               <Label>По</Label>
-              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
+              <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); scheduleApply(dateFrom, e.target.value, asOfDate); }} className="w-40" />
             </div>
           </div>
 
@@ -345,15 +362,15 @@ export default function ReportsPage() {
                       </TableRow>
 
                       <TableRow className="bg-muted/30"><TableCell className="font-bold">Поступления денежных средств</TableCell><TableCell></TableCell></TableRow>
-                      <TableRow><TableCell className="pl-6">Касса (Дт 50)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.cash)}</TableCell></TableRow>
-                      <TableRow><TableCell className="pl-6">Расчётный счёт (Дт 51)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.bank)}</TableCell></TableRow>
-                      {cashFlow.inflows.forex > 0 && <TableRow><TableCell className="pl-6">Валютный счёт (Дт 52)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.forex)}</TableCell></TableRow>}
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in")}><TableCell className="pl-6">Касса (Дт 50)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.cash)}</TableCell></TableRow>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in")}><TableCell className="pl-6">Расчётный счёт (Дт 51)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.bank)}</TableCell></TableRow>
+                      {cashFlow.inflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in")}><TableCell className="pl-6">Валютный счёт (Дт 52)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.forex)}</TableCell></TableRow>}
                       <TableRow className="font-medium"><TableCell>Итого поступления</TableCell><TableCell className="text-right font-bold text-green-600">+{formatRub(cashFlow.inflows.total)}</TableCell></TableRow>
 
                       <TableRow className="bg-muted/30"><TableCell className="font-bold">Выплаты денежных средств</TableCell><TableCell></TableCell></TableRow>
-                      <TableRow><TableCell className="pl-6">Касса (Кт 50)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.cash)}</TableCell></TableRow>
-                      <TableRow><TableCell className="pl-6">Расчётный счёт (Кт 51)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.bank)}</TableCell></TableRow>
-                      {cashFlow.outflows.forex > 0 && <TableRow><TableCell className="pl-6">Валютный счёт (Кт 52)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.forex)}</TableCell></TableRow>}
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out")}><TableCell className="pl-6">Касса (Кт 50)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.cash)}</TableCell></TableRow>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out")}><TableCell className="pl-6">Расчётный счёт (Кт 51)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.bank)}</TableCell></TableRow>
+                      {cashFlow.outflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out")}><TableCell className="pl-6">Валютный счёт (Кт 52)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.forex)}</TableCell></TableRow>}
                       <TableRow className="font-medium"><TableCell>Итого выплаты</TableCell><TableCell className="text-right font-bold text-red-600">-{formatRub(cashFlow.outflows.total)}</TableCell></TableRow>
 
                       <TableRow className="font-bold bg-muted/50">
@@ -379,7 +396,7 @@ export default function ReportsPage() {
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Label>На дату</Label>
-              <Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} className="w-40" />
+              <Input type="date" value={asOfDate} onChange={(e) => { setAsOfDate(e.target.value); scheduleApply(dateFrom, dateTo, e.target.value); }} className="w-40" />
             </div>
             {balanceSheet && !balanceSheet.balanced && (
               <span className="text-red-500 text-sm">Ошибка баланса!</span>
@@ -480,6 +497,11 @@ export default function ReportsPage() {
               {drillDownData.message && (
                 <p className="text-sm text-muted-foreground">{drillDownData.message}</p>
               )}
+              {drillDownData.truncated && (
+                <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  Показаны первые 500 записей. Используйте фильтры дат для уточнения.
+                </p>
+              )}
               
               <div className="flex justify-between items-center py-2 border-b">
                 <span className="font-medium">Итого:</span>
@@ -507,7 +529,14 @@ export default function ReportsPage() {
                           {item.isBalance ? (
                             item.number
                           ) : item.isPayment ? (
-                            item.number
+                            <Link
+                              href="/finance/payments"
+                              className="text-primary hover:underline inline-flex items-center gap-1"
+                              onClick={() => setDrillDownOpen(false)}
+                            >
+                              {item.number}
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
                           ) : (
                             <Link
                               href={`/documents/${item.id}`}

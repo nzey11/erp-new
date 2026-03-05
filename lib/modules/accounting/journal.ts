@@ -71,13 +71,6 @@ export async function createJournalEntry(input: JournalEntryInput) {
     });
   }
 
-  // Validate balance: sum of debits must equal sum of credits
-  const totalDebit = resolvedLines.reduce((s, l) => s + l.amount, 0);
-  const totalCredit = resolvedLines.reduce((s, l) => s + l.amount, 0);
-  if (Math.abs(totalDebit - totalCredit) > 0.01) {
-    throw new Error(`Journal entry is unbalanced: debit=${totalDebit}, credit=${totalCredit}`);
-  }
-
   // Build ledger lines (each accounting line generates one debit + one credit line)
   const ledgerLinesData = resolvedLines.flatMap((line) => [
     {
@@ -101,6 +94,13 @@ export async function createJournalEntry(input: JournalEntryInput) {
       amountRub: line.amount,
     },
   ]);
+
+  // Validate balance: sum of all debit ledger lines must equal sum of all credit ledger lines
+  const totalDebit = ledgerLinesData.filter((l) => l.debit > 0).reduce((s, l) => s + l.debit, 0);
+  const totalCredit = ledgerLinesData.filter((l) => l.credit > 0).reduce((s, l) => s + l.credit, 0);
+  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    throw new Error(`Journal entry is unbalanced: debit=${totalDebit}, credit=${totalCredit}`);
+  }
 
   return db.journalEntry.create({
     data: {
@@ -325,6 +325,8 @@ export async function autoPostPayment(paymentId: string): Promise<void> {
 }
 
 /**
+ * Get all journal entries for a given source document
+ */
 export async function getEntriesForDocument(documentId: string) {
   return db.journalEntry.findMany({
     where: { sourceId: documentId },

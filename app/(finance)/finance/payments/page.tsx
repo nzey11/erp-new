@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ExternalLink, Pencil, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Pencil, ChevronLeft, ChevronRight, AlertTriangle, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { formatRub } from "@/lib/shared/utils";
@@ -55,6 +55,8 @@ export default function PaymentsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [counterpartyFilter, setCounterpartyFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 50;
 
@@ -95,6 +97,8 @@ export default function PaymentsPage() {
       if (typeFilter && typeFilter !== "all") params.set("type", typeFilter);
       if (dateFrom) params.set("dateFrom", dateFrom);
       if (dateTo) params.set("dateTo", dateTo);
+      if (counterpartyFilter && counterpartyFilter !== "all") params.set("counterpartyId", counterpartyFilter);
+      if (categoryFilter && categoryFilter !== "all") params.set("categoryId", categoryFilter);
       params.set("page", String(page));
       params.set("limit", String(PAGE_SIZE));
 
@@ -110,7 +114,7 @@ export default function PaymentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, dateFrom, dateTo, page]);
+  }, [typeFilter, dateFrom, dateTo, counterpartyFilter, categoryFilter, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -122,8 +126,10 @@ export default function PaymentsPage() {
     const catData = await catRes.json();
     const cpData = await cpRes.json();
     setCategories(catData.categories ?? []);
-    setCounterparties(Array.isArray(cpData) ? cpData : (cpData.counterparties ?? []));
+    setCounterparties(Array.isArray(cpData) ? cpData : (cpData.counterparties ?? cpData.data ?? []));
   };
+
+  useEffect(() => { loadFormData(); }, []);
 
   const openCreate = () => {
     setForm({
@@ -155,6 +161,7 @@ export default function PaymentsPage() {
 
   const handleEdit = async () => {
     if (!editingPayment) return;
+    if (!editForm.categoryId) { toast.error("Выберите статью"); return; }
     if (!editForm.amount || isNaN(Number(editForm.amount)) || Number(editForm.amount) <= 0) {
       toast.error("Укажите корректную сумму"); return;
     }
@@ -277,7 +284,7 @@ export default function PaymentsPage() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label className="text-xs">Тип</Label>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
             <SelectTrigger className="w-36"><SelectValue placeholder="Все" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Все</SelectItem>
@@ -287,15 +294,39 @@ export default function PaymentsPage() {
           </Select>
         </div>
         <div className="grid gap-1">
+          <Label className="text-xs">Контрагент</Label>
+          <Select value={counterpartyFilter} onValueChange={(v) => { setCounterpartyFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="Все" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все</SelectItem>
+              {counterparties.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1">
+          <Label className="text-xs">Статья</Label>
+          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="Все" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1">
           <Label className="text-xs">С</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
+          <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="w-36" />
         </div>
         <div className="grid gap-1">
           <Label className="text-xs">По</Label>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
+          <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="w-36" />
         </div>
-        {(typeFilter !== "all" || dateFrom || dateTo) && (
-          <Button variant="ghost" size="sm" onClick={() => { setTypeFilter("all"); setDateFrom(""); setDateTo(""); setPage(1); }}>
+        {(typeFilter !== "all" || counterpartyFilter !== "all" || categoryFilter !== "all" || dateFrom || dateTo) && (
+          <Button variant="ghost" size="sm" onClick={() => { setTypeFilter("all"); setCounterpartyFilter("all"); setCategoryFilter("all"); setDateFrom(""); setDateTo(""); setPage(1); }}>
             Сбросить
           </Button>
         )}
@@ -303,7 +334,9 @@ export default function PaymentsPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="py-8 text-center text-muted-foreground">Загрузка...</div>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
       ) : payments.length === 0 ? (
         <div className="py-8 text-center text-muted-foreground">Платежей нет</div>
       ) : (
@@ -363,7 +396,17 @@ export default function PaymentsPage() {
                       >
                         <Pencil className="h-3 w-3" />
                       </Button>
-                      {!p.document && (
+                      {p.document ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-30"
+                          disabled
+                          title="Создан автоматически из документа — удаление недоступно"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      ) : (
                         <Button
                           variant="ghost"
                           size="icon"

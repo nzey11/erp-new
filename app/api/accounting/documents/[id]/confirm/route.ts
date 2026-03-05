@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
+import { getAuthSession } from "@/lib/shared/auth";
 import { affectsStock, affectsBalance, isStockDecrease, isStockIncrease, isInventoryCount, getDocTypeName, getDocStatusName, generateDocumentNumber } from "@/lib/modules/accounting/documents";
 import { updateStockForDocument, checkStockAvailability, updateAverageCostOnReceipt, updateAverageCostOnTransfer, updateTotalCostValue } from "@/lib/modules/accounting/stock";
 import { recalculateBalance } from "@/lib/modules/accounting/balance";
@@ -107,6 +108,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
   try {
     await requirePermission("documents:confirm");
     const { id } = await params;
+    const session = await getAuthSession();
 
     const doc = await db.document.findUnique({
       where: { id },
@@ -199,6 +201,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
       data: {
         status: "confirmed",
         confirmedAt: new Date(),
+        confirmedBy: session?.username ?? null,
       },
       include: {
         items: { include: { product: { select: { id: true, name: true, sku: true } } } },

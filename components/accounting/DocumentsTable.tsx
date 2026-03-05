@@ -3,13 +3,14 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, Check, X } from "lucide-react";
+import { Eye, Check, X, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import Link from "next/link";
@@ -64,7 +65,11 @@ export const DocumentsTable = forwardRef<DocumentsTableHandle, DocumentsTablePro
 function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }: DocumentsTableProps, ref) {
   const [typeFilter, setTypeFilter] = useState(defaultTypeFilter);
   const [statusFilter, setStatusFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirming, setBulkConfirming] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
   const filteredTypes = groupFilter
@@ -84,6 +89,8 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
     defaultFilters: {
       type: defaultTypeFilter,
       status: "",
+      dateFrom: "",
+      dateTo: "",
       ...(groupFilter && !defaultTypeFilter
         ? { types: DOC_TYPE_OPTIONS.filter((t) => t.group === groupFilter).map((t) => t.value).join(",") }
         : {}),
@@ -118,6 +125,16 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
     grid.setFilter("status", val);
   };
 
+  const handleDateFromChange = (v: string) => {
+    setDateFrom(v);
+    grid.setFilter("dateFrom", v);
+  };
+
+  const handleDateToChange = (v: string) => {
+    setDateTo(v);
+    grid.setFilter("dateTo", v);
+  };
+
   const handleConfirm = async (id: string) => {
     try {
       const res = await fetch(`/api/accounting/documents/${id}/confirm`, { method: "POST" });
@@ -145,6 +162,28 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
       onRefresh?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка отмены");
+    }
+  };
+
+  const handleBulkConfirm = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkConfirming(true);
+    try {
+      const res = await fetch("/api/accounting/documents/bulk-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+      const result = await res.json();
+      toast.success(`Подтверждено: ${result.confirmed}, пропущено: ${result.skipped}`);
+      setSelectedIds(new Set());
+      grid.mutate.refresh();
+      onRefresh?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка массового подтверждения");
+    } finally {
+      setBulkConfirming(false);
     }
   };
 
@@ -238,6 +277,12 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
       columns={columns}
       emptyMessage="Нет документов"
       persistenceKey={`documents-${groupFilter || "all"}`}
+      selection={{
+        enabled: true,
+        selectedIds,
+        onSelectionChange: setSelectedIds,
+        getRowId: (row) => (row as Document).id,
+      }}
       toolbar={{
         ...grid.gridProps.toolbar,
         search: {
@@ -245,6 +290,17 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
           onChange: grid.setSearch,
           placeholder: "Поиск по номеру...",
         },
+        bulkActions: () => (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBulkConfirm}
+            disabled={bulkConfirming}
+          >
+            <CheckCheck className="h-4 w-4 mr-2" />
+            Подтвердить выбранные
+          </Button>
+        ),
         filters: mounted ? (
           <>
             <Select value={typeFilter || "all"} onValueChange={handleTypeChange}>
@@ -265,6 +321,36 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
                 <TabsTrigger value="cancelled">Отменённые</TabsTrigger>
               </TabsList>
             </Tabs>
+
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => handleDateFromChange(e.target.value)}
+                className="w-36 h-8 text-sm"
+                placeholder="Дата с"
+                title="Дата с"
+              />
+              <span className="text-muted-foreground text-xs">—</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => handleDateToChange(e.target.value)}
+                className="w-36 h-8 text-sm"
+                placeholder="Дата по"
+                title="Дата по"
+              />
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => { handleDateFromChange(""); handleDateToChange(""); }}
+                >
+                  ×
+                </Button>
+              )}
+            </div>
           </>
         ) : null,
       }}

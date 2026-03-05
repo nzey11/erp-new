@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Pencil, UserPlus } from "lucide-react";
+import { Pencil, UserPlus, Save, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 
@@ -35,6 +35,14 @@ const ROLE_LABELS: Record<string, string> = {
   viewer: "Наблюдатель",
 };
 
+interface CompanyForm {
+  name: string;
+  inn: string;
+  kpp: string;
+  ogrn: string;
+  fiscalYearStartMonth: string;
+}
+
 export default function SettingsPage() {
   const grid = useDataGrid<User>({
     endpoint: "/api/accounting/users",
@@ -42,6 +50,46 @@ export default function SettingsPage() {
     enableSearch: false,
     responseAdapter: (json) => ({ data: Array.isArray(json) ? json as User[] : [], total: 0 }),
   });
+
+  // Company settings
+  const [companyForm, setCompanyForm] = useState<CompanyForm>({ name: "", inn: "", kpp: "", ogrn: "", fiscalYearStartMonth: "1" });
+  const [savingCompany, setSavingCompany] = useState(false);
+
+  const loadCompany = useCallback(async () => {
+    try {
+      const res = await fetch("/api/accounting/settings/company");
+      if (res.ok) {
+        const data = await res.json();
+        setCompanyForm({
+          name: data.name || "",
+          inn: data.inn || "",
+          kpp: data.kpp || "",
+          ogrn: data.ogrn || "",
+          fiscalYearStartMonth: String(data.fiscalYearStartMonth || 1),
+        });
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { loadCompany(); }, [loadCompany]);
+
+  const saveCompany = async () => {
+    if (!companyForm.name) { toast.error("Название обязательно"); return; }
+    setSavingCompany(true);
+    try {
+      const res = await fetch("/api/accounting/settings/company", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...companyForm, fiscalYearStartMonth: Number(companyForm.fiscalYearStartMonth) }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+      toast.success("Реквизиты сохранены");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка");
+    } finally {
+      setSavingCompany(false);
+    }
+  };
 
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -136,6 +184,57 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Настройки" description="Управление пользователями и системой" />
+
+      {/* Company Settings */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Реквизиты компании
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label>Название *</Label>
+              <Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} placeholder="ООО Моя компания" />
+            </div>
+            <div className="grid gap-2">
+              <Label>ИНН</Label>
+              <Input value={companyForm.inn} onChange={(e) => setCompanyForm({ ...companyForm, inn: e.target.value })} placeholder="1234567890" />
+            </div>
+            <div className="grid gap-2">
+              <Label>КПП</Label>
+              <Input value={companyForm.kpp} onChange={(e) => setCompanyForm({ ...companyForm, kpp: e.target.value })} placeholder="123456789" />
+            </div>
+            <div className="grid gap-2">
+              <Label>ОГРН</Label>
+              <Input value={companyForm.ogrn} onChange={(e) => setCompanyForm({ ...companyForm, ogrn: e.target.value })} placeholder="1234567890123" />
+            </div>
+            <div className="grid gap-2">
+              <Label>Начало фискального года (месяц)</Label>
+              <Select value={companyForm.fiscalYearStartMonth} onValueChange={(v) => setCompanyForm({ ...companyForm, fiscalYearStartMonth: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[
+                    ["Январь", "1"], ["Февраль", "2"], ["Март", "3"], ["Апрель", "4"],
+                    ["Май", "5"], ["Июнь", "6"], ["Июль", "7"], ["Август", "8"],
+                    ["Сентябрь", "9"], ["Октябрь", "10"], ["Ноябрь", "11"], ["Декабрь", "12"],
+                  ].map(([label, value]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={saveCompany} disabled={savingCompany} size="sm">
+              <Save className="h-4 w-4 mr-2" />
+              {savingCompany ? "Сохранение..." : "Сохранить"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

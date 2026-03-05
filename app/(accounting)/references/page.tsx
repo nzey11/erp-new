@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 
 // ============== Types ==============
@@ -63,13 +64,6 @@ export default function ReferencesPage() {
   const [unitForm, setUnitForm] = useState({ name: "", shortName: "" });
   const [savingUnit, setSavingUnit] = useState(false);
 
-  // Warehouses
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [warehouseDialogOpen, setWarehouseDialogOpen] = useState(false);
-  const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
-  const [whForm, setWhForm] = useState({ name: "", address: "", responsibleName: "" });
-  const [savingWarehouse, setSavingWarehouse] = useState(false);
-
   // Price Lists
   const [priceLists, setPriceLists] = useState<PriceList[]>([]);
   const [plDialogOpen, setPlDialogOpen] = useState(false);
@@ -86,18 +80,15 @@ export default function ReferencesPage() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [unitsRes, whRes, plRes, cfRes] = await Promise.all([
+      const [unitsRes, plRes, cfRes] = await Promise.all([
         fetch("/api/accounting/units"),
-        fetch("/api/accounting/warehouses"),
         fetch("/api/accounting/price-lists"),
         fetch("/api/accounting/custom-fields"),
       ]);
       const unitsData = unitsRes.ok ? await unitsRes.json() : [];
-      const whData = whRes.ok ? await whRes.json() : [];
       const plData = plRes.ok ? await plRes.json() : [];
       const cfData = cfRes.ok ? await cfRes.json() : [];
       setUnits(Array.isArray(unitsData) ? unitsData : []);
-      setWarehouses(Array.isArray(whData) ? whData : []);
       setPriceLists(Array.isArray(plData) ? plData : []);
       setCustomFields(Array.isArray(cfData) ? cfData : []);
     } catch {
@@ -138,41 +129,6 @@ export default function ReferencesPage() {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
       setSavingUnit(false);
-    }
-  };
-
-  // ============== Warehouses ==============
-  const openCreateWarehouse = () => {
-    setEditingWarehouse(null);
-    setWhForm({ name: "", address: "", responsibleName: "" });
-    setWarehouseDialogOpen(true);
-  };
-
-  const openEditWarehouse = (wh: Warehouse) => {
-    setEditingWarehouse(wh);
-    setWhForm({ name: wh.name, address: wh.address || "", responsibleName: wh.responsibleName || "" });
-    setWarehouseDialogOpen(true);
-  };
-
-  const saveWarehouse = async () => {
-    if (!whForm.name) {
-      toast.error("Название обязательно");
-      return;
-    }
-    setSavingWarehouse(true);
-    try {
-      const body = { name: whForm.name, address: whForm.address || null, responsibleName: whForm.responsibleName || null };
-      const res = editingWarehouse
-        ? await fetch(`/api/accounting/warehouses/${editingWarehouse.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/accounting/warehouses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
-      toast.success(editingWarehouse ? "Склад обновлён" : "Склад создан");
-      setWarehouseDialogOpen(false);
-      loadAll();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Ошибка");
-    } finally {
-      setSavingWarehouse(false);
     }
   };
 
@@ -278,10 +234,17 @@ export default function ReferencesPage() {
       <Tabs defaultValue="units">
         <TabsList>
           <TabsTrigger value="units">Единицы измерения</TabsTrigger>
-          <TabsTrigger value="warehouses">Склады</TabsTrigger>
           <TabsTrigger value="pricelists">Прайс-листы</TabsTrigger>
           <TabsTrigger value="customfields">Характеристики</TabsTrigger>
         </TabsList>
+        <div className="flex items-center gap-2 ml-auto">
+          <Link href="/warehouses">
+            <Button variant="outline" size="sm" className="gap-1">
+              Склады
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
 
         {/* ============== Units Tab ============== */}
         <TabsContent value="units">
@@ -313,56 +276,6 @@ export default function ReferencesPage() {
                         <TableCell>{unit.shortName}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon" onClick={() => openEditUnit(unit)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ============== Warehouses Tab ============== */}
-        <TabsContent value="warehouses">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Склады ({warehouses.length})</CardTitle>
-              <Button size="sm" onClick={openCreateWarehouse}>
-                <Plus className="h-4 w-4 mr-2" />Добавить
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Название</TableHead>
-                    <TableHead>Адрес</TableHead>
-                    <TableHead>Ответственный</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {warehouses.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">Нет складов</TableCell>
-                    </TableRow>
-                  ) : (
-                    warehouses.map((wh) => (
-                      <TableRow key={wh.id}>
-                        <TableCell className="font-medium">{wh.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{wh.address || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{wh.responsibleName || "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant={wh.isActive ? "default" : "secondary"}>
-                            {wh.isActive ? "Активен" : "Неактивен"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" onClick={() => openEditWarehouse(wh)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -496,32 +409,7 @@ export default function ReferencesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Warehouse Dialog */}
-      <Dialog open={warehouseDialogOpen} onOpenChange={setWarehouseDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingWarehouse ? "Редактировать склад" : "Новый склад"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Название *</Label>
-              <Input value={whForm.name} onChange={(e) => setWhForm({ ...whForm, name: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Адрес</Label>
-              <Input value={whForm.address} onChange={(e) => setWhForm({ ...whForm, address: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Ответственный</Label>
-              <Input value={whForm.responsibleName} onChange={(e) => setWhForm({ ...whForm, responsibleName: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setWarehouseDialogOpen(false)}>Отмена</Button>
-            <Button onClick={saveWarehouse} disabled={savingWarehouse}>{savingWarehouse ? "Сохранение..." : "Сохранить"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Warehouse Dialog removed — warehouses managed at /warehouses */}
 
       {/* Price List Dialog */}
       <Dialog open={plDialogOpen} onOpenChange={setPlDialogOpen}>

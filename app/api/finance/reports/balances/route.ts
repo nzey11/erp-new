@@ -1,13 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
-import { getAllBalances } from "@/lib/modules/finance/reports";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requirePermission("reports:read");
 
-    const balances = await getAllBalances();
+    const { searchParams } = new URL(request.url);
+    const asOfDate = searchParams.get("asOfDate");
+
+    const where: Record<string, unknown> = { NOT: { balanceRub: 0 } };
+    if (asOfDate) {
+      where.lastUpdatedAt = { lte: new Date(asOfDate + "T23:59:59.999Z") };
+    }
+
+    const balances = await db.counterpartyBalance.findMany({
+      where,
+      include: { counterparty: { select: { id: true, name: true, type: true } } },
+      orderBy: { balanceRub: "desc" },
+    });
 
     // Split into receivable (positive) and payable (negative)
     const receivable = balances.filter((b) => b.balanceRub > 0);

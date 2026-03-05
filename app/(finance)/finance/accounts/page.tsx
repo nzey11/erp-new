@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
+import { formatRub } from "@/lib/shared/utils";
 
 interface Account {
   id: string;
@@ -44,6 +46,8 @@ const CATEGORY_COLORS: Record<string, "default" | "secondary" | "outline"> = {
 
 export default function AccountsPage() {
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [balances, setBalances] = useState<Record<string, number>>({});
+  const router = useRouter();
 
   const grid = useDataGrid<Account>({
     endpoint: `/api/accounting/accounts?includeInactive=${includeInactive}`,
@@ -54,6 +58,13 @@ export default function AccountsPage() {
       total: 0,
     }),
   });
+
+  useEffect(() => {
+    fetch("/api/accounting/accounts/balances")
+      .then((r) => r.json())
+      .then((data) => setBalances(data ?? {}))
+      .catch(() => {});
+  }, []);
 
   const columns: DataGridColumn<Account>[] = [
     {
@@ -68,7 +79,7 @@ export default function AccountsPage() {
     {
       accessorKey: "name",
       header: "Наименование",
-      size: 380,
+      size: 340,
       meta: { canHide: false },
       cell: ({ row }) => (
         <span className={row.original.parent ? "pl-4 text-sm" : "font-medium"}>
@@ -95,6 +106,21 @@ export default function AccountsPage() {
           {CATEGORY_LABELS[row.original.category] ?? row.original.category}
         </Badge>
       ),
+    },
+    {
+      id: "balance",
+      header: "Остаток",
+      size: 140,
+      meta: { align: "right" as const },
+      cell: ({ row }) => {
+        const bal = balances[row.original.id];
+        if (bal === undefined || bal === 0) return <span className="text-muted-foreground text-sm">—</span>;
+        return (
+          <span className={`font-mono text-sm font-semibold ${bal > 0 ? "text-green-600" : "text-red-600"}`}>
+            {formatRub(Math.abs(bal))}
+          </span>
+        );
+      },
     },
     {
       accessorKey: "isSystem",
@@ -133,6 +159,7 @@ export default function AccountsPage() {
             emptyMessage="Нет счетов"
             persistenceKey="chart-of-accounts"
             stickyHeader={false}
+            onRowClick={(row) => router.push(`/finance/journal?accountCode=${row.code}`)}
           />
         </CardContent>
       </Card>

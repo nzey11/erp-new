@@ -20,10 +20,30 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, X, Plus, Trash2, ArrowLeft, Link2 } from "lucide-react";
+import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub, formatDate, formatDateTime } from "@/lib/shared/utils";
 import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface JournalLine {
+  id: string;
+  accountCode: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  amountRub: number;
+}
+
+interface JournalEntryDisplay {
+  id: string;
+  number: string;
+  date: string;
+  description: string | null;
+  isManual: boolean;
+  isReversed: boolean;
+  lines: JournalLine[];
+}
 
 interface DocumentItem {
   id: string;
@@ -46,7 +66,9 @@ interface DocumentDetail {
   description: string | null;
   notes: string | null;
   createdAt: string;
+  createdBy: string | null;
   confirmedAt: string | null;
+  confirmedBy: string | null;
   cancelledAt: string | null;
   warehouse: { id: string; name: string } | null;
   targetWarehouse: { id: string; name: string } | null;
@@ -98,6 +120,8 @@ export default function DocumentDetailPage() {
   const [itemPrice, setItemPrice] = useState("0");
   const [saving, setSaving] = useState(false);
   const [creatingLinked, setCreatingLinked] = useState(false);
+  const [journalEntries, setJournalEntries] = useState<JournalEntryDisplay[]>([]);
+  const [journalLoading, setJournalLoading] = useState(false);
 
   const loadDoc = useCallback(async () => {
     setLoading(true);
@@ -115,11 +139,38 @@ export default function DocumentDetailPage() {
 
   useEffect(() => { loadDoc(); }, [loadDoc]);
 
+  const loadJournalEntries = useCallback(async () => {
+    setJournalLoading(true);
+    try {
+      const res = await fetch(`/api/accounting/documents/${id}/journal`);
+      if (res.ok) {
+        const data = await res.json();
+        setJournalEntries(Array.isArray(data) ? data : []);
+      }
+    } catch {
+      // Non-critical: journal entries may not exist yet
+    } finally {
+      setJournalLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { loadJournalEntries(); }, [loadJournalEntries]);
+
+  // Product search with debounce (replaces static limit=500 fetch)
+  const [productSearch, setProductSearch] = useState("");
   useEffect(() => {
-    fetch("/api/accounting/products?limit=500")
-      .then((r) => r.ok ? r.json() : { data: [] })
-      .then((data) => setProducts(Array.isArray(data.data) ? data.data : []));
-  }, []);
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ limit: "20" });
+      if (productSearch) params.set("search", productSearch);
+      fetch(`/api/accounting/products?${params}`)
+        .then((r) => r.ok ? r.json() : { data: [] })
+        .then((data) => setProducts(Array.isArray(data.data) ? data.data : []));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [productSearch]);
+
+  // Inline edit state: key = item index
+  const [editingItems, setEditingItems] = useState<Record<number, { quantity: string; price: string }>>({});
 
   // When product is selected — auto-fill price based on document type
   const handleProductSelect = (productId: string) => {
@@ -132,6 +183,29 @@ export default function DocumentDetailPage() {
       setItemPrice(String(product.purchasePrice));
     } else if (isSale && product.salePrice != null) {
       setItemPrice(String(product.salePrice));
+    }
+  };
+
+  // Inline item update handler
+  const handleUpdateItem = async (index: number, quantity: number, price: number) => {
+    if (!doc) return;
+    const currentItems = doc.items.map((item, i) => ({
+      productId: item.productId,
+      quantity: i === index ? quantity : item.quantity,
+      price: i === index ? price : item.price,
+    }));
+    try {
+      const res = await fetch(`/api/accounting/documents/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: currentItems }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+      // Clear editing state and reload
+      setEditingItems((prev) => { const next = { ...prev }; delete next[index]; return next; });
+      loadDoc();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка сохранения");
     }
   };
 
@@ -319,6 +393,11 @@ export default function DocumentDetailPage() {
           title={`${doc.typeName} ${doc.number}`}
           actions={
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/documents/${id}/print`} target="_blank" rel="noopener noreferrer">
+                  <Printer className="h-4 w-4 mr-1" />Печать
+                </Link>
+              </Button>
               {doc.status === "draft" && (
                 <>
                   <Button variant="outline" size="sm" onClick={() => setAddItemOpen(true)}>
@@ -402,8 +481,9 @@ export default function DocumentDetailPage() {
           </CardHeader>
           <CardContent>
             <p className="font-medium">{formatDate(doc.date)}</p>
+            <p className="text-xs text-muted-foreground">Создан: {formatDateTime(doc.createdAt)}{doc.createdBy ? ` (${doc.createdBy})` : ""}</p>
             {doc.confirmedAt && (
-              <p className="text-xs text-muted-foreground">Подтверждён: {formatDateTime(doc.confirmedAt)}</p>
+              <p className="text-xs text-muted-foreground">Подтверждён: {formatDateTime(doc.confirmedAt)}{doc.confirmedBy ? ` (${doc.confirmedBy})` : ""}</p>
             )}
           </CardContent>
         </Card>
@@ -444,66 +524,172 @@ export default function DocumentDetailPage() {
         )}
       </div>
 
-      {/* Items Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Позиции ({doc.items.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8">#</TableHead>
-                <TableHead>Товар</TableHead>
-                <TableHead>Артикул</TableHead>
-                <TableHead className="text-right">Кол-во</TableHead>
-                <TableHead className="text-right">Цена</TableHead>
-                <TableHead className="text-right">Сумма</TableHead>
-                {doc.status === "draft" && <TableHead className="w-12" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {doc.items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={doc.status === "draft" ? 7 : 6} className="text-center text-muted-foreground py-8">
-                    Нет позиций
-                  </TableCell>
-                </TableRow>
-              ) : (
-                doc.items.map((item, i) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell className="font-medium">{item.product.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{item.product.sku || "—"}</TableCell>
-                    <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">{formatRub(item.price)}</TableCell>
-                    <TableCell className="text-right font-medium">{formatRub(item.total)}</TableCell>
-                    {doc.status === "draft" && (
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveItem(i)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Items + Journal Tabs */}
+      <Tabs defaultValue="items">
+        <TabsList>
+          <TabsTrigger value="items">Позиции ({doc.items.length})</TabsTrigger>
+          <TabsTrigger value="journal">
+            <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+            Проводки{journalEntries.length > 0 ? ` (${journalEntries.length})` : ""}
+          </TabsTrigger>
+        </TabsList>
 
-      {doc.description && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Описание</CardTitle>
-          </CardHeader>
-          <CardContent><p>{doc.description}</p></CardContent>
-        </Card>
+        {/* Items tab */}
+        <TabsContent value="items">
+          <Card>
+            <CardContent className="pt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-8">#</TableHead>
+                    <TableHead>Товар</TableHead>
+                    <TableHead>Артикул</TableHead>
+                    <TableHead>Ед.</TableHead>
+                    <TableHead className="text-right">Кол-во</TableHead>
+                    <TableHead className="text-right">Цена</TableHead>
+                    <TableHead className="text-right">Сумма</TableHead>
+                    {doc.status === "draft" && <TableHead className="w-20" />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {doc.items.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={doc.status === "draft" ? 7 : 6} className="text-center text-muted-foreground py-8">
+                        Нет позиций
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    doc.items.map((item, i) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="font-medium">{item.product.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{item.product.sku || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{item.product.unit?.shortName || "—"}</TableCell>
+                        <TableCell className="text-right">
+                          {doc.status === "draft" ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="w-20 h-7 text-right text-sm"
+                              value={editingItems[i]?.quantity ?? String(item.quantity)}
+                              onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: e.target.value, price: prev[i]?.price ?? String(item.price) } }))}
+                              onBlur={() => {
+                                const ed = editingItems[i];
+                                if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
+                              }}
+                            />
+                          ) : item.quantity}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {doc.status === "draft" ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="w-28 h-7 text-right text-sm"
+                              value={editingItems[i]?.price ?? String(item.price)}
+                              onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: prev[i]?.quantity ?? String(item.quantity), price: e.target.value } }))}
+                              onBlur={() => {
+                                const ed = editingItems[i];
+                                if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
+                              }}
+                            />
+                          ) : formatRub(item.price)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{formatRub(item.total)}</TableCell>
+                        {doc.status === "draft" && (
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveItem(i)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Journal entries tab */}
+        <TabsContent value="journal">
+          <Card>
+            <CardContent className="pt-4">
+              {journalLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
+              ) : journalEntries.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Проводки отсутствуют. Документ ещё не проведён в журнал.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {journalEntries.map((entry) => (
+                    <div key={entry.id}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-mono text-sm font-medium">{entry.number}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(entry.date)}</span>
+                        {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
+                        {entry.isReversed && <span className="text-xs text-destructive font-medium">СТОРНО</span>}
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Счёт</TableHead>
+                            <TableHead>Название</TableHead>
+                            <TableHead className="text-right">Дебет</TableHead>
+                            <TableHead className="text-right">Кредит</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {entry.lines.map((line) => (
+                            <TableRow key={line.id}>
+                              <TableCell className="font-mono text-sm">{line.accountCode}</TableCell>
+                              <TableCell className="text-sm">{line.accountName}</TableCell>
+                              <TableCell className="text-right text-sm">
+                                {line.debit > 0 ? formatRub(line.debit) : "—"}
+                              </TableCell>
+                              <TableCell className="text-right text-sm">
+                                {line.credit > 0 ? formatRub(line.credit) : "—"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {(doc.description || doc.notes) && (
+        <div className="grid gap-4">
+          {doc.description && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">Описание</CardTitle>
+              </CardHeader>
+              <CardContent><p>{doc.description}</p></CardContent>
+            </Card>
+          )}
+          {doc.notes && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">Заметки</CardTitle>
+              </CardHeader>
+              <CardContent><p>{doc.notes}</p></CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Add Item Dialog */}
@@ -515,9 +701,20 @@ export default function DocumentDetailPage() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>Товар *</Label>
+              <Input
+                placeholder="Поиск товара..."
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="mb-1"
+              />
               <Select value={itemProductId} onValueChange={handleProductSelect}>
-                <SelectTrigger><SelectValue placeholder="Выберите товар" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Выберите из списка" /></SelectTrigger>
                 <SelectContent>
+                  {products.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      {productSearch ? "Ничего не найдено" : "Начните вводить название..."}
+                    </div>
+                  )}
                   {products.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} {p.sku ? `(${p.sku})` : ""}

@@ -12,7 +12,7 @@ import {
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, ShoppingCart, User, Eye } from "lucide-react";
+import { Plus, ShoppingCart, User, Eye, Download } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatRub, formatDate } from "@/lib/shared/utils";
 import { DocumentsTable, DOC_TYPE_OPTIONS, CreateDocumentDialog } from "@/components/accounting";
@@ -375,6 +375,26 @@ export default function SalesPage() {
     }
   }, [tab, loadProfitability]);
 
+  // Export
+  const handleExport = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/accounting/documents/export?group=sales`);
+      if (!res.ok) throw new Error("Ошибка экспорта");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sales_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Экспорт завершён");
+    } catch {
+      toast.error("Ошибка экспорта");
+    }
+  }, []);
+
   const getFilterProps = () => {
     switch (tab) {
       case "sales_order": return { groupFilter: "", typeFilter: "sales_order" };
@@ -392,10 +412,16 @@ export default function SalesPage() {
         title="Продажи"
         actions={
           tab !== "profitability" ? (
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Новый документ
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Новый документ
+              </Button>
+            </div>
           ) : undefined
         }
       />

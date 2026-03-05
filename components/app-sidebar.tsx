@@ -36,7 +36,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, useEffect } from "react";
 
 // Module definitions for the switcher
 const modules = [
@@ -79,11 +79,19 @@ export function AppSidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.user) setCurrentUser({ username: data.user.username, role: data.user.role }); })
+      .catch(() => {});
+  }, []);
 
   const getModuleFromPath = (path: string) => {
     if (path.startsWith("/finance")) return "finance";
@@ -222,6 +230,18 @@ export function AppSidebar() {
 
       {/* Bottom section */}
       <div className="border-t p-2 space-y-1">
+        {/* Current user */}
+        {currentUser && !collapsed && (
+          <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg bg-muted/40">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
+              {currentUser.username[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium truncate">{currentUser.username}</p>
+              <p className="text-xs text-muted-foreground truncate">{currentUser.role}</p>
+            </div>
+          </div>
+        )}
         <Link
           href="/integrations"
           onClick={() => setMobileOpen(false)}
