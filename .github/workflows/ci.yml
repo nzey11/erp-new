@@ -118,7 +118,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Upload archive to server
-        run: scp -i ~/.ssh/deploy_key deploy.tar.gz root@${{ secrets.DEPLOY_HOST }}:/tmp/
+        run: scp -i ~/.ssh/deploy_key deploy.tar.gz root@${{ secrets.DEPLOY_HOST }}:/root/
 
       - name: Deploy on server
         run: |
@@ -126,14 +126,14 @@ jobs:
           set -e
           cd /var/www/listopt-erp
           rm -rf .next app/ components/ lib/ prisma/
-          tar -xzf /tmp/deploy.tar.gz
+          tar -xzf /root/deploy.tar.gz
           npm ci
           npx prisma generate
           npx prisma db push --skip-generate
           npx tsx prisma/seed-accounts.ts
           npx next build
           pm2 restart listopt-erp --update-env
-          rm -f /tmp/deploy.tar.gz
+          rm -f /root/deploy.tar.gz
           echo "Deploy complete."
           pm2 list
           ENDSSH
