@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { signSession, verifySessionToken } from "@/lib/shared/auth";
 
 describe("Session Token Security", () => {

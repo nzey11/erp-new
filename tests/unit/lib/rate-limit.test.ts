@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import { rateLimit, getClientIp, type RateLimitResult } from "@/lib/shared/rate-limit";
 
 describe("Rate Limiter", () => {
-  const identifier = "test-ip-123";
-
   it("should allow requests within limit", () => {
     const limit = 5;
     const id = `test-within-${Date.now()}`; // fixed id for all iterations

@@ -56,19 +56,23 @@ export default function FinanceDashboardPage() {
     const { dateFrom, dateTo } = getPeriodDates(opt);
     const params = new URLSearchParams({ dateFrom, dateTo });
 
-    setLoading(true);
-    Promise.all([
-      fetch(`/api/finance/reports/cash-flow?${params}`).then((r) => r.json()),
-      fetch("/api/finance/reports/balances").then((r) => r.json()),
-    ])
-      .then(([cf, bal]) => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [cf, bal] = await Promise.all([
+          fetch(`/api/finance/reports/cash-flow?${params}`).then((r) => r.json()),
+          fetch("/api/finance/reports/balances").then((r) => r.json()),
+        ]);
         setCashFlow(cf);
         setBalances(bal);
-      })
-      .catch(() => {
+      } catch {
         toast.error("Ошибка загрузки данных");
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [selectedPeriod]);
 
   if (loading) {

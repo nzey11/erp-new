@@ -3,13 +3,11 @@ import { createTestRequest, jsonResponse } from "../../helpers/api-client";
 import {
   createUnit,
   createProduct,
-  createCategory,
   createSalePrice,
   createCustomer,
   createCartItem,
   createOrder,
   createOrderItem,
-  createProductDiscount,
 } from "../../helpers/factories";
 import { getTestDb } from "../../helpers/test-db";
 

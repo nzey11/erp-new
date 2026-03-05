@@ -17,8 +17,6 @@ interface PaymentResult {
   status: "success" | "failed" | string;
 }
 
-type PaymentMethod = "tochka" | "cash";
-
 /** Verify T-Bank webhook signature */
 export function verifyTochkaSignature(payload: string, signature: string): boolean {
   const secret = process.env.TOCHKA_WEBHOOK_SECRET;

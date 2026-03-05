@@ -12,7 +12,7 @@ vi.mock("@/lib/shared/auth", async (importOriginal) => {
 });
 
 import { GET as AdminList, POST as AdminCreate } from "@/app/api/accounting/cms-pages/route";
-import { GET as AdminGet, PATCH as AdminUpdate, DELETE as AdminDelete } from "@/app/api/accounting/cms-pages/[id]/route";
+import { PATCH as AdminUpdate, DELETE as AdminDelete } from "@/app/api/accounting/cms-pages/[id]/route";
 import { GET as PublicList } from "@/app/api/ecommerce/cms-pages/route";
 import { GET as PublicGet } from "@/app/api/ecommerce/cms-pages/[slug]/route";
 

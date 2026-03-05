@@ -178,7 +178,6 @@ describe("API: Auth", () => {
       const user = await createUser({ username: "current_user", role: "manager" });
       mockAuthUser(user);
 
-      const _req = createTestRequest("/api/auth/me");
       const res = await ME();
       expect(res.status).toBe(200);
 

@@ -156,9 +156,6 @@ export async function GET(
       }
     }
 
-    // Combined stock including child variants
-    const combinedStock = totalStock + childVariants.reduce((sum, cv) => sum + (cv.inStock ? 1 : 0), 0);
-
     return NextResponse.json({
       id: product.id,
       name: product.name,

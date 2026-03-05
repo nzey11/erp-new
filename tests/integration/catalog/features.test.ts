@@ -824,7 +824,7 @@ describe("Catalog features - integration", () => {
     });
 
     it("should update existing product by SKU on import", async () => {
-      const _product = await createProduct({ name: "Старое название", sku: "UPDATE-001" });
+      await createProduct({ name: "Старое название", sku: "UPDATE-001" });
 
       // Simulate import update
       const existing = await db.product.findFirst({ where: { sku: "UPDATE-001" } });

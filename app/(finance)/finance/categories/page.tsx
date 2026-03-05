@@ -346,7 +346,7 @@ export default function CategoriesPage() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground py-2">
-            Статья <span className="font-semibold">"{deleteTarget?.name}"</span> будет удалена.
+            Статья <span className="font-semibold">&ldquo;{deleteTarget?.name}&rdquo;</span> будет удалена.
             Платежи, связанные с ней, останутся.
           </p>
           <DialogFooter>

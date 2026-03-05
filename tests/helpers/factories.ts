@@ -384,7 +384,7 @@ export async function createDocumentWithItems(
   // Calculate total amount
   let totalAmount = docOverrides?.totalAmount ?? 0;
   if (totalAmount === 0) {
-    totalAmount = items.reduce((sum, item, _i) => {
+    totalAmount = items.reduce((sum, item) => {
       const price = item.price ?? 100;
       return sum + item.quantity * price;
     }, 0);
