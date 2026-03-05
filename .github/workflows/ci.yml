@@ -118,6 +118,8 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: deploy.tar.gz
           target: /tmp/
+          timeout: 120s
+          command_timeout: 30m
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
@@ -125,6 +127,8 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: root
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          timeout: 120s
+          command_timeout: 30m
           script: |
             set -e
             cd /var/www/listopt-erp
