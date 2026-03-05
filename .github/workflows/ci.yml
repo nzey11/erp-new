@@ -84,8 +84,15 @@ jobs:
           path: test-results/
           retention-days: 7
 
-      - name: Build (affected)
-        run: npx nx affected -t build
+      - name: Build
+        run: npx next build
+
+      - name: Upload .next artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+          retention-days: 1
 
   deploy:
     name: Deploy to Production
@@ -97,10 +104,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download .next artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+
       - name: Build archive
         run: |
           tar -czf deploy.tar.gz \
-            --exclude='.next' \
             --exclude='node_modules' \
             --exclude='.env*' \
             --exclude='dev.db' \
@@ -128,19 +140,27 @@ jobs:
           script: |
             set -e
             cd /var/www/listopt-erp
-            # Clean up old Next.js build and deleted files
+            # Clean up old build and deleted files
             rm -rf .next
             rm -rf app/
             rm -rf components/
             rm -rf lib/
             rm -rf prisma/
-            # Extract new archive
+            # Extract new archive (includes pre-built .next)
             tar -xzf /tmp/deploy.tar.gz
-            npm ci
+            # Cache-aware dependency install: skip if package-lock.json unchanged
+            LOCK_HASH=$(md5sum package-lock.json | awk '{print $1}')
+            LOCK_CACHE=/tmp/listopt-lock-hash
+            if [ -f "$LOCK_CACHE" ] && [ "$(cat $LOCK_CACHE)" = "$LOCK_HASH" ] && [ -d node_modules ]; then
+              echo "Dependencies unchanged, skipping npm ci"
+            else
+              npm ci
+              echo "$LOCK_HASH" > "$LOCK_CACHE"
+            fi
             npx prisma generate
             npx prisma db push --skip-generate
             npx tsx prisma/seed-accounts.ts
-            npx next build
+            # next build runs on CI — no rebuild on server
             pm2 restart listopt-erp --update-env
             rm -f /tmp/deploy.tar.gz
             echo "Deploy complete. PM2 status:"
