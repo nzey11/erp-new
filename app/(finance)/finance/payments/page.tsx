@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ExternalLink, Pencil } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Pencil, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
@@ -47,10 +48,19 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [total, setTotal] = useState(0);
+  const [incomeTotal, setIncomeTotal] = useState(0);
+  const [expenseTotal, setExpenseTotal] = useState(0);
+  const [netCashFlow, setNetCashFlow] = useState(0);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
+
+  // Delete confirm dialog state
+  const [deleteTarget, setDeleteTarget] = useState<Payment | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [categories, setCategories] = useState<FinanceCategory[]>([]);
@@ -85,17 +95,22 @@ export default function PaymentsPage() {
       if (typeFilter && typeFilter !== "all") params.set("type", typeFilter);
       if (dateFrom) params.set("dateFrom", dateFrom);
       if (dateTo) params.set("dateTo", dateTo);
+      params.set("page", String(page));
+      params.set("limit", String(PAGE_SIZE));
 
       const res = await fetch(`/api/finance/payments?${params}`);
       const data = await res.json();
       setPayments(data.payments ?? []);
       setTotal(data.total ?? 0);
+      setIncomeTotal(data.incomeTotal ?? 0);
+      setExpenseTotal(data.expenseTotal ?? 0);
+      setNetCashFlow(data.netCashFlow ?? 0);
     } catch {
       toast.error("Ошибка загрузки платежей");
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, dateFrom, dateTo]);
+  }, [typeFilter, dateFrom, dateTo, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -203,20 +218,27 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleDelete = async (payment: Payment) => {
-    if (!confirm(`Удалить платёж ${payment.number}?`)) return;
+  const confirmDelete = (payment: Payment) => {
+    setDeleteTarget(payment);
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/finance/payments/${payment.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/finance/payments/${deleteTarget.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error);
       toast.success("Платёж удалён");
+      setDeleteOpen(false);
+      setDeleteTarget(null);
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     }
   };
 
-  const incomeTotal = payments.filter((p) => p.type === "income").reduce((s, p) => s + p.amount, 0);
-  const expenseTotal = payments.filter((p) => p.type === "expense").reduce((s, p) => s + p.amount, 0);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
 
   return (
     <div className="space-y-6">
@@ -230,21 +252,24 @@ export default function PaymentsPage() {
         }
       />
 
-      {/* Summary */}
+      {/* Summary — server-aggregated totals for the current filter */}
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">Поступления</p>
           <p className="text-2xl font-bold text-green-600">{formatRub(incomeTotal)}</p>
+          <p className="text-xs text-muted-foreground mt-1">за выбранный период</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">Выплаты</p>
           <p className="text-2xl font-bold text-red-600">{formatRub(expenseTotal)}</p>
+          <p className="text-xs text-muted-foreground mt-1">за выбранный период</p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">Чистый поток</p>
-          <p className={`text-2xl font-bold ${incomeTotal - expenseTotal >= 0 ? "text-green-600" : "text-red-600"}`}>
-            {formatRub(incomeTotal - expenseTotal)}
+          <p className={`text-2xl font-bold ${netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {formatRub(netCashFlow)}
           </p>
+          <p className="text-xs text-muted-foreground mt-1">поступления − выплаты</p>
         </div>
       </div>
 
@@ -270,7 +295,7 @@ export default function PaymentsPage() {
           <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
         </div>
         {(typeFilter !== "all" || dateFrom || dateTo) && (
-          <Button variant="ghost" size="sm" onClick={() => { setTypeFilter("all"); setDateFrom(""); setDateTo(""); }}>
+          <Button variant="ghost" size="sm" onClick={() => { setTypeFilter("all"); setDateFrom(""); setDateTo(""); setPage(1); }}>
             Сбросить
           </Button>
         )}
@@ -343,7 +368,7 @@ export default function PaymentsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(p)}
+                          onClick={() => confirmDelete(p)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -354,11 +379,28 @@ export default function PaymentsPage() {
               ))}
             </TableBody>
           </Table>
-          {total > payments.length && (
-            <div className="px-4 py-2 text-sm text-muted-foreground border-t">
-              Показано {payments.length} из {total}
-            </div>
-          )}
+          <div className="flex items-center justify-between px-4 py-2 border-t text-sm text-muted-foreground">
+            <span>Показано {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} из {total}</span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost" size="icon" className="h-7 w-7"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-2">{page} / {totalPages}</span>
+                <Button
+                  variant="ghost" size="icon" className="h-7 w-7"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -447,10 +489,11 @@ export default function PaymentsPage() {
 
             <div className="grid gap-2">
               <Label>Описание</Label>
-              <Input
+              <Textarea
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="Необязательно"
+                rows={2}
               />
             </div>
           </div>
@@ -547,10 +590,11 @@ export default function PaymentsPage() {
               </div>
               <div className="grid gap-2">
                 <Label>Описание</Label>
-                <Input
+                <Textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Необязательно"
+                  rows={2}
                 />
               </div>
             </div>
@@ -558,6 +602,25 @@ export default function PaymentsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditOpen(false); setEditingPayment(null); }}>Отмена</Button>
             <Button onClick={handleEdit} disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Удалить платёж?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Платёж <span className="font-mono font-semibold">{deleteTarget?.number}</span> на сумму{" "}
+            <span className="font-semibold">{deleteTarget ? formatRub(deleteTarget.amount) : ""}</span> будет удалён безвозвратно.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteOpen(false); setDeleteTarget(null); }}>Отмена</Button>
+            <Button variant="destructive" onClick={handleDelete}>Удалить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

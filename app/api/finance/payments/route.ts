@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const [payments, total] = await Promise.all([
+    const [payments, total, incomeAgg, expenseAgg] = await Promise.all([
       db.payment.findMany({
         where,
         include: {
@@ -57,9 +57,14 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       db.payment.count({ where }),
+      db.payment.aggregate({ _sum: { amount: true }, where: { ...where, type: "income" } }),
+      db.payment.aggregate({ _sum: { amount: true }, where: { ...where, type: "expense" } }),
     ]);
 
-    return NextResponse.json({ payments, total, page, limit });
+    const incomeTotal = incomeAgg._sum.amount ?? 0;
+    const expenseTotal = expenseAgg._sum.amount ?? 0;
+
+    return NextResponse.json({ payments, total, page, limit, incomeTotal, expenseTotal, netCashFlow: incomeTotal - expenseTotal });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

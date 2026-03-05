@@ -22,17 +22,6 @@ interface CartItemInput {
   price: number;
 }
 
-// Address data for delivery
-interface DeliveryAddress {
-  recipientName: string;
-  phone: string;
-  city: string;
-  street: string;
-  building: string;
-  apartment?: string | null;
-  postalCode?: string | null;
-}
-
 /**
  * Get or create Counterparty for Customer
  * Called when customer places first order

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { formatRub, formatDate } from "@/lib/shared/utils";
@@ -187,12 +186,7 @@ export default function ReportsPage() {
     return getAllDrillDownItems().reduce((sum, item) => sum + item.amount, 0);
   };
 
-  useEffect(() => {
-    loadReports();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportTab, dateFrom, dateTo, asOfDate]);
-
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     setReportsLoading(true);
     try {
       const params = new URLSearchParams({ dateFrom, dateTo });
@@ -214,7 +208,11 @@ export default function ReportsPage() {
     } finally {
       setReportsLoading(false);
     }
-  };
+  }, [reportTab, dateFrom, dateTo, asOfDate]);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
 
   return (
     <div className="space-y-6">
@@ -241,7 +239,9 @@ export default function ReportsPage() {
           </div>
 
           {reportsLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Загрузка...</div>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : profitLoss ? (
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-4">
@@ -329,7 +329,9 @@ export default function ReportsPage() {
           </div>
 
           {reportsLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Загрузка...</div>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : cashFlow ? (
             <div className="space-y-4">
               <Card>
@@ -385,7 +387,9 @@ export default function ReportsPage() {
           </div>
 
           {reportsLoading ? (
-            <div className="py-8 text-center text-muted-foreground">Загрузка...</div>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : balanceSheet ? (
             <div className="grid gap-4 md:grid-cols-2">
               <Card>

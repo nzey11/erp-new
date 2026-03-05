@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
-import { checkoutSchema } from "@/lib/modules/accounting/schemas/ecom-order.schema";
-import { createSalesOrderFromCart } from "@/lib/modules/accounting/ecom-orders";
+import { checkoutSchema, createSalesOrderFromCart } from "@/lib/modules/accounting";
 
 /** POST /api/ecommerce/checkout — Create order from cart */
 export async function POST(request: NextRequest) {

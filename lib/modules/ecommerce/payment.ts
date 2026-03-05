@@ -2,7 +2,7 @@
 
 import crypto from "crypto";
 import { db } from "@/lib/shared/db";
-import { confirmOrderPayment } from "@/lib/modules/accounting/ecom-orders";
+import { confirmOrderPayment } from "@/lib/modules/accounting";
 
 interface PaymentResult {
   order: {
@@ -18,11 +18,6 @@ interface PaymentResult {
 }
 
 type PaymentMethod = "tochka" | "cash";
-
-const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  tochka: "Точка Банк",
-  cash: "При получении",
-};
 
 /** Verify T-Bank webhook signature */
 export function verifyTochkaSignature(payload: string, signature: string): boolean {

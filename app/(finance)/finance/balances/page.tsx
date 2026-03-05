@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -22,6 +23,12 @@ interface BalancesReport {
   totalPayable: number;
   netBalance: number;
 }
+
+const COUNTERPARTY_TYPE_LABELS: Record<string, string> = {
+  supplier: "Поставщик",
+  customer: "Покупатель",
+  both: "Поставщик+Покупатель",
+};
 
 export default function BalancesPage() {
   const [balances, setBalances] = useState<BalancesReport | null>(null);
@@ -72,6 +79,7 @@ export default function BalancesPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{formatRub(balances.totalReceivable)}</p>
+            <p className="text-xs text-muted-foreground mt-1">нам должны — {balances.receivable.length} контрагентов</p>
           </CardContent>
         </Card>
         <Card>
@@ -80,6 +88,7 @@ export default function BalancesPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">{formatRub(Math.abs(balances.totalPayable))}</p>
+            <p className="text-xs text-muted-foreground mt-1">мы должны — {balances.payable.length} контрагентам</p>
           </CardContent>
         </Card>
         <Card>
@@ -90,6 +99,7 @@ export default function BalancesPage() {
             <p className={`text-2xl font-bold ${balances.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
               {formatRub(balances.netBalance)}
             </p>
+            <p className="text-xs text-muted-foreground mt-1">дебиторская − кредиторская</p>
           </CardContent>
         </Card>
       </div>
@@ -98,21 +108,27 @@ export default function BalancesPage() {
       {balances.receivable.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Нам должны</CardTitle>
+            <CardTitle className="text-lg text-green-700">Нам должны ({balances.receivable.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Контрагент</TableHead>
+                  <TableHead>Тип</TableHead>
                   <TableHead className="text-right">Сумма</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {balances.receivable.map((b) => (
                   <TableRow key={b.id}>
-                    <TableCell>{b.counterparty.name}</TableCell>
-                    <TableCell className="text-right text-green-600">{formatRub(b.balanceRub)}</TableCell>
+                    <TableCell className="font-medium">{b.counterparty.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {COUNTERPARTY_TYPE_LABELS[b.counterparty.type] ?? b.counterparty.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-green-600 font-semibold">{formatRub(b.balanceRub)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -125,21 +141,27 @@ export default function BalancesPage() {
       {balances.payable.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Мы должны</CardTitle>
+            <CardTitle className="text-lg text-red-700">Мы должны ({balances.payable.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Контрагент</TableHead>
+                  <TableHead>Тип</TableHead>
                   <TableHead className="text-right">Сумма</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {balances.payable.map((b) => (
                   <TableRow key={b.id}>
-                    <TableCell>{b.counterparty.name}</TableCell>
-                    <TableCell className="text-right text-red-600">{formatRub(Math.abs(b.balanceRub))}</TableCell>
+                    <TableCell className="font-medium">{b.counterparty.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {COUNTERPARTY_TYPE_LABELS[b.counterparty.type] ?? b.counterparty.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-red-600 font-semibold">{formatRub(Math.abs(b.balanceRub))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

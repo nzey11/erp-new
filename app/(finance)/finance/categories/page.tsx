@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface FinanceCategory {
@@ -42,6 +42,8 @@ export default function CategoriesPage() {
   const [editTarget, setEditTarget] = useState<FinanceCategory | null>(null);
   const [form, setForm] = useState({ name: "", type: "income", defaultAccountCode: "" });
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<FinanceCategory | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -115,16 +117,23 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDelete = async (cat: FinanceCategory) => {
-    if (!confirm(`Удалить статью "${cat.name}"?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/finance/categories/${cat.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/finance/categories/${deleteTarget.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error);
       toast.success("Статья удалена");
+      setDeleteOpen(false);
+      setDeleteTarget(null);
       load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     }
+  };
+  
+  const confirmDelete = (cat: FinanceCategory) => {
+    setDeleteTarget(cat);
+    setDeleteOpen(true);
   };
 
   const openEdit = (cat: FinanceCategory) => {
@@ -193,7 +202,7 @@ export default function CategoriesPage() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(cat)}
+                      onClick={() => confirmDelete(cat)}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -324,6 +333,25 @@ export default function CategoriesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Отмена</Button>
             <Button onClick={handleEdit} disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Удалить статью?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Статья <span className="font-semibold">"{deleteTarget?.name}"</span> будет удалена.
+            Платежи, связанные с ней, останутся.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteOpen(false); setDeleteTarget(null); }}>Отмена</Button>
+            <Button variant="destructive" onClick={handleDelete}>Удалить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

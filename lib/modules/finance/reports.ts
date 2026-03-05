@@ -27,29 +27,6 @@ export async function getAllBalances() {
   });
 }
 
-/** Get total receivables as of date */
-async function getTotalReceivables(asOfDate: Date): Promise<number> {
-  const result = await db.counterpartyBalance.aggregate({
-    _sum: { balanceRub: true },
-    where: {
-      balanceRub: { gt: 0 },
-      // Would ideally filter by date, but counterpartyBalance is current snapshot
-    },
-  });
-  return result._sum.balanceRub ?? 0;
-}
-
-/** Get total payables as of date */
-async function getTotalPayables(asOfDate: Date): Promise<number> {
-  const result = await db.counterpartyBalance.aggregate({
-    _sum: { balanceRub: true },
-    where: {
-      balanceRub: { lt: 0 },
-    },
-  });
-  return Math.abs(result._sum.balanceRub ?? 0);
-}
-
 /**
  * Recalculate counterparty balance from confirmed documents.
  *

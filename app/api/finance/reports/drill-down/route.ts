@@ -8,7 +8,8 @@ const CATEGORY_DOCUMENT_TYPES: Record<string, DocumentType[]> = {
   // P&L
   grossRevenue: ["outgoing_shipment"],
   customerReturns: ["customer_return"],
-  cogs: ["incoming_shipment"],
+  // COGS (90.2) is recognised when we ship OUT — cost leaves inventory to 90.2
+  cogs: ["outgoing_shipment"],
   supplierReturns: ["supplier_return"],
   // Cash Flow
   "operating.in": ["incoming_payment"],
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       return await getReceivablesDrillDown();
     }
     if (category === "liabilities.payables") {
-      return NextResponse.json({ documents: [], payments: [], message: "Дебиторская задолженность рассчитывается на основе сальдо контрагентов" });
+      return NextResponse.json({ documents: [], payments: [], message: "Кредиторская задолженность рассчитывается на основе сальдо контрагентов" });
     }
 
     const docTypes = CATEGORY_DOCUMENT_TYPES[category];

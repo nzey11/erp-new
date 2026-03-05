@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { quickOrderSchema } from "@/lib/modules/ecommerce/schemas/quick-order.schema";
-import { createSalesOrderFromCart, getOrCreateCounterparty } from "@/lib/modules/accounting/ecom-orders";
+import { createSalesOrderFromCart } from "@/lib/modules/accounting";
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
 
     price = Math.round(price * 100) / 100;
     const quantity = data.quantity;
-    const totalAmount = Math.round(price * quantity * 100) / 100;
 
     // Find or create a guest customer by phone
     let customer = await db.customer.findFirst({

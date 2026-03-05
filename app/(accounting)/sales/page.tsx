@@ -5,7 +5,6 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,7 +14,7 @@ import type { DataGridColumn } from "@/components/ui/data-grid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, ShoppingCart, User, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { cn, formatRub, formatDate, formatDateTime } from "@/lib/shared/utils";
+import { cn, formatRub, formatDate } from "@/lib/shared/utils";
 import { DocumentsTable, DOC_TYPE_OPTIONS, CreateDocumentDialog } from "@/components/accounting";
 import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ categories });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
