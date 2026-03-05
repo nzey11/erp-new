@@ -208,9 +208,9 @@ describe("API: E-commerce Cart & Orders", () => {
       });
       expect(cartItems).toHaveLength(0);
 
-      // Order should exist with items
-      const order = await db.order.findUnique({
-        where: { id: data.orderId },
+      // Order should exist as Document (sales_order) with items
+      const order = await db.document.findFirst({
+        where: { type: "sales_order", customerId: customer.id },
         include: { items: true },
       });
       expect(order).not.toBeNull();

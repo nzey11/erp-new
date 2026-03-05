@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
-import { checkoutSchema } from "@/lib/modules/ecommerce/schemas/checkout.schema";
+import { checkoutSchema } from "@/lib/modules/accounting/schemas/ecom-order.schema";
+import { createSalesOrderFromCart } from "@/lib/modules/accounting/ecom-orders";
 
 /** POST /api/ecommerce/checkout — Create order from cart */
 export async function POST(request: NextRequest) {
@@ -10,26 +11,33 @@ export async function POST(request: NextRequest) {
     const customer = await requireCustomer();
     const { deliveryType, addressId, notes } = await parseBody(request, checkoutSchema);
 
-    // Validate address for courier delivery
-    if (deliveryType === "courier" && !addressId) {
-      return NextResponse.json(
-        { error: "Address is required for courier delivery" },
-        { status: 400 }
-      );
-    }
-
-    // Get cart items
+    // Get cart items with price calculation
     const cartItems = await db.cartItem.findMany({
       where: { customerId: customer.id },
       include: {
         product: {
-          select: { id: true, name: true, isActive: true, publishedToStore: true },
+          include: {
+            salePrices: {
+              where: { isActive: true, priceListId: null },
+              orderBy: { validFrom: "desc" },
+              take: 1,
+            },
+            discounts: {
+              where: {
+                isActive: true,
+                validFrom: { lte: new Date() },
+                OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
+              },
+              take: 1,
+            },
+          },
         },
+        variant: true,
       },
     });
 
     if (cartItems.length === 0) {
-      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+      return NextResponse.json({ error: "Корзина пуста" }, { status: 400 });
     }
 
     // Verify all products are still available
@@ -38,60 +46,38 @@ export async function POST(request: NextRequest) {
     );
     if (unavailableProducts.length > 0) {
       return NextResponse.json(
-        { error: "Some products are no longer available" },
+        { error: "Некоторые товары больше недоступны" },
         { status: 400 }
       );
     }
 
-    // Verify address ownership if provided
-    if (addressId) {
-      const address = await db.customerAddress.findUnique({
-        where: { id: addressId },
-        select: { customerId: true },
-      });
-
-      if (!address || address.customerId !== customer.id) {
-        return NextResponse.json({ error: "Invalid address" }, { status: 400 });
+    // Calculate prices with discounts
+    const orderItems = cartItems.map((item) => {
+      let price = item.product.salePrices[0]?.price || 0;
+      if (item.variant) price += item.variant.priceAdjustment;
+      const discount = item.product.discounts[0];
+      if (discount) {
+        price = discount.type === "percentage" 
+          ? price * (1 - discount.value / 100) 
+          : price - discount.value;
+        price = Math.max(0, price);
       }
-    }
-
-    // Calculate total
-    const itemsTotal = cartItems.reduce(
-      (sum, item) => sum + item.priceSnapshot * item.quantity,
-      0
-    );
-    const deliveryCost = deliveryType === "courier" ? 0 : 0; // Add delivery cost logic if needed
-    const totalAmount = itemsTotal + deliveryCost;
-
-    // Generate order number
-    const orderCounter = await db.orderCounter.upsert({
-      where: { prefix: "ORD" },
-      create: { prefix: "ORD", lastNumber: 1 },
-      update: { lastNumber: { increment: 1 } },
+      return {
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        price: Math.round(price * 100) / 100,
+      };
     });
-    const orderNumber = `ORD-${String(orderCounter.lastNumber).padStart(6, "0")}`;
 
-    // Create order
-    const order = await db.order.create({
-      data: {
-        orderNumber,
-        customerId: customer.id,
-        status: "pending",
-        deliveryType,
-        deliveryAddressId: addressId || null,
-        deliveryCost,
-        totalAmount,
-        notes: notes || null,
-        items: {
-          create: cartItems.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            quantity: item.quantity,
-            price: item.priceSnapshot,
-            total: item.priceSnapshot * item.quantity,
-          })),
-        },
-      },
+    // Create sales_order document
+    const result = await createSalesOrderFromCart({
+      customerId: customer.id,
+      items: orderItems,
+      deliveryType,
+      deliveryAddressId: addressId,
+      deliveryCost: 0, // TODO: Add delivery cost calculation
+      notes,
     });
 
     // Clear cart
@@ -100,9 +86,9 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      totalAmount: order.totalAmount,
+      orderId: result.documentId,
+      orderNumber: result.documentNumber,
+      totalAmount: result.totalAmount,
     });
   } catch (error) {
     const vErr = validationError(error);

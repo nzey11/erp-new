@@ -6,6 +6,7 @@ import { z } from "zod";
 const createCategorySchema = z.object({
   name: z.string().min(1).max(100),
   type: z.enum(["income", "expense"]),
+  defaultAccountCode: z.string().nullable().optional(),
 });
 
 export async function GET(request: NextRequest) {

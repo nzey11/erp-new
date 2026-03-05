@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
     await requirePermission("reports:read");
 
     const query = parseQuery(request, dateSchema);
+    // Use end-of-day to include all entries created on that date
     const asOfDate = query.asOfDate ? new Date(query.asOfDate) : new Date();
+    asOfDate.setUTCHours(23, 59, 59, 999);
 
     const balanceSheet = await generateBalanceSheet(asOfDate);
 

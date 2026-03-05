@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Pencil } from "lucide-react";
+import Link from "next/link";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -65,6 +66,18 @@ export default function PaymentsPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [editForm, setEditForm] = useState({
+    categoryId: "",
+    counterpartyId: "none",
+    amount: "",
+    paymentMethod: "bank_transfer",
+    date: "",
+    description: "",
+  });
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -111,6 +124,52 @@ export default function PaymentsPage() {
     setCreateOpen(true);
   };
 
+  const openEdit = (payment: Payment) => {
+    setEditingPayment(payment);
+    setEditForm({
+      categoryId: payment.category.id,
+      counterpartyId: payment.counterparty?.id ?? "none",
+      amount: String(payment.amount),
+      paymentMethod: payment.paymentMethod,
+      date: payment.date.split("T")[0],
+      description: payment.description ?? "",
+    });
+    loadFormData();
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingPayment) return;
+    if (!editForm.amount || isNaN(Number(editForm.amount)) || Number(editForm.amount) <= 0) {
+      toast.error("Укажите корректную сумму"); return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/finance/payments/${editingPayment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryId: editForm.categoryId,
+          counterpartyId: editForm.counterpartyId !== "none" ? editForm.counterpartyId : null,
+          amount: Number(editForm.amount),
+          paymentMethod: editForm.paymentMethod,
+          date: editForm.date,
+          description: editForm.description || null,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      toast.success("Платёж обновлён");
+      setEditOpen(false);
+      setEditingPayment(null);
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const editCategories = categories.filter((c) => c.type === editingPayment?.type);
   const filteredCategories = categories.filter((c) => c.type === form.type);
 
   const handleCreate = async () => {
@@ -235,7 +294,7 @@ export default function PaymentsPage() {
                 <TableHead>Способ</TableHead>
                 <TableHead className="text-right">Сумма</TableHead>
                 <TableHead>Документ</TableHead>
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -256,22 +315,40 @@ export default function PaymentsPage() {
                   <TableCell className={`text-right font-semibold ${p.type === "income" ? "text-green-600" : "text-red-600"}`}>
                     {p.type === "income" ? "+" : "-"}{formatRub(p.amount)}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm">
                     {p.document ? (
-                      <span className="font-mono">{p.document.number}</span>
-                    ) : "—"}
+                      <Link
+                        href={`/documents/${p.document.id}`}
+                        className="inline-flex items-center gap-1 font-mono text-primary hover:underline"
+                      >
+                        {p.document.number}
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
-                    {!p.document && (
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(p)}
+                        className="h-7 w-7"
+                        onClick={() => openEdit(p)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Pencil className="h-3 w-3" />
                       </Button>
-                    )}
+                      {!p.document && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(p)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -380,6 +457,107 @@ export default function PaymentsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Отмена</Button>
             <Button onClick={handleCreate} disabled={saving}>{saving ? "Сохранение..." : "Создать"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditingPayment(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Изменить платёж{editingPayment ? ` ${editingPayment.number}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {editingPayment && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Тип:</span>
+                <Badge className={editingPayment.type === "income" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                  {editingPayment.type === "income" ? "Доход" : "Расход"}
+                </Badge>
+                {editingPayment.document && (
+                  <span className="text-xs">(автоматически создан по док. {editingPayment.document.number})</span>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Статья *</Label>
+                <Select
+                  value={editForm.categoryId}
+                  onValueChange={(v) => setEditForm((f) => ({ ...f, categoryId: v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Выберите статью" /></SelectTrigger>
+                  <SelectContent>
+                    {editCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Сумма *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Способ оплаты *</Label>
+                <Select value={editForm.paymentMethod} onValueChange={(v) => setEditForm((f) => ({ ...f, paymentMethod: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bank_transfer">Перевод</SelectItem>
+                    <SelectItem value="cash">Наличные</SelectItem>
+                    <SelectItem value="card">Карта</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Дата *</Label>
+                <Input
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm((f) => ({ ...f, date: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Контрагент</Label>
+                <Select value={editForm.counterpartyId} onValueChange={(v) => setEditForm((f) => ({ ...f, counterpartyId: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Не выбран" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Не выбран</SelectItem>
+                    {counterparties.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Описание</Label>
+                <Input
+                  value={editForm.description}
+                  onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Необязательно"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditingPayment(null); }}>Отмена</Button>
+            <Button onClick={handleEdit} disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

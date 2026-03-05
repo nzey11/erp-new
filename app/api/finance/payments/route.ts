@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requireAuth } from "@/lib/shared/authorization";
 import { z } from "zod";
+import { autoPostPayment } from "@/lib/modules/accounting/journal";
 
 const createPaymentSchema = z.object({
   type: z.enum(["income", "expense"]),
@@ -90,6 +91,9 @@ export async function POST(request: NextRequest) {
         document: { select: { id: true, number: true, type: true } },
       },
     });
+
+    // Auto-post to journal (non-critical)
+    try { await autoPostPayment(payment.id); } catch { /* silent */ }
 
     return NextResponse.json(payment);
   } catch (error) {

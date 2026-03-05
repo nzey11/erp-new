@@ -5,6 +5,7 @@ import { z } from "zod";
 
 const updateCategorySchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  defaultAccountCode: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -21,11 +22,18 @@ export async function PATCH(
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if (existing.isSystem) {
-      return NextResponse.json({ error: "Cannot edit system category" }, { status: 403 });
+    // System categories: only defaultAccountCode can be updated, not name
+    if (existing.isSystem && data.name) {
+      return NextResponse.json({ error: "Cannot rename system category" }, { status: 403 });
     }
 
-    const updated = await db.financeCategory.update({ where: { id }, data });
+    const updated = await db.financeCategory.update({
+      where: { id },
+      data: {
+        ...(data.name ? { name: data.name } : {}),
+        ...(data.defaultAccountCode !== undefined ? { defaultAccountCode: data.defaultAccountCode } : {}),
+      },
+    });
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {

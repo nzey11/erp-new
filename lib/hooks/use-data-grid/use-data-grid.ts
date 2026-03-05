@@ -159,7 +159,8 @@ export function useDataGrid<TData extends { id: string }>(
     if (!getCache(cacheKey)) setLoading(true);
 
     try {
-      const res = await fetch(`${endpoint}?${params}`, { signal: controller.signal });
+      const separator = endpoint.includes("?") ? "&" : "?";
+      const res = await fetch(`${endpoint}${separator}${params}`, { signal: controller.signal });
       if (id !== fetchIdRef.current) return; // Stale response
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();

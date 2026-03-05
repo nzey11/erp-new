@@ -25,6 +25,8 @@ import {
   Image,
   Plug,
   FileText,
+  BookMarked,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,9 +63,10 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Отчёты", href: "/finance/reports", icon: TrendingUp },
     { name: "Взаиморасчёты", href: "/finance/balances", icon: Users },
     { name: "Статьи", href: "/finance/categories", icon: BookOpen },
+    { name: "План счетов", href: "/finance/accounts", icon: BookMarked },
+    { name: "Журнал проводок", href: "/finance/journal", icon: ClipboardList },
   ],
   ecommerce: [
-    { name: "Заказы клиентов", href: "/ecommerce/orders", icon: ShoppingCart },
     { name: "Промо-блоки", href: "/ecommerce/promo-blocks", icon: Image },
     { name: "Отзывы", href: "/ecommerce/reviews", icon: Star },
     { name: "CMS-страницы", href: "/cms-pages", icon: FileText },

@@ -7,3 +7,5 @@ export type { Product } from "./ProductsTable";
 
 export { CounterpartiesTable, TYPE_LABELS } from "./CounterpartiesTable";
 export type { Counterparty } from "./CounterpartiesTable";
+
+export { CreateDocumentDialog } from "./CreateDocumentDialog";

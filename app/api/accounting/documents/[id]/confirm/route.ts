@@ -5,6 +5,7 @@ import { validationError } from "@/lib/shared/validation";
 import { affectsStock, affectsBalance, isStockDecrease, isStockIncrease, isInventoryCount, getDocTypeName, getDocStatusName, generateDocumentNumber } from "@/lib/modules/accounting/documents";
 import { updateStockForDocument, checkStockAvailability, updateAverageCostOnReceipt, updateAverageCostOnTransfer, updateTotalCostValue } from "@/lib/modules/accounting/stock";
 import { recalculateBalance } from "@/lib/modules/accounting/balance";
+import { autoPostDocument } from "@/lib/modules/accounting/journal";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -268,10 +269,22 @@ export async function POST(_request: NextRequest, { params }: Params) {
       await recalculateBalance(doc.counterpartyId);
     }
 
-    // Auto-create finance payment for shipment documents and purchase orders
-    if (doc.type === "incoming_shipment" || doc.type === "outgoing_shipment" || doc.type === "purchase_order") {
+    // Auto-post to accounting journal (double-entry)
+    try {
+      await autoPostDocument(
+        confirmed.id,
+        confirmed.number,
+        confirmed.confirmedAt ?? confirmed.date,
+        confirmed.createdBy ?? undefined
+      );
+    } catch {
+      // Non-critical: journal posting failure should not block document confirmation
+    }
+
+    // Auto-create finance payment only for actual shipments (not purchase orders — those are just orders, no money moves yet)
+    if (doc.type === "incoming_shipment" || doc.type === "outgoing_shipment") {
       try {
-        const isPurchase = doc.type === "incoming_shipment" || doc.type === "purchase_order";
+        const isPurchase = doc.type === "incoming_shipment";
         const paymentType = isPurchase ? "expense" : "income";
         const categoryName = isPurchase ? "Оплата поставщику" : "Оплата от покупателя";
 

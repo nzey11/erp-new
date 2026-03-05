@@ -41,20 +41,17 @@ export async function POST(request: NextRequest) {
     // Check for verified purchase
     let isVerifiedPurchase = false;
     if (orderId) {
-      const order = await db.order.findFirst({
+      // Check in Document (sales_order) - new approach
+      const doc = await db.document.findFirst({
         where: {
           id: orderId,
+          type: "sales_order",
           customerId: customer.id,
-          status: { in: ["delivered", "paid", "shipped"] },
-          items: {
-            some: { productId },
-          },
+          status: { in: ["confirmed", "shipped", "delivered"] },
+          items: { some: { productId } },
         },
       });
-
-      if (order) {
-        isVerifiedPurchase = true;
-      }
+      if (doc) isVerifiedPurchase = true;
     }
 
     // Create review (not published by default, admin approval needed)
@@ -62,12 +59,12 @@ export async function POST(request: NextRequest) {
       data: {
         productId,
         customerId: customer.id,
-        orderId: orderId || null,
+        documentId: orderId || null,  // orderId now maps to documentId
         rating,
         title: title || null,
         comment: comment || null,
         isVerifiedPurchase,
-        isPublished: false, // Admin approval required
+        isPublished: false,
       },
     });
 

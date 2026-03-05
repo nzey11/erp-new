@@ -1,24 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
 import { formatRub, formatNumber } from "@/lib/shared/utils";
-import { DocumentsTable } from "@/components/accounting";
+import { DocumentsTable, CreateDocumentDialog } from "@/components/accounting";
 import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
+import { useAccountingRefs } from "@/lib/hooks/use-accounting-refs";
 
 interface StockRow {
   id: string; // Composite key: productId-warehouseId
@@ -46,11 +42,6 @@ interface Totals {
   totalSaleValue: number;
 }
 
-interface Warehouse {
-  id: string;
-  name: string;
-}
-
 const STOCK_DOC_TYPES = [
   { value: "inventory_count", label: "Инвентаризация" },
   { value: "write_off", label: "Списание" },
@@ -59,14 +50,12 @@ const STOCK_DOC_TYPES = [
 
 export default function StockPage() {
   const [tab, setTab] = useState("balances");
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
   // Create document dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [createType, setCreateType] = useState("");
-  const [createWarehouseId, setCreateWarehouseId] = useState("");
-  const [creating, setCreating] = useState(false);
   const tableRef = useRef<DocumentsTableHandle>(null);
+
+  const { warehouses } = useAccountingRefs();
 
   const grid = useDataGrid<StockRow>({
     endpoint: "/api/accounting/stock",
@@ -98,62 +87,6 @@ export default function StockPage() {
       totalSaleValue: grid.data.reduce((s, r) => s + (r.saleValue ?? 0), 0),
     };
   }, [grid.data]);
-
-  useEffect(() => {
-    fetch("/api/accounting/warehouses")
-      .then((r) => r.ok ? r.json() : [])
-      .then((data) => setWarehouses(Array.isArray(data) ? data : []))
-      .catch(() => setWarehouses([]));
-  }, []);
-
-  const handleCreate = async () => {
-    if (!createType) {
-      toast.error("Выберите тип документа");
-      return;
-    }
-    if (!createWarehouseId) {
-      toast.error("Выберите склад");
-      return;
-    }
-    setCreating(true);
-    try {
-      const body: Record<string, unknown> = {
-        type: createType,
-        warehouseId: createWarehouseId,
-        items: [],
-      };
-
-      const res = await fetch("/api/accounting/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Ошибка");
-      }
-
-      const doc = await res.json();
-
-      // Auto-fill inventory with current stock data
-      if (createType === "inventory_count") {
-        await fetch(`/api/accounting/documents/${doc.id}/fill-inventory`, {
-          method: "POST",
-        });
-      }
-
-      toast.success("Документ создан");
-      setCreateOpen(false);
-      setCreateType("");
-      setCreateWarehouseId("");
-      tableRef.current?.refresh();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Ошибка");
-    } finally {
-      setCreating(false);
-    }
-  };
 
   const getDocFilterProps = () => {
     switch (tab) {
@@ -243,10 +176,6 @@ export default function StockPage() {
         actions={
           showCreateButton ? (
             <Button onClick={() => {
-              if (tab === "inventory") setCreateType("inventory_count");
-              else if (tab === "write_off") setCreateType("write_off");
-              else if (tab === "stock_receipt") setCreateType("stock_receipt");
-              else setCreateType("");
               setCreateOpen(true);
             }}>
               <Plus className="h-4 w-4 mr-2" />
@@ -324,43 +253,21 @@ export default function StockPage() {
       )}
 
       {/* Create Document Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Новый складской документ</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Тип документа *</Label>
-              <Select value={createType} onValueChange={setCreateType}>
-                <SelectTrigger><SelectValue placeholder="Выберите тип" /></SelectTrigger>
-                <SelectContent>
-                  {STOCK_DOC_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Склад *</Label>
-              <Select value={createWarehouseId} onValueChange={setCreateWarehouseId}>
-                <SelectTrigger><SelectValue placeholder="Выберите склад" /></SelectTrigger>
-                <SelectContent>
-                  {warehouses.map((wh) => (
-                    <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Отмена</Button>
-            <Button onClick={handleCreate} disabled={creating}>
-              {creating ? "Создание..." : "Создать"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateDocumentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="Новый складской документ"
+        docTypes={STOCK_DOC_TYPES}
+        warehouses={warehouses}
+        counterparties={[]}
+        requireWarehouse
+        onSuccess={() => tableRef.current?.refresh()}
+        onAfterCreate={async (doc, type) => {
+          if (type === "inventory_count") {
+            await fetch(`/api/accounting/documents/${doc.id}/fill-inventory`, { method: "POST" });
+          }
+        }}
+      />
     </div>
   );
 }

@@ -38,6 +38,8 @@ model User {
 enum DocumentStatus {
   draft
   confirmed
+  shipped
+  delivered
   cancelled
 }
 
@@ -150,7 +152,7 @@ model Product {
 
   // E-commerce relations
   cartItems         CartItem[]
-  orderItems        OrderItem[]
+  orderItems        OrderItem[]      // Legacy - will be removed
   reviews           Review[]
   favorites         Favorite[]
 
@@ -237,8 +239,9 @@ model ProductVariant {
   option  VariantOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   // E-commerce relations
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]      // Legacy - will be removed
+  documentItems  DocumentItem[]   // New: link to Document items
 
   @@unique([productId, optionId])
   @@index([productId])
@@ -319,6 +322,9 @@ model Counterparty {
   isActive      Boolean          @default(true)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+
+  // Link to e-commerce Customer (optional, for auto-created counterparties)
+  customer Customer? @relation
 
   interactions   CounterpartyInteraction[]
   purchasePrices PurchasePrice[]
@@ -433,21 +439,42 @@ model Document {
   updatedAt         DateTime       @updatedAt
 
   items             DocumentItem[]
-
-  // E-commerce relation
-  ecommerceOrder    Order?
   payments          Payment[]
+
+  // E-commerce order fields (for type = sales_order)
+  customerId        String?
+  deliveryType      String?          // "pickup" | "courier"
+  deliveryAddressId String?
+  deliveryCost      Float           @default(0)
+  paymentMethod     String?          // "tochka" | "cash"
+  paymentStatus     String          @default("pending")  // pending, paid, failed, refunded
+  paymentExternalId String?
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+
+  customer        Customer?         @relation("CustomerOrders", fields: [customerId], references: [id])
+  deliveryAddress CustomerAddress?  @relation("DeliveryAddress", fields: [deliveryAddressId], references: [id])
+
+  // Legacy relation - will be removed after migration
+  ecommerceOrder   Order?
+
+  // Reviews for this order
+  reviews          Review[]
 
   @@index([type, status, date])
   @@index([warehouseId, date])
   @@index([counterpartyId, date])
   @@index([number])
+  @@index([customerId])
+  @@index([paymentStatus])
 }
 
 model DocumentItem {
   id          String   @id @default(cuid())
   documentId  String
   productId   String
+  variantId   String?   // E-commerce product variant
   quantity    Float
   price       Float    @default(0)
   total       Float    @default(0)
@@ -458,11 +485,13 @@ model DocumentItem {
 
   createdAt   DateTime @default(now())
 
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id])
+  document Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id])
+  variant  ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([documentId])
   @@index([productId])
+  @@index([variantId])
 }
 
 // =============================================
@@ -562,7 +591,16 @@ model Customer {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  // Link to ERP Counterparty (auto-created on first order)
+  counterpartyId String?  @unique
+  counterparty   Counterparty? @relation(fields: [counterpartyId], references: [id])
+
+  // Legacy relation - will be removed after migration
   orders    Order[]
+
+  // New relation to Document (sales_order)
+  documents Document[] @relation("CustomerOrders")
+
   reviews   Review[]
   favorites Favorite[]
   addresses CustomerAddress[]
@@ -586,7 +624,12 @@ model CustomerAddress {
   createdAt     DateTime @default(now())
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  orders   Order[]
+
+  // Legacy relation - will be removed after migration
+  orders Order[]
+
+  // New relation to Document (delivery address)
+  deliveryOrders Document[] @relation("DeliveryAddress")
 
   @@index([customerId])
 }
@@ -672,7 +715,8 @@ model Review {
   id                 String   @id @default(cuid())
   productId          String
   customerId         String
-  orderId            String?
+  orderId            String?   // Legacy - will be removed after migration
+  documentId         String?   // New: link to Document (sales_order)
   rating             Int      // 1-5
   title              String?
   comment            String?
@@ -684,9 +728,11 @@ model Review {
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   order    Order?   @relation(fields: [orderId], references: [id])
+  document Document? @relation(fields: [documentId], references: [id])
 
   @@index([productId, isPublished])
   @@index([customerId])
+  @@index([documentId])
 }
 
 // =============================================
@@ -776,14 +822,15 @@ model Integration {
 // =============================================
 
 model FinanceCategory {
-  id        String   @id @default(cuid())
-  name      String
-  type      String   // "income" | "expense"
-  isSystem  Boolean  @default(false)
-  isActive  Boolean  @default(true)
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  name                String
+  type                String   // "income" | "expense"
+  isSystem            Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  order               Int      @default(0)
+  defaultAccountCode  String?  // e.g. "44", "26", "91.1", "91.2"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   payments Payment[]
 
@@ -817,4 +864,142 @@ model Payment {
   @@index([type, date])
   @@index([counterpartyId])
   @@index([documentId])
+}
+
+// =============================================
+// ACCOUNTING: Chart of Accounts (План счетов)
+// =============================================
+
+enum AccountType {
+  active           // Активный (Дебет - увеличение)
+  passive          // Пассивный (Кредит - увеличение)
+  active_passive   // Активно-пассивный
+}
+
+enum AccountCategory {
+  asset       // Активы (1xxx)
+  liability   // Обязательства (2xxx)
+  equity      // Капитал (3xxx)
+  income      // Доходы (4xxx/90)
+  expense     // Расходы (5xxx/90)
+  off_balance // Забалансовые (0xx)
+}
+
+model Account {
+  id            String         @id @default(cuid())
+  code          String         @unique // "41", "41.1", "60", "90.1"
+  name          String // "Товары", "Расчеты с поставщиками"
+  type          AccountType
+  category      AccountCategory
+  parentId      String?
+  parent        Account?       @relation("AccountTree", fields: [parentId], references: [id])
+  children      Account[]     @relation("AccountTree")
+  isSystem      Boolean        @default(true)
+  isActive      Boolean        @default(true)
+  order         Int            @default(0)
+  analyticsType String? // "counterparty", "warehouse", "product"
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  lines LedgerLine[]
+
+  @@index([code])
+  @@index([category, isActive])
+}
+
+model JournalEntry {
+  id           String   @id @default(cuid())
+  number       String   @unique
+  date         DateTime @default(now())
+  description  String?
+
+  sourceType   String? // "incoming_shipment", "sales_order", "manual"
+  sourceId     String? // Document ID
+  sourceNumber String?
+
+  isManual    Boolean   @default(false)
+  isReversed  Boolean   @default(false)
+  reversedBy  JournalEntry?  @relation("JournalReversal", fields: [reversedById], references: [id])
+  reversedById String?
+  reversals   JournalEntry[] @relation("JournalReversal")
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+
+  lines LedgerLine[]
+
+  @@index([date])
+  @@index([sourceType, sourceId])
+}
+
+model LedgerLine {
+  id             String   @id @default(cuid())
+  entryId        String
+  accountId      String
+
+  debit          Float    @default(0)
+  credit         Float    @default(0)
+
+  counterpartyId String?
+  warehouseId    String?
+  productId      String?
+
+  currency       String?
+  amountRub      Float    @default(0) // Amount in RUB
+
+  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account   Account      @relation(fields: [accountId], references: [id])
+
+  @@index([entryId])
+  @@index([accountId])
+  @@index([counterpartyId])
+}
+
+model JournalCounter {
+  id         String @id @default(cuid())
+  prefix     String @unique @default("JE")
+  lastNumber Int    @default(0)
+}
+
+// =============================================
+// COMPANY: Settings
+// =============================================
+
+enum TaxRegime {
+  osno              // ОСНО с НДС
+  usn_income        // УСН Доходы
+  usn_income_expense // УСН Доходы-Расходы
+  patent            // Патент
+}
+
+model CompanySettings {
+  id                        String    @id @default(cuid())
+  name                      String
+  inn                       String?
+  kpp                       String?
+  ogrn                      String?
+
+  taxRegime                 TaxRegime @default(usn_income)
+  vatRate                   Float     @default(20)
+  usnRate                   Float     @default(6)
+
+  initialCapital            Float     @default(0)
+  initialCapitalDate        DateTime?
+
+  // Account mappings for auto-posting
+  cashAccountId             String?
+  bankAccountId             String?
+  inventoryAccountId        String?
+  supplierAccountId         String?
+  customerAccountId         String?
+  vatAccountId              String?
+  vatPayableAccountId       String?
+  salesAccountId            String?
+  cogsAccountId             String?
+  profitAccountId           String?
+  retainedEarningsAccountId String?
+
+  fiscalYearStartMonth      Int       @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

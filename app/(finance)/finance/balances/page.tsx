@@ -30,7 +30,14 @@ export default function BalancesPage() {
   useEffect(() => {
     fetch("/api/finance/reports/balances")
       .then((res) => res.json())
-      .then((data) => setBalances(data))
+      .then((data) => setBalances({
+          balances: data.balances ?? [],
+          receivable: data.receivable ?? [],
+          payable: data.payable ?? [],
+          totalReceivable: data.totalReceivable ?? 0,
+          totalPayable: data.totalPayable ?? 0,
+          netBalance: data.netBalance ?? 0,
+        }))
       .catch(() => toast.error("Ошибка загрузки балансов"))
       .finally(() => setLoading(false));
   }, []);

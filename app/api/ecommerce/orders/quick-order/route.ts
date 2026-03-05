@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { quickOrderSchema } from "@/lib/modules/ecommerce/schemas/quick-order.schema";
+import { createSalesOrderFromCart, getOrCreateCounterparty } from "@/lib/modules/accounting/ecom-orders";
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,16 +69,7 @@ export async function POST(request: NextRequest) {
     const quantity = data.quantity;
     const totalAmount = Math.round(price * quantity * 100) / 100;
 
-    // Generate order number
-    const counter = await db.orderCounter.upsert({
-      where: { prefix: "ORD" },
-      create: { prefix: "ORD", lastNumber: 1 },
-      update: { lastNumber: { increment: 1 } },
-    });
-    const orderNumber = `ORD-${String(counter.lastNumber).padStart(6, "0")}`;
-
-    // Find or create a guest customer placeholder
-    // Use phone as identifier for quick orders
+    // Find or create a guest customer by phone
     let customer = await db.customer.findFirst({
       where: { phone: data.customerPhone },
     });
@@ -92,32 +84,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create order
-    const order = await db.order.create({
-      data: {
-        orderNumber,
-        customerId: customer.id,
-        status: "pending",
-        deliveryType: "pickup",
-        totalAmount,
-        notes: data.notes
-          ? `[Быстрый заказ] ${data.customerName}, ${data.customerPhone}\n${data.notes}`
-          : `[Быстрый заказ] ${data.customerName}, ${data.customerPhone}`,
-        items: {
-          create: {
-            productId: data.productId,
-            variantId: data.variantId || null,
-            quantity,
-            price,
-            total: totalAmount,
-          },
-        },
-      },
+    // Create Document (sales_order) via ERP module
+    const notes = data.notes
+      ? `[Быстрый заказ] ${data.customerName}, ${data.customerPhone}\n${data.notes}`
+      : `[Быстрый заказ] ${data.customerName}, ${data.customerPhone}`;
+
+    const result = await createSalesOrderFromCart({
+      customerId: customer.id,
+      items: [{
+        productId: data.productId,
+        variantId: data.variantId || null,
+        quantity,
+        price,
+      }],
+      deliveryType: "pickup",
+      deliveryCost: 0,
+      notes,
     });
 
     return NextResponse.json({
-      orderNumber: order.orderNumber,
-      totalAmount: order.totalAmount,
+      orderNumber: result.documentNumber,
+      totalAmount: result.totalAmount,
     });
   } catch (error) {
     const vErr = validationError(error);

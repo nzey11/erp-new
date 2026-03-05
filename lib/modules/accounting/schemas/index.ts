@@ -10,3 +10,4 @@ export * from "./prices.schema";
 export * from "./users.schema";
 export * from "./reports.schema";
 export * from "./ecommerce-admin.schema";
+export * from "./ecom-order.schema";

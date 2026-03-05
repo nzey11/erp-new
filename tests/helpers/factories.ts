@@ -495,14 +495,14 @@ export async function createCartItem(
 }
 
 // =============================================
-// Order Factory
+// Sales Order Document Factory (replaces createOrder)
 // =============================================
 
 export async function createOrder(
   customerId: string,
   overrides: Partial<{
     orderNumber: string;
-    status: "pending" | "paid" | "processing" | "shipped" | "delivered" | "cancelled";
+    status: "draft" | "confirmed" | "shipped" | "delivered" | "cancelled";
     deliveryType: "pickup" | "courier";
     totalAmount: number;
     deliveryCost: number;
@@ -510,21 +510,36 @@ export async function createOrder(
   }> = {}
 ) {
   const id = uniqueId();
-  return db.order.create({
+  // Ensure counterparty exists
+  let counterparty = await db.counterparty.findFirst({
+    where: { type: "customer" },
+  });
+  if (!counterparty) {
+    counterparty = await db.counterparty.create({
+      data: {
+        type: "customer",
+        name: "Test Counterparty",
+      },
+    });
+  }
+  return db.document.create({
     data: {
-      orderNumber: overrides.orderNumber ?? `ORD-${id}`,
+      number: overrides.orderNumber ?? `ЗК-${id}`,
+      type: "sales_order",
+      status: overrides.status ?? "draft",
       customerId,
-      status: overrides.status ?? "pending",
+      counterpartyId: counterparty.id,
       deliveryType: overrides.deliveryType ?? "pickup",
       totalAmount: overrides.totalAmount ?? 5000,
       deliveryCost: overrides.deliveryCost ?? 0,
       notes: overrides.notes ?? null,
+      paymentStatus: "pending",
     },
   });
 }
 
 // =============================================
-// Order Item Factory
+// Document Item Factory (replaces createOrderItem)
 // =============================================
 
 export async function createOrderItem(
@@ -541,9 +556,9 @@ export async function createOrderItem(
   const price = overrides.price ?? 1000;
   const total = overrides.total ?? quantity * price;
 
-  return db.orderItem.create({
+  return db.documentItem.create({
     data: {
-      orderId,
+      documentId: orderId,
       productId,
       variantId: overrides.variantId ?? null,
       quantity,

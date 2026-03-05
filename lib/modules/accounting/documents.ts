@@ -37,6 +37,8 @@ const DOC_TYPE_NAME: Record<DocumentType, string> = {
 const DOC_STATUS_NAME: Record<DocumentStatus, string> = {
   draft: "Черновик",
   confirmed: "Подтверждён",
+  shipped: "Отправлен",
+  delivered: "Доставлен",
   cancelled: "Отменён",
 };
 

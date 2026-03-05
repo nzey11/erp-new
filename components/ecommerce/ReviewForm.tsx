@@ -19,7 +19,8 @@ import { cn } from "@/lib/shared/utils";
 interface ReviewFormProps {
   productId: string;
   productName: string;
-  orderId?: string;
+  orderId?: string;      // Legacy - will be removed
+  documentId?: string;   // New: link to Document (sales_order)
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -29,6 +30,7 @@ export function ReviewForm({
   productId,
   productName,
   orderId,
+  documentId,
   open,
   onOpenChange,
   onSuccess,
@@ -57,6 +59,7 @@ export function ReviewForm({
           title: title.trim() || undefined,
           comment: comment.trim() || undefined,
           orderId: orderId || undefined,
+          documentId: documentId || undefined,
         }),
       });
 

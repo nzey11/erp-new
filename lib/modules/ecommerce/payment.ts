@@ -1,36 +1,31 @@
-/** Точка Банк (T-Bank) payment integration. Placeholder for real integration. */
+/** T-Bank (T-Bank) payment integration. Placeholder for real integration. */
 
 import crypto from "crypto";
 import { db } from "@/lib/shared/db";
+import { confirmOrderPayment } from "@/lib/modules/accounting/ecom-orders";
 
-interface PaymentLinkResult {
-  paymentUrl: string;
+interface PaymentResult {
+  order: {
+    id: string;
+    number: string;
+    totalAmount: number;
+    paymentStatus: string;
+    paidAt: Date | null;
+  } | null;
+  message: string;
   externalId: string;
+  status: "success" | "failed" | string;
 }
 
-/** Create a payment link via Точка Банк acquiring API */
-export async function createPaymentLink(
-  orderId: string,
-  orderNumber: string,
-  amount: number,
-  returnUrl: string
-): Promise<PaymentLinkResult> {
-  // TODO: Replace with real Точка Банк API integration
-  // const customerCode = process.env.TOCHKA_CUSTOMER_CODE;
-  // const merchantId = process.env.TOCHKA_MERCHANT_ID;
-  // const accessToken = process.env.TOCHKA_ACCESS_TOKEN;
+type PaymentMethod = "tochka" | "cash";
 
-  // For now, return a stub
-  const externalId = `tochka_${orderId}_${Date.now()}`;
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  tochka: "Точка Банк",
+  cash: "При получении",
+};
 
-  return {
-    paymentUrl: `${returnUrl}?payment=success&orderId=${orderId}`,
-    externalId,
-  };
-}
-
-/** Verify Точка Банк webhook signature */
-export function verifyWebhookSignature(payload: string, signature: string): boolean {
+/** Verify T-Bank webhook signature */
+export function verifyTochkaSignature(payload: string, signature: string): boolean {
   const secret = process.env.TOCHKA_WEBHOOK_SECRET;
   if (!secret) return false;
 
@@ -39,20 +34,57 @@ export function verifyWebhookSignature(payload: string, signature: string): bool
 }
 
 /** Process payment webhook */
-export async function handlePaymentWebhook(externalId: string, status: "success" | "failed") {
-  const order = await db.order.findFirst({
+export async function handlePaymentWebhook(externalId: string, status: "success" | "failed"): Promise<PaymentResult> {
+  // Find document by payment external ID
+  const document = await db.document.findFirst({
     where: { paymentExternalId: externalId },
   });
 
-  if (!order) throw new Error("Order not found for payment");
+  if (!document) {
+    throw new Error("Order not found for payment");
+  }
+
+  if (document.type !== "sales_order") {
+    throw new Error("Document is not a sales order");
+  }
 
   if (status === "success") {
-    const { confirmOrderPayment } = await import("./orders");
-    await confirmOrderPayment(order.id, externalId);
-  } else {
-    await db.order.update({
-      where: { id: order.id },
-      data: { paymentStatus: "failed" },
+    // Use new accounting module to confirm payment
+    await confirmOrderPayment({
+      documentId: document.id,
+      paymentExternalId: externalId,
+      paymentMethod: "tochka",
     });
+
+    return {
+      order: document,
+      message: "Платёж подтверждён",
+      externalId,
+      status: "success",
+    };
+  } else {
+    // Payment failed
+    await db.document.update({
+      where: { id: document.id },
+      data: {
+        paymentStatus: "failed",
+      },
+    });
+
+    return {
+      order: document,
+      message: "Платёж не прошёл",
+      externalId,
+      status: "failed",
+    };
   }
+}
+
+/** Get payment by external ID */
+export async function getPaymentByExternalId(externalId: string) {
+  const payment = await db.document.findFirst({
+    where: { paymentExternalId: externalId },
+  });
+
+  return payment;
 }

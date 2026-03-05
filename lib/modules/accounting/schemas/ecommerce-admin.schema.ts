@@ -1,9 +1,16 @@
 import { z } from "zod";
 
 // PUT /api/accounting/ecommerce/orders/[id]
+// Status values map to Document operations:
+// - "draft" → draft status
+// - "confirmed" → confirmed status (after payment)
+// - "shipped" → set shippedAt timestamp
+// - "delivered" → set deliveredAt timestamp
+// - "cancelled" → cancelled status
+// - "paid" → set paymentStatus=paid (backwards compat)
 export const updateOrderStatusSchema = z.object({
   status: z.enum(
-    ["pending", "paid", "processing", "shipped", "delivered", "cancelled"],
+    ["draft", "confirmed", "shipped", "delivered", "cancelled", "paid"],
     { message: "Некорректный статус заказа" }
   ),
 });

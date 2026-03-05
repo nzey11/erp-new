@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
           warehouse: { select: { id: true, name: true } },
           targetWarehouse: { select: { id: true, name: true } },
           counterparty: { select: { id: true, name: true } },
+          customer: { select: { id: true, name: true, phone: true, telegramUsername: true } },
           _count: { select: { items: true } },
         },
         orderBy: { date: "desc" },

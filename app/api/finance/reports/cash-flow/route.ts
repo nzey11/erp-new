@@ -10,7 +10,12 @@ export async function GET(request: NextRequest) {
 
     const query = parseQuery(request, dateRangeSchema);
 
-    const report = await generateCashFlow(new Date(query.dateFrom), new Date(query.dateTo));
+    // Parse dateTo as end-of-day to include all entries on that date
+    const dateFrom = new Date(query.dateFrom);
+    const dateTo = new Date(query.dateTo);
+    dateTo.setUTCHours(23, 59, 59, 999);
+
+    const report = await generateCashFlow(dateFrom, dateTo);
 
     return NextResponse.json(report);
   } catch (error) {
