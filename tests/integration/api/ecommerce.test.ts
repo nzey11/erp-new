@@ -76,7 +76,6 @@ describe("API: E-commerce Cart & Orders", () => {
     it("should return empty cart for new customer", async () => {
       mockCustomer(customer);
 
-      const req = createTestRequest("/api/ecommerce/cart");
       const res = await getCart();
       expect(res.status).toBe(200);
 
@@ -90,7 +89,6 @@ describe("API: E-commerce Cart & Orders", () => {
       await createSalePrice(product.id, { price: 5000 });
       await createCartItem(customer.id, product.id, { priceSnapshot: 5000, quantity: 2 });
 
-      const req = createTestRequest("/api/ecommerce/cart");
       const res = await getCart();
       expect(res.status).toBe(200);
 
@@ -102,7 +100,6 @@ describe("API: E-commerce Cart & Orders", () => {
 
     it("should reject unauthenticated", async () => {
       mockNoCustomer();
-      const req = createTestRequest("/api/ecommerce/cart");
       const res = await getCart();
       expect(res.status).toBe(401);
     });
