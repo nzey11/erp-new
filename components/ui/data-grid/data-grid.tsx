@@ -134,6 +134,7 @@ export function DataGrid<TData>({
     ? [selectionColumn as typeof columns[number], ...columns]
     : columns;
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns: allColumns,

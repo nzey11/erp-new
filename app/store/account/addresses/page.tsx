@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, MapPin, Plus, Pencil, Trash2, Check } from "lucide-react";
@@ -49,11 +49,7 @@ export default function AddressesPage() {
   });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchAddresses();
-  }, []);
-
-  const fetchAddresses = async () => {
+  const fetchAddresses = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/ecommerce/addresses");
@@ -71,7 +67,11 @@ export default function AddressesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchAddresses();
+  }, [fetchAddresses]);
 
   const openCreateDialog = () => {
     setEditingAddress(null);

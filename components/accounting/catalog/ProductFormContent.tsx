@@ -434,6 +434,7 @@ export function ProductFormContent({
               <div className="flex items-center gap-4">
                 {formImageUrl ? (
                   <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={formImageUrl} alt="Preview" className="h-20 w-20 rounded-lg object-cover border" />
                     <button type="button" className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
                       onClick={() => setFormImageUrl("")}><X className="h-3 w-3" /></button>
@@ -735,6 +736,7 @@ export function ProductFormContent({
                     <div key={s.productId} className="flex items-center justify-between px-3 py-2 text-sm">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {s.product.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={s.product.imageUrl} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
                         ) : (
                           <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">

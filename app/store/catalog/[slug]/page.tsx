@@ -327,6 +327,7 @@ export default function ProductDetailPage() {
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                   <div className="relative aspect-square bg-muted">
                     {link.product.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={link.product.imageUrl}
                         alt={link.product.name}

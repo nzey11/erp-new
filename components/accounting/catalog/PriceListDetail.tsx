@@ -253,6 +253,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       {record.product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={record.product.imageUrl}
                           alt=""
@@ -328,6 +329,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
             {selectedProduct ? (
               <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30">
                 {selectedProduct.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={selectedProduct.imageUrl}
                     alt=""
@@ -375,6 +377,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
                         onClick={() => handleSelectProduct(p)}
                       >
                         {p.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={p.imageUrl} alt="" className="h-8 w-8 rounded object-cover" />
                         ) : (
                           <div className="h-8 w-8 rounded bg-muted" />

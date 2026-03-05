@@ -115,6 +115,7 @@ export default function VariantGroupsPage() {
         const sz = r.type === "group" ? "h-8 w-8" : "h-6 w-6";
         const iconSz = r.type === "group" ? "h-4 w-4" : "h-3 w-3";
         return url ? (
+         // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt="" className={`${sz} rounded object-cover`} />
         ) : (
           <div className={`${sz} rounded bg-muted flex items-center justify-center`}>

@@ -193,6 +193,7 @@ export function VariantGroupsPanel() {
                       </TableCell>
                       <TableCell>
                         {group.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={group.imageUrl} alt="" className="h-8 w-8 rounded object-cover" />
                         ) : (
                           <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
@@ -240,6 +241,7 @@ export function VariantGroupsPanel() {
                         <TableCell></TableCell>
                         <TableCell>
                           {variant.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={variant.imageUrl} alt="" className="h-6 w-6 rounded object-cover" />
                           ) : (
                             <div className="h-6 w-6 rounded bg-muted flex items-center justify-center">

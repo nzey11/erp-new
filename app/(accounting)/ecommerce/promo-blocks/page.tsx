@@ -215,6 +215,7 @@ export default function PromoBlocksPage() {
                 <TableRow key={block.id}>
                   <TableCell>
                     {block.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={block.imageUrl}
                         alt={block.title}

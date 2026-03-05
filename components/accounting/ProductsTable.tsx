@@ -273,6 +273,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
       enableSorting: false,
       cell: ({ row }) =>
         row.original.imageUrl ? (
+         // eslint-disable-next-line @next/next/no-img-element
           <img src={row.original.imageUrl} alt={row.original.name} className="h-8 w-8 rounded object-cover" />
         ) : (
           <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
