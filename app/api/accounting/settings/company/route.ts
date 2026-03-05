@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
-import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
+import { requireAuth, requirePermission, handleAuthError } from "@/lib/shared/authorization";
 
 export async function GET() {
   try {
-    await requirePermission("settings:read");
+    await requireAuth();
 
     let settings = await db.companySettings.findFirst();
     if (!settings) {
