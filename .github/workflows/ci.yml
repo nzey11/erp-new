@@ -110,42 +110,30 @@ jobs:
             .
           echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
 
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
       - name: Upload archive to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: root
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: deploy.tar.gz
-          target: /tmp/
-          timeout: 120s
-          command_timeout: 30m
+        run: scp -i ~/.ssh/deploy_key deploy.tar.gz root@${{ secrets.DEPLOY_HOST }}:/tmp/
 
       - name: Deploy on server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: root
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          timeout: 120s
-          command_timeout: 30m
-          script: |
-            set -e
-            cd /var/www/listopt-erp
-            # Clean up old Next.js build and deleted files
-            rm -rf .next
-            rm -rf app/
-            rm -rf components/
-            rm -rf lib/
-            rm -rf prisma/
-            # Extract new archive
-            tar -xzf /tmp/deploy.tar.gz
-            npm ci
-            npx prisma generate
-            npx prisma db push --skip-generate
-            npx tsx prisma/seed-accounts.ts
-            npx next build
-            pm2 restart listopt-erp --update-env
-            rm -f /tmp/deploy.tar.gz
-            echo "Deploy complete. PM2 status:"
-            pm2 list
+        run: |
+          ssh -i ~/.ssh/deploy_key root@${{ secrets.DEPLOY_HOST }} bash << 'ENDSSH'
+          set -e
+          cd /var/www/listopt-erp
+          rm -rf .next app/ components/ lib/ prisma/
+          tar -xzf /tmp/deploy.tar.gz
+          npm ci
+          npx prisma generate
+          npx prisma db push --skip-generate
+          npx tsx prisma/seed-accounts.ts
+          npx next build
+          pm2 restart listopt-erp --update-env
+          rm -f /tmp/deploy.tar.gz
+          echo "Deploy complete."
+          pm2 list
+          ENDSSH
