@@ -76,12 +76,11 @@ export async function POST(request: NextRequest) {
         // Confirm the document
         const confirmedDoc = await db.document.update({
           where: { id },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           data: {
-            status: "confirmed",
+            status: "confirmed" as const,
             confirmedAt: new Date(),
             confirmedBy: session?.username ?? null,
-          } as any,
+          },
           include: { items: true },
         });
 

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -28,14 +27,6 @@ interface Unit {
   id: string;
   name: string;
   shortName: string;
-  isActive: boolean;
-}
-
-interface Warehouse {
-  id: string;
-  name: string;
-  address: string | null;
-  responsibleName: string | null;
   isActive: boolean;
 }
 

@@ -42,6 +42,10 @@ next-env.d.ts
 
 /lib/generated/prisma
 
+# sqlite dev db
+prisma/dev.db
+prisma/*.db-journal
+
 # nx
 .nx/
 
