@@ -129,7 +129,7 @@ jobs:
           tar -xzf /root/deploy.tar.gz
           npm ci
           npx prisma generate
-          npx prisma db push --skip-generate
+          npx prisma db push
           npx tsx prisma/seed-accounts.ts
           npx next build
           pm2 restart listopt-erp --update-env
