@@ -6,7 +6,7 @@ export class DocumentsPage {
   async goto() {
     // Note: /documents redirects to /purchases in middleware
     await this.page.goto("/purchases");
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   /** Click "+ Новый документ" button */
@@ -70,7 +70,7 @@ export class DocumentDetailPage {
 
   async goto(id: string) {
     await this.page.goto(`/documents/${id}`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   /** Click "Добавить позицию" button */
@@ -79,9 +79,15 @@ export class DocumentDetailPage {
     await this.page.waitForTimeout(300);
   }
 
-  /** Select a product in the add-item dialog (Radix Select) */
+  /** Select a product in the add-item dialog (search input + Select) */
   async selectProduct(name: string) {
-    await this.page.locator('[role="dialog"]').getByText("Выберите товар").click();
+    const dialog = this.page.locator('[role="dialog"]');
+    // Type in search input to filter products
+    await dialog.locator('input[placeholder="Поиск товара..."]').fill(name);
+    // Wait for debounce (300ms) + network
+    await this.page.waitForTimeout(600);
+    // Open the Select dropdown
+    await dialog.locator('[role="combobox"]').click();
     await this.page.getByRole("option", { name }).click();
     await this.page.waitForTimeout(300);
   }
