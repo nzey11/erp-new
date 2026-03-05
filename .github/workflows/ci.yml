@@ -128,6 +128,9 @@ jobs:
           rm -rf .next app/ components/ lib/ prisma/
           tar -xzf /root/deploy.tar.gz
           npm ci
+          set -a
+          source .env.local 2>/dev/null || source .env 2>/dev/null || true
+          set +a
           npx prisma generate
           npx prisma db push --accept-data-loss
           npx tsx prisma/seed-accounts.ts
