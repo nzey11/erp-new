@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { validationError } from "@/lib/shared/validation";
+import { logger } from "@/lib/shared/logger";
 
 /** GET /api/ecommerce/categories — Public category tree */
 export async function GET() {
@@ -41,7 +42,7 @@ export async function GET() {
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;
-    console.error("Ecommerce categories error:", error);
+    logger.error("ecommerce-categories", "Failed to fetch categories", error);
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }
 }

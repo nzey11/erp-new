@@ -4,6 +4,7 @@ import { db } from "@/lib/shared/db";
 import { signCustomerSession, CUSTOMER_COOKIE_NAME, CUSTOMER_SESSION_MAX_AGE } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { telegramAuthSchema } from "@/lib/shared/schemas/auth.schema";
+import { logger } from "@/lib/shared/logger";
 
 /** Get bot token from DB or env */
 async function getBotToken(): Promise<string | null> {
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;
-    console.error("Telegram auth error:", error);
+    logger.error("telegram-auth", "Telegram authentication failed", error);
     return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
   }
 }

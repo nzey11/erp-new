@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
+import { logger } from "@/lib/shared/logger";
 
 export async function GET(
   _request: NextRequest,
@@ -28,7 +29,7 @@ export async function GET(
       seoDescription: page.seoDescription,
     });
   } catch (error) {
-    console.error("Failed to fetch CMS page:", error);
+    logger.error("cms-pages", "Failed to fetch CMS page", error);
     return NextResponse.json(
       { error: "Не удалось загрузить страницу" },
       { status: 500 }

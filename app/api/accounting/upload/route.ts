@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, AuthorizationError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
+import { logger } from "@/lib/shared/logger";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof AuthorizationError) {
       return error.toResponse();
     }
-    console.error("Upload error:", error);
+    logger.error("upload", "File upload failed", error);
     const message = error instanceof Error ? error.message : "Ошибка загрузки файла";
     return NextResponse.json({ error: message }, { status: 500 });
   }

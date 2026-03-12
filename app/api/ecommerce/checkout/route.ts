@@ -3,6 +3,7 @@ import { db } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { checkoutSchema, createSalesOrderFromCart } from "@/lib/modules/accounting";
+import { logger } from "@/lib/shared/logger";
 
 /** POST /api/ecommerce/checkout — Create order from cart */
 export async function POST(request: NextRequest) {
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;
-    console.error("Checkout error:", error);
+    logger.error("checkout", "Checkout failed", error);
     return handleCustomerAuthError(error);
   }
 }

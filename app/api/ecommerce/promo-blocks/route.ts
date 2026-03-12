@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { validationError } from "@/lib/shared/validation";
+import { logger } from "@/lib/shared/logger";
 
 /** GET /api/ecommerce/promo-blocks — Active promo blocks */
 export async function GET() {
@@ -13,7 +14,7 @@ export async function GET() {
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;
-    console.error("Promo blocks error:", error);
+    logger.error("promo-blocks", "Failed to fetch promo blocks", error);
     return NextResponse.json({ error: "Failed to fetch promo blocks" }, { status: 500 });
   }
 }

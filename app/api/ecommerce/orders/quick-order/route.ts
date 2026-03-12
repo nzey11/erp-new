@@ -3,6 +3,7 @@ import { db } from "@/lib/shared/db";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { quickOrderSchema } from "@/lib/modules/ecommerce/schemas/quick-order.schema";
 import { createSalesOrderFromCart } from "@/lib/modules/accounting";
+import { logger } from "@/lib/shared/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;
-    console.error("Quick order error:", error);
+    logger.error("quick-order", "Quick order failed", error);
     return NextResponse.json(
       { error: "Не удалось создать заказ" },
       { status: 500 }

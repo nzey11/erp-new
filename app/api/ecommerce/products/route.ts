@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryStorefrontProductsSchema } from "@/lib/modules/ecommerce/schemas/products.schema";
+import { logger } from "@/lib/shared/logger";
 
 /** GET /api/ecommerce/products — Public product listing */
 export async function GET(request: NextRequest) {
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;
-    console.error("Ecommerce products error:", error);
+    logger.error("ecommerce-products", "Failed to fetch products", error);
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }

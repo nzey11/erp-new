@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
+import { logger } from "@/lib/shared/logger";
 
 export async function GET(
   _request: NextRequest,
@@ -97,7 +98,7 @@ export async function GET(
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error("Failed to fetch related products:", error);
+    logger.error("related-products", "Failed to fetch related products", error);
     return NextResponse.json({ data: [] });
   }
 }

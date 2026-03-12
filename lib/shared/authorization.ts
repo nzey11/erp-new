@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "./auth";
+import { logger } from "./logger";
 import type { ErpRole } from "@/lib/generated/prisma/client";
 
 export type { ErpRole };
@@ -153,6 +154,6 @@ export function handleAuthError(error: unknown): NextResponse {
   if (error instanceof AuthorizationError) {
     return error.toResponse();
   }
-  console.error("Unexpected auth error:", error);
+  logger.error("auth", "Unexpected auth error", error);
   return NextResponse.json({ error: "Ошибка авторизации" }, { status: 500 });
 }

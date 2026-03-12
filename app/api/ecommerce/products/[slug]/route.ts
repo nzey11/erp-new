@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { validationError } from "@/lib/shared/validation";
+import { logger } from "@/lib/shared/logger";
 
 /** GET /api/ecommerce/products/[slug] — Product detail by slug */
 export async function GET(
@@ -210,7 +211,7 @@ export async function GET(
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;
-    console.error("Product detail error:", error);
+    logger.error("product-detail", "Failed to fetch product", error);
     return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
   }
 }

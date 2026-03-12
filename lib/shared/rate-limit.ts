@@ -1,4 +1,26 @@
 /**
+ * ⚠️ WARNING: In-Memory Rate Limiter
+ * 
+ * This implementation uses an in-memory Map for rate limiting.
+ * It works for single-instance deployments but has limitations:
+ * 
+ * - NOT suitable for multi-instance/serverless deployments
+ * - Rate limits are NOT shared between instances
+ * - State is LOST on server restart
+ * 
+ * For production with multiple instances, use Redis-based solution:
+ * - @upstash/ratelimit (recommended for Vercel/serverless)
+ * - redis-rate-limiter
+ * - express-rate-limit with Redis store
+ * 
+ * Required env vars for Redis:
+ * - UPSTASH_REDIS_REST_URL
+ * - UPSTASH_REDIS_REST_TOKEN
+ * 
+ * See: https://github.com/upstash/ratelimit
+ */
+
+/**
  * Simple in-memory rate limiter
  * For production, consider using Redis-based solution like @upstash/ratelimit
  */

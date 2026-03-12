@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
+import { logger } from "@/lib/shared/logger";
 
 /** GET /api/integrations/telegram - Get public Telegram settings (no auth required) */
 export async function GET() {
@@ -22,7 +23,7 @@ export async function GET() {
       enableAdminLogin: settings.enableAdminLogin ?? false,
     });
   } catch (error) {
-    console.error("Error fetching Telegram settings:", error);
+    logger.error("telegram-integration", "Failed to fetch Telegram settings", error);
     return NextResponse.json({ enabled: false });
   }
 }

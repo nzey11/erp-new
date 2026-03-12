@@ -1004,3 +1004,18 @@ model CompanySettings {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// =============================================
+// SYSTEM: Webhook Idempotency
+// =============================================
+
+model ProcessedWebhook {
+  id          String   @id @default(cuid())
+  source      String   // "tochka", "telegram", etc.
+  externalId  String   // Unique ID from the source
+  payload     Json     // Original payload for debugging
+  processedAt DateTime @default(now())
+
+  @@unique([source, externalId])
+  @@index([source, processedAt])
+}

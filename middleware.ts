@@ -1,4 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  requiresCsrfProtection,
+  isCsrfExemptPath,
+  validateCsrf,
+} from "@/lib/shared/csrf";
+import { rateLimit, getClientIp } from "@/lib/shared/rate-limit";
+import { logger } from "@/lib/shared/logger";
+import { randomUUID } from "crypto";
+
+const REQUEST_ID_HEADER = "X-Request-Id";
 
 // Routes that require NO authentication at all
 const PUBLIC_ROUTES = ["/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/integrations"];
@@ -26,8 +36,17 @@ const REDIRECTS: Record<string, string> = {
   "/reports": "/finance",
 };
 
+/** Add request ID header to response */
+function withRequestId(response: NextResponse, requestId: string): NextResponse {
+  response.headers.set(REQUEST_ID_HEADER, requestId);
+  return response;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Generate request ID for tracing
+  const requestId = request.headers.get(REQUEST_ID_HEADER) || randomUUID();
 
   // Static files and Next.js internals
   if (
@@ -35,32 +54,34 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/favicon") ||
     pathname.includes(".")
   ) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set(REQUEST_ID_HEADER, requestId);
+    return response;
   }
 
   // Public routes - no auth required
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // Webhook routes - public, no auth
   if (WEBHOOK_ROUTES.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // Customer auth routes - public, handle their own auth
   if (CUSTOMER_AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // Storefront homepage
   if (pathname === "/store" || pathname === "/store/") {
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // Public storefront pages and APIs
   if (STOREFRONT_PUBLIC.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // Customer-protected storefront pages
@@ -68,20 +89,20 @@ export function middleware(request: NextRequest) {
     const customerSession = request.cookies.get("customer_session")?.value;
     if (!customerSession) {
       if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return withRequestId(NextResponse.json({ error: "Unauthorized" }, { status: 401 }), requestId);
       }
       return NextResponse.redirect(new URL("/store/auth/telegram", request.url));
     }
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // E-commerce API routes requiring customer auth
   if (ECOMMERCE_CUSTOMER_API.some((route) => pathname.startsWith(route))) {
     const customerSession = request.cookies.get("customer_session")?.value;
     if (!customerSession) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return withRequestId(NextResponse.json({ error: "Unauthorized" }, { status: 401 }), requestId);
     }
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // ---- Everything below is ERP (accounting) ----
@@ -90,9 +111,35 @@ export function middleware(request: NextRequest) {
   const session = request.cookies.get("session")?.value;
   if (!session) {
     if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return withRequestId(NextResponse.json({ error: "Unauthorized" }, { status: 401 }), requestId);
     }
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // CSRF Protection for ERP API routes
+  if (
+    pathname.startsWith("/api/") &&
+    requiresCsrfProtection(request.method) &&
+    !isCsrfExemptPath(pathname)
+  ) {
+    const secret = process.env.SESSION_SECRET;
+    if (secret) {
+      const csrfResult = validateCsrf(request, secret);
+      if (!csrfResult.valid) {
+        logger.warn("csrf", "CSRF validation failed", {
+          pathname,
+          method: request.method,
+          error: csrfResult.error,
+        });
+        return withRequestId(
+          NextResponse.json(
+            { error: "CSRF validation failed", details: csrfResult.error },
+            { status: 403 }
+          ),
+          requestId
+        );
+      }
+    }
   }
 
   // Handle old route redirects (only for authenticated ERP users)
@@ -100,7 +147,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(REDIRECTS[pathname], request.url));
   }
 
-  return NextResponse.next();
+  return withRequestId(NextResponse.next(), requestId);
 }
 
 export const config = {

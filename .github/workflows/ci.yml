@@ -132,7 +132,7 @@ jobs:
           source .env.local 2>/dev/null || source .env 2>/dev/null || true
           set +a
           npx prisma generate
-          npx prisma db push --accept-data-loss
+          npx prisma migrate deploy
           npx tsx prisma/seed-accounts.ts
           npx next build
           pm2 restart listopt-erp --update-env
