@@ -141,6 +141,7 @@ model Product {
   childVariants Product[] @relation("ProductMasterVariants")
 
   stockRecords      StockRecord[]
+  stockMovements    StockMovement[]
   documentItems     DocumentItem[]
   purchasePrices    PurchasePrice[]
   salePrices        SalePrice[]
@@ -242,6 +243,7 @@ model ProductVariant {
   cartItems      CartItem[]
   orderItems     OrderItem[]      // Legacy - will be removed
   documentItems  DocumentItem[]   // New: link to Document items
+  stockMovements StockMovement[]  // Stock movements for this variant
 
   @@unique([productId, optionId])
   @@index([productId])
@@ -374,6 +376,7 @@ model Warehouse {
   updatedAt       DateTime @updatedAt
 
   stockRecords      StockRecord[]
+  stockMovements    StockMovement[]
   documents         Document[]  @relation("WarehouseDocuments")
   incomingTransfers Document[]  @relation("TargetWarehouseDocuments")
 
@@ -394,6 +397,43 @@ model StockRecord {
 
   @@unique([warehouseId, productId])
   @@index([productId])
+}
+
+// =============================================
+// ERP: Stock Movements (immutable audit log)
+// =============================================
+
+enum MovementType {
+  receipt       // Приход (stock_receipt, incoming_shipment, customer_return)
+  write_off     // Списание
+  shipment      // Отгрузка (outgoing_shipment)
+  return        // Возврат поставщику
+  transfer_out  // Перемещение: исходящий склад
+  transfer_in   // Перемещение: целевой склад
+  adjustment    // Корректировка по инвентаризации
+}
+
+model StockMovement {
+  id             String       @id @default(cuid())
+  documentId     String
+  productId      String
+  warehouseId    String
+  variantId      String?
+  quantity       Float        // Положительное = приход, отрицательное = расход
+  cost           Float        // Себестоимость единицы
+  totalCost      Float        // quantity * cost
+  type           MovementType
+  createdAt      DateTime     @default(now())
+
+  document  Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product   Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  variant   ProductVariant?  @relation(fields: [variantId], references: [id])
+
+  @@index([documentId])
+  @@index([productId, warehouseId])
+  @@index([warehouseId, createdAt])
+  @@index([productId, createdAt])
 }
 
 // =============================================
@@ -436,11 +476,13 @@ model Document {
   confirmedAt       DateTime?
   confirmedBy       String?
   cancelledAt       DateTime?
+  adjustmentsCreated Boolean @default(false) // Для inventory_count: корректировки успешно созданы
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
   items             DocumentItem[]
   payments          Payment[]
+  stockMovements    StockMovement[]
 
   // E-commerce order fields (for type = sales_order)
   customerId        String?

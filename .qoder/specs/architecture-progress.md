@@ -92,25 +92,38 @@ This file tracks the implementation progress of architecture improvements. Each 
 
 ## Phase 1: Architecture Cleanup
 
-**Status:** 🔴 Not Started  
-**Priority:** High  
-**Duration:** 4-6 weeks  
+**Status:** 🟡 In Progress
+**Priority:** High
+**Duration:** 4-6 weeks
 **Risk Level:** Medium
 
 ### 1.1 Stock Movements as Source of Truth
 
-- [ ] Add `StockMovement` model to `prisma/schema.prisma`
-- [ ] Create migration
-- [ ] Create `lib/modules/inventory/stock-movement.service.ts`
-- [ ] Implement `createMovementsForDocument()`
-- [ ] Implement `recalculateProjection()`
-- [ ] Update confirm flow to use stock movements
+- [x] Add `StockMovement` model to `prisma/schema.prisma`
+- [x] Add `MovementType` enum to schema
+- [x] Add relations to Document, Product, Warehouse, ProductVariant
+- [x] Create migration file
+- [x] Create `lib/modules/accounting/stock-movements.ts`
+- [x] Implement movement type mapping rules
+- [x] Implement `createMovementsForDocument()` with idempotency
+- [x] Implement `documentHasMovements()` for idempotency check
+- [x] Implement `createReversingMovements()` for cancel flow
+- [x] Implement `calculateStockFromMovements()` projection
+- [x] Implement `reconcileStockRecord()` for StockRecord sync
+- [x] Update confirm flow to create stock movements
+- [ ] Apply migration (requires `npx prisma migrate deploy`)
+- [ ] Generate Prisma client (requires `npx prisma generate`)
 - [ ] Update cancel flow to create reversing movements
 - [ ] Add tests for stock calculations
 - [ ] Verify historical data can be reconstructed
 
 **New files:**
-- `lib/modules/inventory/stock-movement.service.ts`
+- `lib/modules/accounting/stock-movements.ts`
+- `prisma/migrations/20260312_add_stock_movements/migration.sql`
+
+**Files modified:**
+- `prisma/schema.prisma` (StockMovement model, MovementType enum, relations)
+- `app/api/accounting/documents/[id]/confirm/route.ts` (createMovementsForDocument call)
 
 ### 1.2 Simplify confirm() Operation
 
@@ -292,7 +305,7 @@ This file tracks the implementation progress of architecture improvements. Each 
 | Phase | Status | Completion | Started | Completed |
 |-------|--------|------------|---------|-----------|
 | P0 | 🟢 Completed | 85% | 2026-03-12 | 2026-03-12 |
-| P1 | 🔴 Not Started | 0% | - | - |
+| P1 | 🟡 In Progress | 20% | 2026-03-12 | - |
 | P2 | 🔴 Not Started | 0% | - | - |
 | P3 | 🔴 Not Started | 0% | - | - |
 
@@ -302,10 +315,11 @@ This file tracks the implementation progress of architecture improvements. Each 
 - 🟢 Completed
 - ⚠️ Blocked
 
-**P0 Remaining (Manual):**
-- Create Prisma migration
-- Test on staging
-- Add tests for CSRF and idempotency
+**P1.1 Remaining (Manual):**
+- Apply migration: `npx prisma migrate deploy`
+- Generate client: `npx prisma generate`
+- Update cancel flow for reversing movements
+- Add tests for stock movements
 
 ---
 

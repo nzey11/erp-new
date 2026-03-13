@@ -6,9 +6,22 @@ import {
 } from "@/lib/shared/csrf";
 import { rateLimit, getClientIp } from "@/lib/shared/rate-limit";
 import { logger } from "@/lib/shared/logger";
-import { randomUUID } from "crypto";
 
 const REQUEST_ID_HEADER = "X-Request-Id";
+
+/** Generate a UUID compatible with edge runtime */
+function generateUUID(): string {
+  // Use Web Crypto API if available (edge runtime)
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 // Routes that require NO authentication at all
 const PUBLIC_ROUTES = ["/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/integrations"];
@@ -46,7 +59,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Generate request ID for tracing
-  const requestId = request.headers.get(REQUEST_ID_HEADER) || randomUUID();
+  const requestId = request.headers.get(REQUEST_ID_HEADER) || generateUUID();
 
   // Static files and Next.js internals
   if (

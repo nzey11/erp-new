@@ -7,6 +7,7 @@ import { affectsStock, affectsBalance, isStockDecrease, isStockIncrease, isInven
 import { updateStockForDocument, checkStockAvailability, updateAverageCostOnReceipt, updateAverageCostOnTransfer, updateTotalCostValue } from "@/lib/modules/accounting/stock";
 import { recalculateBalance } from "@/lib/modules/accounting/balance";
 import { autoPostDocument } from "@/lib/modules/accounting/journal";
+import { createMovementsForDocument, documentHasMovements } from "@/lib/modules/accounting/stock-movements";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -14,6 +15,8 @@ type Params = { params: Promise<{ id: string }> };
  * Create and confirm linked adjustment documents from an inventory count.
  * - write_off for items where actualQty < expectedQty (shortages)
  * - stock_receipt for items where actualQty > expectedQty (surpluses)
+ * 
+ * IDEMPOTENT: Uses adjustmentsCreated flag + DB check for existing documents.
  */
 async function createInventoryAdjustments(
   inventoryDocId: string,
@@ -21,83 +24,151 @@ async function createInventoryAdjustments(
   items: { productId: string; expectedQty: number | null; actualQty: number | null; difference: number | null; price: number }[],
   createdBy: string | null
 ) {
+  // Idempotency check 1: Get inventory document state
+  const inventoryDoc = await db.document.findUnique({
+    where: { id: inventoryDocId },
+    select: { adjustmentsCreated: true },
+  });
+  
+  if (inventoryDoc?.adjustmentsCreated) {
+    // Idempotency check 2: Verify actual documents exist (recovery after crash)
+    const existingAdjustments = await db.document.count({
+      where: {
+        linkedDocumentId: inventoryDocId,
+        type: { in: ["write_off", "stock_receipt"] },
+      },
+    });
+    
+    if (existingAdjustments > 0) {
+      // Already created, exit idempotently
+      return [];
+    }
+    // Flag set but no documents - reset flag and continue
+  }
+  
+  // Idempotency check 3: Check for existing documents (even if flag not set)
+  const existingDocs = await db.document.findMany({
+    where: {
+      linkedDocumentId: inventoryDocId,
+      type: { in: ["write_off", "stock_receipt"] },
+    },
+  });
+  
+  if (existingDocs.length > 0) {
+    // Documents exist - just set flag and exit
+    await db.document.update({
+      where: { id: inventoryDocId },
+      data: { adjustmentsCreated: true },
+    });
+    return existingDocs.map((d) => d.id);
+  }
+
   const shortages = items.filter((i) => (i.difference ?? 0) < 0);
   const surpluses = items.filter((i) => (i.difference ?? 0) > 0);
   const createdDocs: string[] = [];
 
-  // Create write_off for shortages
-  if (shortages.length > 0) {
-    const number = await generateDocumentNumber("write_off");
-    const writeOffItems = shortages.map((item) => {
-      const qty = Math.abs(item.difference ?? 0);
-      return {
-        productId: item.productId,
-        quantity: qty,
-        price: item.price,
-        total: qty * item.price,
-      };
-    });
-    const totalAmount = writeOffItems.reduce((sum, i) => sum + i.total, 0);
+  // Use transaction for atomicity
+  await db.$transaction(async (tx) => {
+    // Create write_off for shortages
+    if (shortages.length > 0) {
+      const number = await generateDocumentNumber("write_off");
+      const writeOffItems = shortages.map((item) => {
+        const qty = Math.abs(item.difference ?? 0);
+        return {
+          productId: item.productId,
+          quantity: qty,
+          price: item.price,
+          total: qty * item.price,
+        };
+      });
+      const totalAmount = writeOffItems.reduce((sum, i) => sum + i.total, 0);
 
-    const writeOff = await db.document.create({
-      data: {
-        number,
-        type: "write_off",
-        status: "confirmed",
-        date: new Date(),
-        warehouseId,
-        linkedDocumentId: inventoryDocId,
-        totalAmount,
-        description: `Списание по инвентаризации`,
-        createdBy,
-        confirmedAt: new Date(),
-        items: { create: writeOffItems },
-      },
-    });
-    createdDocs.push(writeOff.id);
-
-    // Update stock for write-off
-    await updateStockForDocument(writeOff.id);
-    for (const item of writeOffItems) {
-      await updateTotalCostValue(warehouseId, item.productId);
+      const writeOff = await tx.document.create({
+        data: {
+          number,
+          type: "write_off",
+          status: "confirmed",
+          date: new Date(),
+          warehouseId,
+          linkedDocumentId: inventoryDocId,
+          totalAmount,
+          description: `Списание по инвентаризации`,
+          createdBy,
+          confirmedAt: new Date(),
+          adjustmentsCreated: true, // These are adjustment docs
+          items: { create: writeOffItems },
+        },
+      });
+      createdDocs.push(writeOff.id);
     }
+
+    // Create stock_receipt for surpluses
+    if (surpluses.length > 0) {
+      const number = await generateDocumentNumber("stock_receipt");
+      const receiptItems = surpluses.map((item) => {
+        const qty = item.difference ?? 0;
+        return {
+          productId: item.productId,
+          quantity: qty,
+          price: item.price,
+          total: qty * item.price,
+        };
+      });
+      const totalAmount = receiptItems.reduce((sum, i) => sum + i.total, 0);
+
+      const receipt = await tx.document.create({
+        data: {
+          number,
+          type: "stock_receipt",
+          status: "confirmed",
+          date: new Date(),
+          warehouseId,
+          linkedDocumentId: inventoryDocId,
+          totalAmount,
+          description: `Оприходование по инвентаризации`,
+          createdBy,
+          confirmedAt: new Date(),
+          adjustmentsCreated: true, // These are adjustment docs
+          items: { create: receiptItems },
+        },
+      });
+      createdDocs.push(receipt.id);
+    }
+
+    // Set flag on inventory document (at the end of transaction)
+    if (createdDocs.length > 0) {
+      await tx.document.update({
+        where: { id: inventoryDocId },
+        data: { adjustmentsCreated: true },
+      });
+    }
+  });
+
+  // Update stock projections (outside transaction - non-critical)
+  for (const docId of createdDocs) {
+    await updateStockForDocument(docId);
   }
-
-  // Create stock_receipt for surpluses
-  if (surpluses.length > 0) {
-    const number = await generateDocumentNumber("stock_receipt");
-    const receiptItems = surpluses.map((item) => {
-      const qty = item.difference ?? 0;
-      return {
-        productId: item.productId,
-        quantity: qty,
-        price: item.price,
-        total: qty * item.price,
-      };
+  
+  // Create stock movements for adjustment documents
+  for (const docId of createdDocs) {
+    const adjDoc = await db.document.findUnique({
+      where: { id: docId },
+      include: { items: true },
     });
-    const totalAmount = receiptItems.reduce((sum, i) => sum + i.total, 0);
-
-    const receipt = await db.document.create({
-      data: {
-        number,
-        type: "stock_receipt",
-        status: "confirmed",
-        date: new Date(),
-        warehouseId,
-        linkedDocumentId: inventoryDocId,
-        totalAmount,
-        description: `Оприходование по инвентаризации`,
-        createdBy,
-        confirmedAt: new Date(),
-        items: { create: receiptItems },
-      },
-    });
-    createdDocs.push(receipt.id);
-
-    // Update stock for receipt
-    await updateStockForDocument(receipt.id);
-    for (const item of receiptItems) {
-      await updateAverageCostOnReceipt(warehouseId, item.productId, item.quantity, item.price);
+    
+    if (adjDoc && adjDoc.warehouseId) {
+      await createMovementsForDocument({
+        id: adjDoc.id,
+        type: adjDoc.type,
+        warehouseId: adjDoc.warehouseId,
+        targetWarehouseId: adjDoc.targetWarehouseId,
+        items: adjDoc.items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+      });
     }
   }
 
@@ -234,6 +305,21 @@ export async function POST(_request: NextRequest, { params }: Params) {
 
     // Update stock if applicable (non-inventory documents)
     if (affectsStock(doc.type)) {
+      // Create immutable stock movements (idempotent)
+      await createMovementsForDocument({
+        id: confirmed.id,
+        type: confirmed.type,
+        warehouseId: confirmed.warehouseId,
+        targetWarehouseId: confirmed.targetWarehouseId,
+        items: doc.items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+      });
+
+      // Update StockRecord projections (legacy compatibility)
       await updateStockForDocument(id);
 
       // Update average cost based on document type

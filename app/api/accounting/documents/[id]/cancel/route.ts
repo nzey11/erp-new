@@ -45,6 +45,8 @@ export async function POST(_request: NextRequest, { params }: Params) {
 
     // Recalculate stock (cancelled doc will be excluded from calculation)
     if (affectsStock(doc.type)) {
+      // TODO: Create reversing stock movements after Prisma generate
+      // See: lib/modules/accounting/stock-movements.ts -> createReversingMovements
       await updateStockForDocument(id);
     }
 

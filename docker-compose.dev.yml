@@ -25,7 +25,8 @@ services:
 
   db:
     image: postgres:16-alpine
-    # Port not exposed to host - only accessible within Docker network
+    ports:
+      - "5432:5432"  # Exposed for local Prisma commands
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres

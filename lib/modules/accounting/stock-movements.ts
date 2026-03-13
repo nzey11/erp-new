@@ -1,0 +1,399 @@
+/**
+ * Stock Movement Service
+ * 
+ * Immutable audit log for all stock changes.
+ * Each movement records: what, where, how much, at what cost, and from which document.
+ * 
+ * Movement Rules:
+ * - stock_receipt, incoming_shipment, customer_return → receipt (IN)
+ * - write_off → write_off (OUT)
+ * - outgoing_shipment → shipment (OUT)
+ * - supplier_return → return (OUT)
+ * - stock_transfer → transfer_out (source) + transfer_in (target)
+ * - inventory_count adjustments → adjustment (±)
+ * 
+ * Idempotency:
+ * - Movements are created only once per document
+ * - Cancel creates reversing movements, never deletes
+ */
+
+import { db } from "@/lib/shared/db";
+import { DocumentType, MovementType } from "@/lib/generated/prisma";
+
+// =============================================
+// Movement Type Mapping
+// =============================================
+
+const STOCK_INCREASE_TYPES: DocumentType[] = [
+  "stock_receipt",
+  "incoming_shipment",
+  "customer_return",
+];
+
+const STOCK_DECREASE_TYPES: DocumentType[] = [
+  "write_off",
+  "outgoing_shipment",
+  "supplier_return",
+];
+
+/**
+ * Get movement type for a document.
+ * Returns null if document doesn't affect stock.
+ */
+export function getMovementTypeForDocument(
+  docType: DocumentType,
+  isTargetWarehouse: boolean = false
+): MovementType | null {
+  if (STOCK_INCREASE_TYPES.includes(docType)) {
+    return "receipt";
+  }
+  
+  if (docType === "write_off") {
+    return "write_off";
+  }
+  
+  if (docType === "outgoing_shipment") {
+    return "shipment";
+  }
+  
+  if (docType === "supplier_return") {
+    return "return";
+  }
+  
+  if (docType === "stock_transfer") {
+    return isTargetWarehouse ? "transfer_in" : "transfer_out";
+  }
+  
+  return null;
+}
+
+/**
+ * Check if document type affects stock.
+ */
+export function documentAffectsStock(docType: DocumentType): boolean {
+  return [
+    ...STOCK_INCREASE_TYPES,
+    ...STOCK_DECREASE_TYPES,
+    "stock_transfer",
+  ].includes(docType);
+}
+
+// =============================================
+// Movement Creation
+// =============================================
+
+interface CreateMovementInput {
+  documentId: string;
+  productId: string;
+  warehouseId: string;
+  variantId?: string | null;
+  quantity: number;
+  cost: number;
+  type: MovementType;
+}
+
+/**
+ * Create a single stock movement.
+ */
+async function createMovement(input: CreateMovementInput) {
+  return db.stockMovement.create({
+    data: {
+      documentId: input.documentId,
+      productId: input.productId,
+      warehouseId: input.warehouseId,
+      variantId: input.variantId,
+      quantity: input.quantity,
+      cost: input.cost,
+      totalCost: input.quantity * input.cost,
+      type: input.type,
+    },
+  });
+}
+
+/**
+ * Check if movements already exist for a document.
+ * Used for idempotency - prevents duplicate movements.
+ */
+export async function documentHasMovements(documentId: string): Promise<boolean> {
+  const count = await db.stockMovement.count({
+    where: { documentId },
+  });
+  return count > 0;
+}
+
+// =============================================
+// Aggregation Helper
+// =============================================
+
+interface AggregatedItem {
+  productId: string;
+  variantId: string | null;
+  quantity: number;
+  price: number;
+}
+
+/**
+ * Aggregate document items by (productId, variantId).
+ * This ensures one movement per unique combination, preventing unique index violations.
+ */
+function aggregateItems(items: DocumentItem[]): AggregatedItem[] {
+  const aggregated = new Map<string, AggregatedItem>();
+  
+  for (const item of items) {
+    const key = `${item.productId}:${item.variantId ?? 'null'}`;
+    const existing = aggregated.get(key);
+    
+    if (existing) {
+      // Sum quantities, use weighted average for price
+      const totalQty = existing.quantity + item.quantity;
+      const totalValue = existing.quantity * existing.price + item.quantity * item.price;
+      existing.quantity = totalQty;
+      existing.price = totalQty > 0 ? totalValue / totalQty : item.price;
+    } else {
+      aggregated.set(key, {
+        productId: item.productId,
+        variantId: item.variantId ?? null,
+        quantity: item.quantity,
+        price: item.price,
+      });
+    }
+  }
+  
+  return Array.from(aggregated.values());
+}
+
+// =============================================
+// Main API: Create Movements for Document
+// =============================================
+
+interface DocumentItem {
+  productId: string;
+  variantId?: string | null;
+  quantity: number;
+  price: number;
+}
+
+interface DocumentForMovements {
+  id: string;
+  type: DocumentType;
+  warehouseId: string | null;
+  targetWarehouseId: string | null;
+  items: DocumentItem[];
+}
+
+/**
+ * Create stock movements for a confirmed document.
+ * 
+ * IMPORTANT: This function is idempotent.
+ * If movements already exist for this document, it returns early.
+ * 
+ * @throws Error if warehouse is missing for stock-affecting document
+ */
+export async function createMovementsForDocument(
+  document: DocumentForMovements
+): Promise<{ created: number }> {
+  // Idempotency check
+  if (await documentHasMovements(document.id)) {
+    return { created: 0 };
+  }
+  
+  if (!documentAffectsStock(document.type)) {
+    return { created: 0 };
+  }
+  
+  const movements: CreateMovementInput[] = [];
+  
+  // Aggregate items to prevent duplicate movements
+  const aggregatedItems = aggregateItems(document.items);
+  
+  // Handle different document types
+  if (STOCK_INCREASE_TYPES.includes(document.type)) {
+    // IN: stock_receipt, incoming_shipment, customer_return
+    if (!document.warehouseId) {
+      throw new Error(`Warehouse required for ${document.type}`);
+    }
+    
+    const movementType = getMovementTypeForDocument(document.type);
+    if (!movementType) {
+      throw new Error(`Unknown movement type for ${document.type}`);
+    }
+    
+    for (const item of aggregatedItems) {
+      movements.push({
+        documentId: document.id,
+        productId: item.productId,
+        warehouseId: document.warehouseId,
+        variantId: item.variantId,
+        quantity: item.quantity, // Positive = IN
+        cost: item.price,
+        type: movementType,
+      });
+    }
+  } else if (STOCK_DECREASE_TYPES.includes(document.type)) {
+    // OUT: write_off, outgoing_shipment, supplier_return
+    if (!document.warehouseId) {
+      throw new Error(`Warehouse required for ${document.type}`);
+    }
+    
+    const movementType = getMovementTypeForDocument(document.type);
+    if (!movementType) {
+      throw new Error(`Unknown movement type for ${document.type}`);
+    }
+    
+    for (const item of aggregatedItems) {
+      movements.push({
+        documentId: document.id,
+        productId: item.productId,
+        warehouseId: document.warehouseId,
+        variantId: item.variantId,
+        quantity: -item.quantity, // Negative = OUT
+        cost: item.price,
+        type: movementType,
+      });
+    }
+  } else if (document.type === "stock_transfer") {
+    // Transfer: OUT from source, IN to target
+    if (!document.warehouseId || !document.targetWarehouseId) {
+      throw new Error("Both source and target warehouses required for stock_transfer");
+    }
+    
+    for (const item of aggregatedItems) {
+      // OUT from source warehouse
+      movements.push({
+        documentId: document.id,
+        productId: item.productId,
+        warehouseId: document.warehouseId,
+        variantId: item.variantId,
+        quantity: -item.quantity, // Negative = OUT
+        cost: item.price,
+        type: "transfer_out",
+      });
+      
+      // IN to target warehouse
+      movements.push({
+        documentId: document.id,
+        productId: item.productId,
+        warehouseId: document.targetWarehouseId,
+        variantId: item.variantId,
+        quantity: item.quantity, // Positive = IN
+        cost: item.price,
+        type: "transfer_in",
+      });
+    }
+  }
+  
+  // Create all movements in a transaction
+  if (movements.length > 0) {
+    await db.$transaction(
+      movements.map((m) => db.stockMovement.create({ data: m }))
+    );
+  }
+  
+  return { created: movements.length };
+}
+
+// =============================================
+// Cancel: Create Reversing Movements
+// =============================================
+
+/**
+ * Create reversing movements when a document is cancelled.
+ * 
+ * IMPORTANT: This creates NEW movements that reverse the originals.
+ * Original movements are NEVER deleted - they remain as audit history.
+ */
+export async function createReversingMovements(
+  documentId: string,
+  cancelledDocumentId: string // ID of the cancellation document (for audit trail)
+): Promise<{ created: number }> {
+  // Get original movements
+  const originalMovements = await db.stockMovement.findMany({
+    where: { documentId },
+  });
+  
+  if (originalMovements.length === 0) {
+    return { created: 0 };
+  }
+  
+  // Create reversing movements
+  const reversingMovements = originalMovements.map((m) => ({
+    documentId: cancelledDocumentId,
+    productId: m.productId,
+    warehouseId: m.warehouseId,
+    variantId: m.variantId,
+    quantity: -m.quantity, // Reverse the quantity
+    cost: m.cost,
+    type: m.type,
+  }));
+  
+  await db.$transaction(
+    reversingMovements.map((m) => db.stockMovement.create({ data: m }))
+  );
+  
+  return { created: reversingMovements.length };
+}
+
+// =============================================
+// Query Helpers
+// =============================================
+
+/**
+ * Get all movements for a product in a warehouse.
+ */
+export async function getProductMovements(
+  productId: string,
+  warehouseId: string,
+  options?: { from?: Date; to?: Date }
+) {
+  return db.stockMovement.findMany({
+    where: {
+      productId,
+      warehouseId,
+      createdAt: {
+        gte: options?.from,
+        lte: options?.to,
+      },
+    },
+    orderBy: { createdAt: "asc" },
+    include: {
+      document: {
+        select: { id: true, number: true, type: true },
+      },
+    },
+  });
+}
+
+/**
+ * Calculate stock from movements (source of truth).
+ * This is the "projection" from movements to current stock.
+ */
+export async function calculateStockFromMovements(
+  productId: string,
+  warehouseId: string
+): Promise<number> {
+  const result = await db.stockMovement.aggregate({
+    where: { productId, warehouseId },
+    _sum: { quantity: true },
+  });
+  
+  return result._sum.quantity ?? 0;
+}
+
+/**
+ * Reconcile StockRecord with movements.
+ * Updates StockRecord to match the sum of movements.
+ */
+export async function reconcileStockRecord(
+  productId: string,
+  warehouseId: string
+): Promise<number> {
+  const quantity = await calculateStockFromMovements(productId, warehouseId);
+  
+  await db.stockRecord.upsert({
+    where: { warehouseId_productId: { warehouseId, productId } },
+    update: { quantity },
+    create: { warehouseId, productId, quantity },
+  });
+  
+  return quantity;
+}
