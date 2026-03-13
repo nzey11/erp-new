@@ -34,6 +34,31 @@ export async function createUnit(
 }
 
 // =============================================
+// Tenant Factory
+// =============================================
+
+export async function createTenant(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    slug: string;
+    isActive: boolean;
+  }> = {}
+) {
+  const id = overrides.id ?? `tenant_${uniqueId()}`;
+  return db.tenant.upsert({
+    where: { id },
+    create: {
+      id,
+      name: overrides.name ?? `Tenant ${id}`,
+      slug: overrides.slug ?? id,
+      isActive: overrides.isActive ?? true,
+    },
+    update: {},
+  });
+}
+
+// =============================================
 // Warehouse Factory
 // =============================================
 
@@ -47,8 +72,12 @@ export async function createWarehouse(
 ) {
   const id = uniqueId();
 
-  // Use provided tenantId or default-tenant
-  const tenantId = overrides.tenantId ?? "default-tenant";
+  // Use provided tenantId or create default tenant
+  let tenantId = overrides.tenantId;
+  if (!tenantId) {
+    const tenant = await createTenant({ id: "default-tenant" });
+    tenantId = tenant.id;
+  }
 
   return db.warehouse.create({
     data: {
