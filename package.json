@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nx dev",
     "build": "nx build",
-    "start": "nx start",
+    "start": "next start -p 3000",
     "lint": "nx run-many -t lint",
     "test": "nx run-many -t test --parallel=1",
     "test:unit": "vitest run --config vitest.unit.config.ts",

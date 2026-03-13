@@ -87,9 +87,6 @@ jobs:
           path: test-results/
           retention-days: 7
 
-      - name: Build (affected)
-        run: npx nx affected -t build
-
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
