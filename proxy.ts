@@ -6,16 +6,15 @@ import {
 } from "@/lib/shared/csrf";
 import { rateLimit, getClientIp } from "@/lib/shared/rate-limit";
 import { logger } from "@/lib/shared/logger";
+import { verifySessionToken } from "@/lib/shared/auth";
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 
-/** Generate a UUID compatible with edge runtime */
+/** Generate a UUID */
 function generateUUID(): string {
-  // Use Web Crypto API if available (edge runtime)
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  // Fallback for environments without crypto.randomUUID
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -55,7 +54,7 @@ function withRequestId(response: NextResponse, requestId: string): NextResponse 
   return response;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Generate request ID for tracing
@@ -120,13 +119,19 @@ export async function middleware(request: NextRequest) {
 
   // ---- Everything below is ERP (accounting) ----
 
-  // Check ERP session cookie
+  // Check ERP session cookie (presence + token validity)
   const session = request.cookies.get("session")?.value;
-  if (!session) {
+  const isValidSession = session ? verifySessionToken(session) !== null : false;
+  if (!session || !isValidSession) {
     if (pathname.startsWith("/api/")) {
       return withRequestId(NextResponse.json({ error: "Unauthorized" }, { status: 401 }), requestId);
     }
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Clear stale cookie and redirect to login
+    const loginRedirect = NextResponse.redirect(new URL("/login", request.url));
+    if (session && !isValidSession) {
+      loginRedirect.cookies.set("session", "", { maxAge: 0, path: "/" });
+    }
+    return loginRedirect;
   }
 
   // CSRF Protection for ERP API routes

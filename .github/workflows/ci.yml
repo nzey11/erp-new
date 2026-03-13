@@ -132,19 +132,10 @@ jobs:
           source .env.local 2>/dev/null || source .env 2>/dev/null || true
           set +a
           npx prisma generate
-          # Baseline: mark all existing migrations as applied if _prisma_migrations table doesn't exist yet
-          # This handles the transition from db push → migrate deploy on an existing production database
-          npx prisma migrate resolve --applied 20260226_add_variant_hierarchy 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260227_add_product_image_urls 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260227_add_store_page 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260305_add_category_account_code 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260312_add_processed_webhook 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260312_add_reversing_movements 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260312_add_stock_movements 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260313_add_tenant_architecture 2>/dev/null || true
-          npx prisma migrate resolve --applied 20260313_add_warehouse_tenantId 2>/dev/null || true
+          # Run migrations (creates tables if needed, applies pending migrations)
           npx prisma migrate deploy
-          npx tsx prisma/seed-accounts.ts
+          # Seed essential data (idempotent - creates admin if not exists)
+          npx prisma db seed
           npx next build
           pm2 restart listopt-erp --update-env
           rm -f /root/deploy.tar.gz

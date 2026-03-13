@@ -9,6 +9,7 @@ import {
   resolveActiveMembershipForUser,
   MembershipResolutionError,
 } from "@/lib/modules/auth/resolve-membership";
+import { generateCsrfToken, signCsrfToken, CSRF_COOKIE_NAME } from "@/lib/shared/csrf";
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
     // 3. Create session (token still simple: just userId)
     const token = signSession(user.id);
 
+    // 4. Generate CSRF token for subsequent requests
+    const csrfToken = generateCsrfToken();
+    const signedCsrfToken = await signCsrfToken(
+      csrfToken,
+      process.env.SESSION_SECRET || "default-secret"
+    );
+
     logger.info("auth/login", "Login successful", {
       username,
       userId: user.id,
@@ -83,6 +91,15 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set("session", token, {
       httpOnly: true,
+      secure: process.env.SECURE_COOKIES === "true",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    // Set CSRF cookie (not httpOnly - needs to be readable by JS)
+    response.cookies.set(CSRF_COOKIE_NAME, signedCsrfToken, {
+      httpOnly: false,
       secure: process.env.SECURE_COOKIES === "true",
       sameSite: "lax",
       path: "/",

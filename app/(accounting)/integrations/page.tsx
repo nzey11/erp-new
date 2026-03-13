@@ -60,9 +60,18 @@ export default function IntegrationsPage() {
   const saveTelegramSettings = async () => {
     setSaving(true);
     try {
+      // Get CSRF token from cookie
+      const csrfCookie = document.cookie
+        .split(";")
+        .find((c) => c.trim().startsWith("csrf_token="));
+      const csrfToken = csrfCookie ? csrfCookie.split("=")[1]?.split(".")[0] : "";
+
       const res = await fetch("/api/accounting/integrations/telegram", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
         body: JSON.stringify(telegram.settings),
       });
 
