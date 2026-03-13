@@ -29,7 +29,10 @@
     "test:e2e:debug": "npx playwright test --debug",
     "test:e2e:headed": "npx playwright test --headed",
     "preview": "npm run build && npm start",
-    "preview:check": "npm run lint && npm run test && npm run build"
+    "preview:check": "npm run lint && npm run test && npm run build",
+    "typecheck": "tsc --noEmit",
+    "check:fast": "npm run lint && npm run typecheck && npm run test:unit",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/client": "^7.4.1",

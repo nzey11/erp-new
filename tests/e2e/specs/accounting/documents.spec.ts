@@ -1,7 +1,7 @@
 import { test, expect } from "../../fixtures/test-base";
 import { DocumentsPage, DocumentDetailPage } from "../../pages/accounting/document-form.page";
 import {
-  cleanDatabase, createWarehouse, createUnit, createProduct, createDocument,
+  cleanDatabase, ensureTenant, createWarehouse, createUnit, createProduct, createDocument,
   createDocumentItem, createStockRecord, findStockRecord, findDocument,
 } from "../../fixtures/database.fixture";
 import { E2E_TENANT_ID } from "../../fixtures/auth.fixture";
@@ -13,7 +13,8 @@ test.describe("Document Workflow", () => {
 
   test.beforeEach(async () => {
     await cleanDatabase();
-    // Warehouse must use the same tenantId as the logged-in admin user (E2E_TENANT_ID)
+    // Tenant must exist before creating warehouses
+    await ensureTenant(E2E_TENANT_ID);
     warehouse = (await createWarehouse({ name: "Основной склад", tenantId: E2E_TENANT_ID })) as typeof warehouse;
     unit = await createUnit({ name: "Штука", shortName: "шт" });
     product = (await createProduct({

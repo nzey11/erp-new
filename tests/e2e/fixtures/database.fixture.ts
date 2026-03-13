@@ -94,12 +94,23 @@ function cuid(): string {
 
 export type DbRow = Record<string, unknown> & { id: string };
 
+/** Ensure a Tenant row exists (idempotent - safe to call multiple times) */
+export async function ensureTenant(tenantId: string): Promise<void> {
+  const p = getPool();
+  await p.query(
+    `INSERT INTO "Tenant" (id, name, slug, "isActive", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, true, NOW(), NOW())
+     ON CONFLICT (id) DO NOTHING`,
+    [tenantId, `Tenant ${tenantId}`, tenantId]
+  );
+}
+
 export async function createUser(overrides: {
   username?: string;
   password?: string;
   role?: string;
   isActive?: boolean;
-  tenantId?: string;  // Optional: use a specific tenantId instead of auto-generating one
+  tenantId?: string;
 } = {}): Promise<DbRow & { tenantId: string }> {
   const id = cuid();
   const user = await insertRow("User", {
@@ -112,24 +123,16 @@ export async function createUser(overrides: {
     updatedAt: new Date(),
   });
 
-  // Create tenant and membership for the user (required for login)
+  // Use provided tenantId or auto-generate one
   const tenantId = overrides.tenantId ?? `tenant-${user.id}`;
 
-  // Only create tenant if it doesn't exist yet (idempotent for shared tenantId)
-  const existing = await queryOne<{ id: string }>(
-    `SELECT id FROM "Tenant" WHERE id = $1`,
-    [tenantId]
+  // Create tenant if it doesn't exist (idempotent)
+  await getPool().query(
+    `INSERT INTO "Tenant" (id, name, slug, "isActive", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, true, NOW(), NOW())
+     ON CONFLICT (id) DO NOTHING`,
+    [tenantId, `Tenant ${tenantId}`, tenantId]
   );
-  if (!existing) {
-    await insertRow("Tenant", {
-      id: tenantId,
-      name: `Tenant ${tenantId}`,
-      slug: tenantId,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-  }
 
   await insertRow("TenantMembership", {
     id: cuid(),
