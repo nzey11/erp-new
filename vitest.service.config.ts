@@ -24,6 +24,7 @@ export default defineConfig({
       "tests/unit/lib/cogs.test.ts",
       "tests/unit/lib/party-owner.test.ts",
       "tests/unit/lib/party-merge.test.ts",
+      "tests/unit/lib/activity-ingest.test.ts",
     ],
     // Sequential: avoid DB race conditions
     fileParallelism: false,
