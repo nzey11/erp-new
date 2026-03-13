@@ -26,28 +26,38 @@
 - [app/api/accounting/price-lists/route.ts](file://app/api/accounting/price-lists/route.ts)
 - [lib/modules/accounting/balance.ts](file://lib/modules/accounting/balance.ts)
 - [prisma/schema.prisma](file://prisma/schema.prisma)
+- [vitest.config.ts](file://vitest.config.ts)
+- [vitest.integration.config.ts](file://vitest.integration.config.ts)
+- [vitest.unit.config.ts](file://vitest.unit.config.ts)
+- [vitest.service.config.ts](file://vitest.service.config.ts)
+- [tests/setup.ts](file://tests/setup.ts)
+- [tests/helpers/test-db.ts](file://tests/helpers/test-db.ts)
+- [tests/integration/api/documents.test.ts](file://tests/integration/api/documents.test.ts)
+- [tests/unit/lib/documents.test.ts](file://tests/unit/lib/documents.test.ts)
+- [tests/unit/lib/stock-movements.test.ts](file://tests/unit/lib/stock-movements.test.ts)
+- [package.json](file://package.json)
 </cite>
 
 ## Update Summary
 **Changes Made**
-- Added comprehensive documentation for the new document confirmation service with transactional guarantees
-- Updated state management documentation with the centralized document state machine
-- Restructured inventory and finance modules with domain-specific organization
-- Added new inventory adjustment workflow for inventory counts
-- Enhanced stock management with improved cost calculation and movement tracking
-- Updated architecture diagrams to reflect the new modular structure
+- Enhanced testing infrastructure documentation with detailed Vitest configuration breakdown
+- Added comprehensive coverage of the multi-tier testing strategy (unit, service, integration)
+- Updated test execution patterns and configuration options
+- Documented database cleanup and isolation mechanisms
+- Added testing best practices and troubleshooting guidance
 
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
 3. [Core Components](#core-components)
 4. [Architecture Overview](#architecture-overview)
-5. [Detailed Component Analysis](#detailed-component-analysis)
-6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Conclusion](#conclusion)
-10. [Appendices](#appendices)
+5. [Testing Infrastructure](#testing-infrastructure)
+6. [Detailed Component Analysis](#detailed-component-analysis)
+7. [Dependency Analysis](#dependency-analysis)
+8. [Performance Considerations](#performance-considerations)
+9. [Troubleshooting Guide](#troubleshooting-guide)
+10. [Conclusion](#conclusion)
+11. [Appendices](#appendices)
 
 ## Introduction
 The Accounting module is the core business engine of ListOpt ERP, responsible for managing inventory, documents, and financial transactions. Following a major restructuring, the module now features a comprehensive document confirmation service with transactional guarantees, centralized state management, and domain-specific organization for inventory and finance operations.
@@ -60,7 +70,7 @@ The module orchestrates the lifecycle of 11 document types across four primary d
 
 It provides real-time stock tracking with moving average cost calculations, multi-warehouse support, counterparty relationship management, and a robust reference data system for units, categories, price lists, and warehouses. The module integrates with the Finance module for balances and chart-of-accounts posting, and exposes APIs for reporting and audit trails.
 
-**Updated** The module now features a transactional document confirmation service that ensures atomicity across stock movements, cost calculations, and document state changes, along with a centralized state machine for consistent status transitions.
+**Updated** The module now features a transactional document confirmation service that ensures atomicity across stock movements, cost calculations, and document state changes, along with a centralized state machine for consistent status transitions. The testing infrastructure has been enhanced with a comprehensive multi-tier approach covering unit, service, and integration testing.
 
 ## Project Structure
 The module is organized by feature areas under the accounting namespace with domain-specific submodules:
@@ -162,8 +172,9 @@ PL --- PRISMA
 - **Counterparty management**: customer/supplier relationship lifecycle with balances and interaction history.
 - **Reference data**: units, product categories, price lists, and warehouses.
 - **Integration points**: Finance module for balances and chart-of-accounts posting; e-commerce for order-to-document synchronization.
+- **Comprehensive testing infrastructure**: multi-tier testing approach with unit, service, and integration test configurations.
 
-**Updated** Added transaction-safe document confirmation service with strict operation ordering and centralized state management for consistent business rules enforcement.
+**Updated** Added comprehensive testing infrastructure with separate Vitest configurations for different test types, ensuring proper isolation and execution patterns for various testing scenarios.
 
 **Section sources**
 - [lib/modules/accounting/services/document-confirm.service.ts:244-350](file://lib/modules/accounting/services/document-confirm.service.ts#L244-L350)
@@ -208,6 +219,80 @@ DB --> PG["PostgreSQL"]
 - [lib/modules/accounting/inventory/predicates.ts:1-55](file://lib/modules/accounting/inventory/predicates.ts#L1-L55)
 - [lib/modules/accounting/finance/cogs.ts:39-89](file://lib/modules/accounting/finance/cogs.ts#L39-L89)
 - [prisma/schema.prisma:1-1064](file://prisma/schema.prisma#L1-L1064)
+
+## Testing Infrastructure
+
+The Accounting module employs a comprehensive multi-tier testing strategy using Vitest with specialized configurations for different testing scenarios:
+
+### Test Configuration Hierarchy
+
+```mermaid
+graph TB
+subgraph "Vitest Configuration Hierarchy"
+ROOT["vitest.config.ts<br/>Base configuration"] --> UNIT["vitest.unit.config.ts<br/>Pure unit tests"]
+ROOT --> SERVICE["vitest.service.config.ts<br/>Service-level tests"]
+ROOT --> INTEGRATION["vitest.integration.config.ts<br/>Full integration tests"]
+END
+subgraph "Test Categories"
+UNIT --> UNIT_TESTS["tests/unit/**/*"]
+SERVICE --> SERVICE_TESTS["tests/unit/lib/* (DB-backed)"]
+INTEGRATION --> INTEGRATION_TESTS["tests/integration/**/*"]
+END
+subgraph "Execution Scripts"
+NPM["package.json scripts"] --> TEST_ALL["test:all"]
+NPM --> TEST_UNIT["test:unit"]
+NPM --> TEST_SERVICE["test:service"]
+NPM --> TEST_INTEGRATION["test:integration"]
+END
+```
+
+**Diagram sources**
+- [vitest.config.ts:1-30](file://vitest.config.ts#L1-L30)
+- [vitest.unit.config.ts:1-34](file://vitest.unit.config.ts#L1-L34)
+- [vitest.service.config.ts:1-40](file://vitest.service.config.ts#L1-L40)
+- [vitest.integration.config.ts:1-36](file://vitest.integration.config.ts#L1-L36)
+- [package.json:5-33](file://package.json#L5-L33)
+
+### Base Configuration (`vitest.config.ts`)
+The root configuration establishes global testing settings including environment setup, timeout values, and parallelization controls. It serves as the foundation for all other test configurations.
+
+### Unit Test Configuration (`vitest.unit.config.ts`)
+Focused on pure unit tests that don't require database access. Excludes specific service tests that need database connectivity and allows parallel execution for faster feedback.
+
+### Service Test Configuration (`vitest.service.config.ts`)
+Targets business logic functions that require database access. These tests validate service-level operations against a real test database with sequential execution to prevent race conditions.
+
+### Integration Test Configuration (`vitest.integration.config.ts`)
+The most comprehensive test suite running against a real test database with full data flows. Includes repository queries, transaction boundaries, and API route handlers with strict sequential execution.
+
+### Database Management and Isolation
+The testing infrastructure includes sophisticated database management through helper utilities:
+
+```mermaid
+sequenceDiagram
+participant SETUP as "Test Setup"
+participant CLEAN as "cleanDatabase()"
+participant DB as "Test Database"
+SETUP->>CLEAN : Initialize test environment
+CLEAN->>DB : Delete in FK dependency order
+CLEAN->>DB : Clear all test data
+SETUP->>DB : Create test fixtures
+SETUP->>SETUP : Execute test suite
+SETUP->>DB : Cleanup after tests
+```
+
+**Diagram sources**
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
+- [tests/setup.ts:1-26](file://tests/setup.ts#L1-L26)
+
+**Section sources**
+- [vitest.config.ts:1-30](file://vitest.config.ts#L1-L30)
+- [vitest.unit.config.ts:1-34](file://vitest.unit.config.ts#L1-L34)
+- [vitest.service.config.ts:1-40](file://vitest.service.config.ts#L1-L40)
+- [vitest.integration.config.ts:1-36](file://vitest.integration.config.ts#L1-L36)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
+- [tests/setup.ts:1-26](file://tests/setup.ts#L1-L26)
+- [package.json:5-33](file://package.json#L5-L33)
 
 ## Detailed Component Analysis
 
@@ -499,6 +584,7 @@ DB --> FIN["Finance Balance"]
 - **Index optimization**: Strategic indexes on enums and frequently filtered fields improve query performance.
 - **Aggregation optimization**: Enhanced stock report computes aggregates server-side to avoid client-side heavy computations.
 - **Pagination**: APIs enforce limits and pagination to prevent large result sets.
+- **Test parallelization**: Unit tests run in parallel for faster feedback, while service and integration tests execute sequentially to prevent database race conditions.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -509,15 +595,22 @@ Common issues and resolutions:
 - **Confirmation failures**: Check DocumentConfirmError details for specific validation failures (stock availability, inventory count requirements).
 - **State transition errors**: Use validateTransition to check allowed transitions before attempting state changes.
 - **Inventory adjustment issues**: Verify that inventory count documents have actual quantities filled and appropriate warehouse assignment.
+- **Test execution failures**: Check Vitest configuration for proper environment setup and database connectivity.
+- **Database cleanup issues**: Ensure test database is properly initialized and cleaned between test runs.
+- **Race condition errors**: Verify that service and integration tests are configured for sequential execution.
 
 **Section sources**
 - [app/api/accounting/documents/[id]/route.ts:63-165](file://app/api/accounting/documents/[id]/route.ts#L63-L165)
 - [app/api/accounting/counterparties/[id]/route.ts:35-86](file://app/api/accounting/counterparties/[id]/route.ts#L35-L86)
 - [lib/modules/accounting/services/document-confirm.service.ts:99-160](file://lib/modules/accounting/services/document-confirm.service.ts#L99-L160)
 - [lib/modules/accounting/document-states.ts:128-142](file://lib/modules/accounting/document-states.ts#L128-L142)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
+- [vitest.integration.config.ts:1-36](file://vitest.integration.config.ts#L1-L36)
 
 ## Conclusion
 The Accounting module provides a cohesive, extensible foundation for inventory, document processing, and counterparty management. Following the major restructuring, the module now features transaction-safe document confirmation, centralized state management, and domain-specific organization that enables scalable operations across multiple warehouses and document workflows. The new architecture ensures data integrity, improves maintainability, and provides a solid foundation for future enhancements.
+
+**Updated** The enhanced testing infrastructure with multi-tier Vitest configurations ensures comprehensive coverage of unit, service, and integration testing scenarios, providing confidence in code quality and system reliability across all operational domains.
 
 ## Appendices
 
@@ -570,3 +663,31 @@ The document confirmation service provides strict transaction safety guarantees:
 **Section sources**
 - [lib/modules/accounting/services/document-confirm.service.ts:244-350](file://lib/modules/accounting/services/document-confirm.service.ts#L244-L350)
 - [lib/modules/accounting/services/document-confirm.service.ts:351-366](file://lib/modules/accounting/services/document-confirm.service.ts#L351-L366)
+
+### Testing Strategy and Execution Patterns
+
+The Accounting module employs a comprehensive testing strategy with distinct configurations for different test types:
+
+#### Test Execution Commands
+- **Full test suite**: `npm run test` - Runs all test configurations sequentially
+- **Unit tests only**: `npm run test:unit` - Pure unit tests with parallel execution
+- **Service tests**: `npm run test:service` - Database-backed service tests with sequential execution
+- **Integration tests**: `npm run test:integration` - Full integration tests against real database
+- **Watch mode**: `npm run test:watch` - Continuous test execution during development
+- **Coverage**: `npm run test:cov` - Test coverage generation
+
+#### Database Isolation and Cleanup
+The testing infrastructure ensures proper database isolation through:
+- **Sequential execution**: Prevents race conditions between test files
+- **Database cleanup**: Comprehensive cleanup of test data in dependency order
+- **Environment setup**: Proper environment variable loading for test databases
+- **Connection management**: Graceful database connection handling and cleanup
+
+**Section sources**
+- [vitest.config.ts:1-30](file://vitest.config.ts#L1-L30)
+- [vitest.unit.config.ts:1-34](file://vitest.unit.config.ts#L1-L34)
+- [vitest.service.config.ts:1-40](file://vitest.service.config.ts#L1-L40)
+- [vitest.integration.config.ts:1-36](file://vitest.integration.config.ts#L1-L36)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
+- [tests/setup.ts:1-26](file://tests/setup.ts#L1-L26)
+- [package.json:5-33](file://package.json#L5-L33)

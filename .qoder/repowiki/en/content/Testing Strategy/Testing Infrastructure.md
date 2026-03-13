@@ -22,6 +22,13 @@
 - [package.json](file://package.json)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Enhanced database fixtures with automatic tenant membership creation in both Prisma and raw SQL factories
+- Improved factory system with new tenant factory functions and automatic tenant membership creation
+- Added cleanup procedures for TenantSettings, TenantMembership, and Tenant tables in database cleanup processes
+- Updated tenant architecture documentation to reflect the new tenant-aware testing infrastructure
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -36,6 +43,8 @@
 
 ## Introduction
 This document describes the ListOpt ERP testing ecosystem, focusing on shared testing utilities, test database management, and common test setup procedures. It explains how the test environment is configured, how database fixtures and factories work, and how testing helpers (API clients, database connections, and utilities) support unit, integration, and end-to-end (E2E) testing. It also covers continuous integration testing, execution strategies, and coverage reporting, along with best practices, naming conventions, and maintainability patterns. Finally, it provides troubleshooting guidance and performance optimization techniques.
+
+**Updated** Enhanced with tenant-aware testing infrastructure including automatic tenant membership creation and improved factory system.
 
 ## Project Structure
 The testing ecosystem is organized into three primary layers:
@@ -88,11 +97,11 @@ GH --> PConf
 - [vitest.config.ts:1-30](file://vitest.config.ts#L1-L30)
 - [playwright.config.ts:1-40](file://playwright.config.ts#L1-L40)
 - [tests/setup.ts:1-26](file://tests/setup.ts#L1-L26)
-- [tests/helpers/test-db.ts:1-70](file://tests/helpers/test-db.ts#L1-L70)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
 - [tests/helpers/api-client.ts:1-70](file://tests/helpers/api-client.ts#L1-L70)
-- [tests/helpers/factories.ts:1-725](file://tests/helpers/factories.ts#L1-L725)
+- [tests/helpers/factories.ts:1-848](file://tests/helpers/factories.ts#L1-L848)
 - [tests/e2e/fixtures/test-base.ts:1-41](file://tests/e2e/fixtures/test-base.ts#L1-L41)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 - [tests/e2e/pages/common/login.page.ts:1-30](file://tests/e2e/pages/common/login.page.ts#L1-L30)
 - [.github/workflows/ci.yml:1-143](file://.github/workflows/ci.yml#L1-L143)
 
@@ -103,35 +112,39 @@ GH --> PConf
 
 ## Core Components
 - Test database management:
-  - Prisma-based cleanup for Vitest unit/integration tests.
-  - Raw SQL truncation for Playwright E2E tests.
+  - Prisma-based cleanup for Vitest unit/integration tests with enhanced tenant table cleanup.
+  - Raw SQL truncation for Playwright E2E tests with automatic tenant membership cleanup.
 - API testing helpers:
   - Construct NextRequest objects for route handler tests.
   - Mock authentication sessions for API tests.
   - Utility to parse JSON responses.
 - Factories:
-  - Comprehensive Prisma-based factories for ERP entities.
+  - Comprehensive Prisma-based factories for ERP entities with automatic tenant membership creation.
+  - Specialized tenant factory functions for creating tenant-aware test data.
+  - Enhanced user factory that automatically creates tenant and membership associations.
   - Specialized accounting/company seeding utilities.
 - E2E fixtures:
-  - Admin session creation and cookie injection.
-  - Raw database factory helpers for E2E tests.
+  - Admin session creation and cookie injection with automatic tenant setup.
+  - Raw database factory helpers for E2E tests with tenant-aware data generation.
 - Authentication utilities:
   - Session signing and verification for unit tests.
   - Runtime session retrieval for API routes.
 
+**Updated** Enhanced with tenant-aware factory system and automatic tenant membership creation.
+
 **Section sources**
-- [tests/helpers/test-db.ts:1-70](file://tests/helpers/test-db.ts#L1-L70)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
 - [tests/helpers/api-client.ts:1-70](file://tests/helpers/api-client.ts#L1-L70)
-- [tests/helpers/factories.ts:1-725](file://tests/helpers/factories.ts#L1-L725)
+- [tests/helpers/factories.ts:1-848](file://tests/helpers/factories.ts#L1-L848)
 - [tests/e2e/fixtures/test-base.ts:1-41](file://tests/e2e/fixtures/test-base.ts#L1-L41)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 - [lib/shared/auth.ts:1-89](file://lib/shared/auth.ts#L1-L89)
 
 ## Architecture Overview
-The testing architecture separates concerns across layers:
-- Unit tests validate pure logic and isolated modules (e.g., session token verification).
-- Integration tests validate API route handlers using mocked auth and Prisma-backed factories.
-- E2E tests validate browser-driven flows against a real server with a dedicated test database.
+The testing architecture separates concerns across layers with enhanced tenant awareness:
+- Unit tests validate pure logic and isolated modules (e.g., session token verification) with tenant-aware factories.
+- Integration tests validate API route handlers using mocked auth and Prisma-backed factories with automatic tenant membership creation.
+- E2E tests validate browser-driven flows against a real server with a dedicated test database and automatic tenant setup.
 
 ```mermaid
 sequenceDiagram
@@ -144,23 +157,23 @@ participant DB as "Test Database"
 participant PRISMA as "Prisma Client"
 participant AUTH as "Auth Module"
 UT->>VT : Initialize setup.ts
-VT->>PRISMA : cleanDatabase()
+VT->>PRISMA : cleanDatabase() with tenant cleanup
 IT->>AUTH : Mock getAuthSession()
-IT->>PRISMA : create* factories
+IT->>PRISMA : create* factories with tenant membership
 ET->>PT : Launch web server
-ET->>DB : Truncate tables
+ET->>DB : Truncate tables with tenant cleanup
 ET->>AUTH : Create admin session cookie
 ET->>ET : Navigate UI and assert
 ```
 
 **Diagram sources**
 - [tests/setup.ts:1-26](file://tests/setup.ts#L1-L26)
-- [tests/helpers/test-db.ts:1-70](file://tests/helpers/test-db.ts#L1-L70)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
 - [tests/helpers/api-client.ts:1-70](file://tests/helpers/api-client.ts#L1-L70)
-- [tests/helpers/factories.ts:1-725](file://tests/helpers/factories.ts#L1-L725)
+- [tests/helpers/factories.ts:1-848](file://tests/helpers/factories.ts#L1-L848)
 - [playwright.config.ts:1-40](file://playwright.config.ts#L1-L40)
 - [tests/e2e/fixtures/test-base.ts:1-41](file://tests/e2e/fixtures/test-base.ts#L1-L41)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 
 ## Detailed Component Analysis
 
@@ -184,40 +197,58 @@ Best practices:
 
 ### Test Database Management
 - Vitest:
-  - beforeEach cleans the database using a dependency-aware deletion order.
+  - beforeEach cleans the database using a dependency-aware deletion order with enhanced tenant table cleanup.
   - afterAll disconnects the Prisma client.
   - If the database is unreachable (e.g., pure unit tests), cleaning silently skips.
 - E2E:
-  - A raw SQL TRUNCATE CASCADE is used to reset the database quickly.
+  - A raw SQL TRUNCATE CASCADE is used to reset the database quickly with automatic tenant membership cleanup.
   - A shared connection pool is exposed for E2E-specific operations.
 
+Enhanced cleanup procedures:
+- TenantSettings cleanup added to both Prisma and raw SQL cleanup processes.
+- TenantMembership cleanup added to ensure referential integrity.
+- Tenant table cleanup added as the final step to maintain proper dependency order.
+
+**Updated** Enhanced with comprehensive tenant table cleanup procedures.
+
 Guidelines:
-- Prefer Prisma-based cleanup in Vitest for referential integrity.
-- Use raw SQL truncation in E2E for speed and simplicity.
-- Ensure cleanup happens before fixtures are applied in E2E.
+- Prefer Prisma-based cleanup in Vitest for referential integrity with tenant-aware cleanup.
+- Use raw SQL truncation in E2E for speed and simplicity with automatic tenant setup.
+- Ensure cleanup happens before fixtures are applied in E2E with proper tenant table ordering.
 
 **Section sources**
 - [tests/setup.ts:1-26](file://tests/setup.ts#L1-L26)
-- [tests/helpers/test-db.ts:1-70](file://tests/helpers/test-db.ts#L1-L70)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 
 ### Database Fixtures and Factories
 - Prisma factories (Vitest):
   - Create entities with deterministic uniqueness and optional overrides.
-  - Automatically create dependent entities (e.g., Unit for Product).
+  - Automatically create dependent entities (e.g., Unit for Product) with tenant membership creation.
+  - Enhanced tenant factory with automatic tenant membership creation for users.
   - Provide convenience builders (e.g., createDocumentWithItems).
   - Include accounting/company seeding utilities (seedTestAccounts, seedCompanySettings).
 - Raw SQL factories (E2E):
   - Lightweight helpers to insert rows directly into tables.
+  - Automatic tenant and membership creation for user entities.
   - Useful for E2E-specific data generation and assertions.
 
+Enhanced tenant functionality:
+- New createTenant factory function for creating tenant entities.
+- Enhanced createUser factory automatically creates tenant and membership associations.
+- E2E database fixture automatically creates tenant and membership for user creation.
+- Both Prisma and raw SQL factories ensure tenant membership creation for proper authentication.
+
+**Updated** Enhanced with comprehensive tenant-aware factory system.
+
 Usage tips:
-- Use factories to minimize duplication and ensure valid referential data.
+- Use factories to minimize duplication and ensure valid referential data with tenant membership.
 - For complex accounting scenarios, seed minimal chart of accounts and company settings.
+- Leverage automatic tenant membership creation to simplify test setup.
 
 **Section sources**
-- [tests/helpers/factories.ts:1-725](file://tests/helpers/factories.ts#L1-L725)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/helpers/factories.ts:1-848](file://tests/helpers/factories.ts#L1-L848)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 
 ### Testing Helpers: API Clients and Utilities
 - API client:
@@ -231,6 +262,7 @@ Usage tips:
 Patterns:
 - Always mock auth in API tests to control session state deterministically.
 - Use factories to create prerequisite entities before invoking route handlers.
+- Leverage tenant-aware factories for authentication-dependent tests.
 
 **Section sources**
 - [tests/helpers/api-client.ts:1-70](file://tests/helpers/api-client.ts#L1-L70)
@@ -243,22 +275,29 @@ Patterns:
   - Provides page error logging for easier debugging.
 - auth.fixture:
   - Signs session tokens using the same algorithm as lib/shared/auth.ts.
-  - Creates an admin user and returns a session token.
+  - Creates an admin user with automatic tenant and membership creation.
 - database.fixture:
-  - Provides raw SQL factories and queries for E2E tests.
+  - Provides raw SQL factories and queries for E2E tests with tenant-aware data generation.
 - login.page:
   - Encapsulates common UI interactions for the login flow.
+
+Enhanced E2E tenant functionality:
+- Automatic tenant and membership creation in auth fixture for proper authentication.
+- Tenant-aware user creation in database fixture with proper foreign key relationships.
+- Seamless integration with tenant-aware testing infrastructure.
+
+**Updated** Enhanced with automatic tenant membership creation in E2E fixtures.
 
 **Section sources**
 - [tests/e2e/fixtures/test-base.ts:1-41](file://tests/e2e/fixtures/test-base.ts#L1-L41)
 - [tests/e2e/fixtures/auth.fixture.ts:1-33](file://tests/e2e/fixtures/auth.fixture.ts#L1-L33)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 - [tests/e2e/pages/common/login.page.ts:1-30](file://tests/e2e/pages/common/login.page.ts#L1-L30)
 
 ### Continuous Integration Testing Pipeline
 - Job stages:
   - Postgres service provisioned with health checks.
-  - Prisma client generation and schema push.
+  - Prisma client generation and schema push with tenant architecture support.
   - Nx affected lint, test, and build.
   - E2E tests executed with CI=true.
   - Artifacts uploaded on failure for debugging.
@@ -266,8 +305,9 @@ Patterns:
   - DATABASE_URL and SESSION_SECRET injected for test runs.
 
 Recommendations:
-- Keep CI database schema synchronized with local development.
+- Keep CI database schema synchronized with local development including tenant tables.
 - Use Nx affected to limit test scope during PRs.
+- Ensure tenant migration is applied before running tests.
 
 **Section sources**
 - [.github/workflows/ci.yml:1-143](file://.github/workflows/ci.yml#L1-L143)
@@ -330,7 +370,7 @@ Server-->>Page : Redirect to catalog
 - [tests/e2e/specs/auth.spec.ts:1-46](file://tests/e2e/specs/auth.spec.ts#L1-L46)
 - [tests/e2e/fixtures/test-base.ts:1-41](file://tests/e2e/fixtures/test-base.ts#L1-L41)
 - [tests/e2e/fixtures/auth.fixture.ts:1-33](file://tests/e2e/fixtures/auth.fixture.ts#L1-L33)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 - [tests/e2e/pages/common/login.page.ts:1-30](file://tests/e2e/pages/common/login.page.ts#L1-L30)
 
 ### Best Practices and Naming Conventions
@@ -343,25 +383,35 @@ Server-->>Page : Redirect to catalog
   - Group shared helpers under tests/helpers/.
 - Factories:
   - Use create<Entity>() for entity creation and create<Entity>WithItems() for composite entities.
+  - Use createTenant() for tenant creation and leverage automatic tenant membership creation.
 - Assertions:
   - Prefer explicit status checks and JSON parsing via jsonResponse() for API tests.
   - Use Playwright locators and page objects (e.g., login.page.ts) for E2E assertions.
+
+Enhanced tenant practices:
+- Use createTenant() factory for tenant creation in tests requiring multiple organizations.
+- Leverage automatic tenant membership creation in createUser() for authentication tests.
+- Ensure tenant cleanup order in database cleanup procedures.
 
 Maintainability:
 - Keep setup.ts minimal and centralized for global test initialization.
 - Centralize database cleanup in tests/helpers/test-db.ts for Vitest and database.fixture.ts for E2E.
 - Reuse factories to reduce duplication and ensure schema compliance.
+- Utilize tenant-aware factories for multi-tenant testing scenarios.
+
+**Updated** Enhanced with tenant-aware factory usage and practices.
 
 **Section sources**
-- [tests/helpers/factories.ts:1-725](file://tests/helpers/factories.ts#L1-L725)
+- [tests/helpers/factories.ts:1-848](file://tests/helpers/factories.ts#L1-L848)
 - [tests/helpers/api-client.ts:1-70](file://tests/helpers/api-client.ts#L1-L70)
 - [tests/e2e/pages/common/login.page.ts:1-30](file://tests/e2e/pages/common/login.page.ts#L1-L30)
 
 ## Dependency Analysis
-The testing utilities depend on shared libraries and Prisma:
+The testing utilities depend on shared libraries and Prisma with enhanced tenant architecture:
 - tests/helpers/* depend on lib/shared/db.ts and lib/shared/auth.ts.
 - E2E fixtures depend on database.fixture.ts and auth.fixture.ts.
-- Prisma schema defines the entities and relationships used by factories.
+- Prisma schema defines the entities and relationships used by factories including tenant tables.
+- Tenant-related dependencies include Tenant, TenantMembership, and TenantSettings models.
 
 ```mermaid
 graph LR
@@ -372,37 +422,45 @@ TD["tests/helpers/test-db.ts"] --> DB
 AF["tests/e2e/fixtures/auth.fixture.ts"] --> AU
 DF["tests/e2e/fixtures/database.fixture.ts"] --> DB
 SC["prisma/schema.prisma"] --> DB
+TS["TenantSettings"] --> DB
+TM["TenantMembership"] --> DB
+T["Tenant"] --> DB
 ```
 
+**Updated** Enhanced with tenant architecture dependencies.
+
 **Diagram sources**
-- [tests/helpers/factories.ts:1-725](file://tests/helpers/factories.ts#L1-L725)
+- [tests/helpers/factories.ts:1-848](file://tests/helpers/factories.ts#L1-L848)
 - [tests/helpers/api-client.ts:1-70](file://tests/helpers/api-client.ts#L1-L70)
-- [tests/helpers/test-db.ts:1-70](file://tests/helpers/test-db.ts#L1-L70)
+- [tests/helpers/test-db.ts:1-75](file://tests/helpers/test-db.ts#L1-L75)
 - [tests/e2e/fixtures/auth.fixture.ts:1-33](file://tests/e2e/fixtures/auth.fixture.ts#L1-L33)
-- [tests/e2e/fixtures/database.fixture.ts:1-334](file://tests/e2e/fixtures/database.fixture.ts#L1-L334)
+- [tests/e2e/fixtures/database.fixture.ts:1-376](file://tests/e2e/fixtures/database.fixture.ts#L1-L376)
 - [lib/shared/db.ts:1-25](file://lib/shared/db.ts#L1-L25)
 - [lib/shared/auth.ts:1-89](file://lib/shared/auth.ts#L1-L89)
-- [prisma/schema.prisma:1-800](file://prisma/schema.prisma#L1-L800)
+- [prisma/schema.prisma:1-1338](file://prisma/schema.prisma#L1-L1338)
 
 **Section sources**
 - [lib/shared/db.ts:1-25](file://lib/shared/db.ts#L1-L25)
 - [lib/shared/auth.ts:1-89](file://lib/shared/auth.ts#L1-L89)
-- [prisma/schema.prisma:1-800](file://prisma/schema.prisma#L1-L800)
+- [prisma/schema.prisma:1-1338](file://prisma/schema.prisma#L1-L1338)
 
 ## Performance Considerations
 - Database cleanup:
-  - Use Prisma deleteMany in dependency order for Vitest to preserve referential integrity.
-  - Use TRUNCATE CASCADE for E2E to minimize overhead.
+  - Use Prisma deleteMany in dependency order for Vitest to preserve referential integrity with tenant table cleanup.
+  - Use TRUNCATE CASCADE for E2E to minimize overhead with automatic tenant membership cleanup.
+  - Ensure proper cleanup order: User -> TenantMembership -> TenantSettings -> Tenant for referential integrity.
 - Concurrency:
   - Disable Vitest file parallelism and sequence concurrency to avoid race conditions.
   - Run Playwright with a single worker to reduce flakiness.
 - Test data:
   - Prefer lightweight factories and minimal seeds to reduce setup time.
+  - Leverage automatic tenant membership creation to reduce test setup complexity.
 - CI:
   - Cache node_modules and install Playwright browsers once per job.
   - Use Nx affected to limit test scope during PRs.
+  - Ensure tenant migration is applied before running tests.
 
-[No sources needed since this section provides general guidance]
+**Updated** Enhanced with tenant table cleanup considerations.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -421,6 +479,14 @@ Common issues and resolutions:
 - CI flaky tests:
   - Symptom: Tests fail intermittently.
   - Resolution: Confirm single worker mode in Playwright; disable Vitest file parallelism; ensure Prisma schema is pushed before running tests.
+- Tenant membership issues:
+  - Symptom: Users cannot log in or access tenant data.
+  - Resolution: Ensure tenant and membership are created together using enhanced factories; verify cleanup order in database setup.
+- Tenant table cleanup failures:
+  - Symptom: Tenant-related tables not properly cleaned between tests.
+  - Resolution: Verify cleanup order includes TenantSettings, TenantMembership, and Tenant tables in proper sequence.
+
+**Updated** Enhanced with tenant-related troubleshooting guidance.
 
 **Section sources**
 - [tests/setup.ts:8-25](file://tests/setup.ts#L8-L25)
@@ -432,9 +498,9 @@ Common issues and resolutions:
 - [vitest.config.ts:18-22](file://vitest.config.ts#L18-L22)
 
 ## Conclusion
-The ListOpt ERP testing ecosystem combines robust shared utilities, disciplined database management, and layered test strategies. By centralizing setup, leveraging factories, and maintaining strict isolation, the suite supports reliable unit, integration, and E2E testing. CI ensures consistent execution against a managed Postgres service, while scripts and configuration enforce safe concurrency and performance characteristics.
+The ListOpt ERP testing ecosystem combines robust shared utilities, disciplined database management, and layered test strategies with enhanced tenant-aware capabilities. By centralizing setup, leveraging comprehensive factories with automatic tenant membership creation, and maintaining strict isolation, the suite supports reliable unit, integration, and E2E testing across multiple organizations. CI ensures consistent execution against a managed Postgres service with tenant architecture support, while scripts and configuration enforce safe concurrency and performance characteristics.
 
-[No sources needed since this section summarizes without analyzing specific files]
+**Updated** Enhanced with tenant-aware testing infrastructure and automatic tenant membership creation capabilities.
 
 ## Appendices
 
@@ -456,7 +522,11 @@ The ListOpt ERP testing ecosystem combines robust shared utilities, disciplined 
 
 ### Appendix B: Prisma Schema Entities Used in Tests
 - Core entities: User, Unit, ProductCategory, Product, Counterparty, Warehouse, StockRecord, Document, DocumentItem, PriceList, SalePrice, PurchasePrice, ProductVariant, VariantOption, VariantType, ProductDiscount, SkuCounter, Customer, CustomerAddress, CartItem, Order, OrderItem, Review, Favorite, and more.
-- These entities are cleaned and seeded by factories and fixtures to support realistic test scenarios.
+- Tenant architecture entities: Tenant, TenantMembership, TenantSettings for multi-organization testing support.
+- These entities are cleaned and seeded by factories and fixtures to support realistic test scenarios across multiple organizations.
+
+**Updated** Enhanced with tenant architecture entities for multi-organization testing.
 
 **Section sources**
-- [prisma/schema.prisma:108-800](file://prisma/schema.prisma#L108-L800)
+- [prisma/schema.prisma:55-114](file://prisma/schema.prisma#L55-L114)
+- [prisma/migrations/20260313_add_tenant_architecture/migration.sql:1-78](file://prisma/migrations/20260313_add_tenant_architecture/migration.sql#L1-L78)

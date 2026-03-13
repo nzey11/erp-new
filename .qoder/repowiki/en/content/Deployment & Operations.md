@@ -11,7 +11,7 @@
 - [check_db.sh](file://check_db.sh)
 - [next.config.ts](file://next.config.ts)
 - [middleware.ts](file://middleware.ts)
-- [prisma/config.ts](file://prisma.config.ts)
+- [prisma/config.ts](file://prisma/config.ts)
 - [prisma/schema.prisma](file://prisma/schema.prisma)
 - [prisma/seed.ts](file://prisma/seed.ts)
 - [prisma/seed-accounts.ts](file://prisma/seed-accounts.ts)
@@ -21,6 +21,13 @@
 - [nx.json](file://nx.json)
 - [.gitignore](file://.gitignore)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated PM2 process management configuration to use port 3000 instead of 3001
+- Updated CI/CD workflow to use DEPLOY_SSH_KEY2 for enhanced security
+- Updated architecture diagrams and deployment procedures to reflect the new port configuration
+- Updated quick deployment script references to match current SSH key configuration
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -115,14 +122,14 @@ QUICKDEPLOY --> PM2CFG
 - [lib/shared/rate-limit.ts:1-115](file://lib/shared/rate-limit.ts#L1-L115)
 
 ## Architecture Overview
-Production runtime uses PM2 to manage a Next.js process listening on a designated port. The application relies on environment variables for database connectivity and session security. CI/CD automates packaging, deployment, database migrations, seeding, and process restarts.
+Production runtime uses PM2 to manage a Next.js process listening on port 3000. The application relies on environment variables for database connectivity and session security. CI/CD automates packaging, deployment, database migrations, seeding, and process restarts.
 
 ```mermaid
 graph TB
 CLIENT["Browser / Clients"]
 NGINX["Nginx Reverse Proxy<br/>SSL/TLS termination"]
 PM2["PM2 Process Manager<br/>ecosystem.config.js"]
-NEXT["Next.js App<br/>PORT 3001"]
+NEXT["Next.js App<br/>PORT 3000"]
 DB["PostgreSQL Database"]
 CLIENT --> NGINX
 NGINX --> PM2
@@ -168,12 +175,14 @@ DevServer --> End(["Ready"])
 - Configuration:
   - Name: listopt-erp
   - Script: next binary
-  - Args: start -p 3001
+  - Args: start -p 3000
   - Working directory: /var/www/listopt-erp
   - Instances: 1
   - Autorestart enabled
   - Memory threshold triggers restart
-  - Environment: NODE_ENV=production, PORT=3001, DATABASE_URL, SESSION_SECRET (commented placeholders)
+  - Environment: NODE_ENV=production, PORT=3000, DATABASE_URL, SESSION_SECRET (commented placeholders)
+
+**Updated** Changed from port 3001 to 3000 for consistency across development and production environments
 
 ```mermaid
 sequenceDiagram
@@ -182,7 +191,7 @@ participant PM2 as "PM2"
 participant Proc as "Next.js Process"
 Ops->>PM2 : pm2 restart listopt-erp
 PM2->>Proc : Stop gracefully
-PM2->>Proc : Start with args "start -p 3001"
+PM2->>Proc : Start with args "start -p 3000"
 Proc-->>PM2 : Healthy
 PM2-->>Ops : OK
 ```
@@ -198,20 +207,20 @@ PM2-->>Ops : OK
 - Recommended approach:
   - Place Nginx in front of PM2-managed Next.js
   - Terminate TLS at Nginx with valid certificates
-  - Proxy to http://localhost:3001
+  - Proxy to http://localhost:3000
   - Configure upstream health checks and timeouts
   - Enable gzip and static asset caching for performance
-
-[No sources needed since this section provides general guidance]
 
 ### CI/CD Pipeline and Automated Deployment
 - Workflow stages:
   - Lint, Test (affected), E2E, Build
   - Deploy to Production:
     - Archive repository excluding .next, node_modules, .env*, dev.db, .git, test artifacts
-    - Setup SSH key and known_hosts
+    - Setup SSH key and known_hosts using DEPLOY_SSH_KEY2 for enhanced security
     - Upload archive to remote server
     - On server: extract, install deps, source environment, generate Prisma client, apply migrations, seed data, build Next, restart PM2 with updated env
+
+**Updated** Enhanced security by switching from DEPLOY_SSH_KEY to DEPLOY_SSH_KEY2 for deployment SSH keys
 
 ```mermaid
 sequenceDiagram
@@ -221,7 +230,7 @@ participant Srv as "Production Server"
 Dev->>GH : Push to main branch
 GH->>GH : Build archive (exclude patterns)
 GH->>Srv : Upload deploy.tar.gz
-GH->>Srv : SSH execute deployment steps
+GH->>Srv : SSH execute deployment steps using DEPLOY_SSH_KEY2
 Srv->>Srv : Extract archive
 Srv->>Srv : npm ci, prisma generate
 Srv->>Srv : prisma migrate deploy
@@ -243,8 +252,6 @@ Srv-->>GH : Deploy complete
   - Keep previous artifact/version on the server for 1–2 releases
   - On rollback: extract prior archive, run migrations if needed, pm2 restart listopt-erp
   - Optionally maintain a secondary standby instance behind a load balancer for zero-downtime rollback
-
-[No sources needed since this section provides general guidance]
 
 ### Monitoring, Log Management, and Performance Optimization
 - Logging:
@@ -274,8 +281,6 @@ Srv-->>GH : Deploy complete
   - Back up application source and environment files
   - Maintain a documented DR playbook with steps to rebuild environment and redeploy
 
-[No sources needed since this section provides general guidance]
-
 ### Maintenance Schedules
 - Weekly:
   - Review logs and alerts
@@ -287,8 +292,6 @@ Srv-->>GH : Deploy complete
   - Audit security headers and middleware
   - Review rate limiting and scaling thresholds
 
-[No sources needed since this section provides general guidance]
-
 ### Scaling, Load Balancing, and High Availability
 - Current setup runs a single Next.js instance managed by PM2.
 - To scale horizontally:
@@ -296,8 +299,6 @@ Srv-->>GH : Deploy complete
   - Use Redis for session storage and rate limiting
   - Ensure shared, stateless sessions and persistent database
   - Consider container orchestration (Kubernetes/Docker Swarm) for HA
-
-[No sources needed since this section provides general guidance]
 
 ### Security Hardening, Firewall, and Access Control
 - Middleware enforces:
@@ -332,9 +333,11 @@ Srv-->>GH : Deploy complete
   - Build Next app
   - Restart PM2 with updated environment
 
+**Updated** The quick deployment script now uses the enhanced SSH key configuration (listopt_erp_new) for secure connections
+
 ```mermaid
 flowchart TD
-QStart(["Run deploy-quick.ps1"]) --> SSH["SSH to server as root"]
+QStart(["Run deploy-quick.ps1"]) --> SSH["SSH to server as root using listopt_erp_new key"]
 SSH --> Extract["Extract deploy.tar.gz"]
 Extract --> Clean[".next cache removal"]
 Clean --> Build["npm run build"]
@@ -427,7 +430,7 @@ NX --> PKG
 - [.github/workflows/ci.yml:134-138](file://.github/workflows/ci.yml#L134-L138)
 
 ## Conclusion
-ListOpt ERP’s deployment model centers on a single PM2-managed Next.js process with PostgreSQL via Prisma. The GitHub Actions workflow automates packaging, migrations, seeding, and restarts. For production hardening, add Nginx/TLS, Redis-backed rate limiting, centralized logging, and multi-instance scaling. Regular backups, audits, and documented DR procedures ensure reliability.
+ListOpt ERP's deployment model centers on a single PM2-managed Next.js process with PostgreSQL via Prisma. The GitHub Actions workflow automates packaging, migrations, seeding, and restarts. The recent enhancements include switching to port 3000 for consistency and using DEPLOY_SSH_KEY2 for improved security. For production hardening, add Nginx/TLS, Redis-backed rate limiting, centralized logging, and multi-instance scaling. Regular backups, audits, and documented DR procedures ensure reliability.
 
 ## Appendices
 

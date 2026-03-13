@@ -1,7 +1,8 @@
 import { defineConfig } from "@playwright/test";
 import dotenv from "dotenv";
 
-dotenv.config({ path: ".env.test", override: true });
+// Load .env.test but don't override existing env vars (CI sets DATABASE_URL)
+dotenv.config({ path: ".env.test", override: false });
 
 export default defineConfig({
   testDir: "./tests/e2e/specs",
