@@ -38,6 +38,9 @@ export async function cleanDatabase(): Promise<void> {
       "ProductCategory",
       "Counterparty",
       "Warehouse",
+      "TenantSettings",
+      "TenantMembership",
+      "Tenant",
       "Unit",
       "User"
     CASCADE
@@ -98,7 +101,7 @@ export async function createUser(overrides: {
   isActive?: boolean;
 } = {}): Promise<DbRow> {
   const id = cuid();
-  return insertRow("User", {
+  const user = await insertRow("User", {
     id,
     username: overrides.username ?? `user_${id}`,
     password: overrides.password ?? "$2a$10$placeholder_hash",
@@ -107,6 +110,29 @@ export async function createUser(overrides: {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+
+  // Create tenant and membership for the user (required for login)
+  const tenantId = `tenant-${user.id}`;
+  await insertRow("Tenant", {
+    id: tenantId,
+    name: `Tenant ${tenantId}`,
+    slug: tenantId,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  await insertRow("TenantMembership", {
+    id: cuid(),
+    userId: user.id as string,
+    tenantId: tenantId,
+    role: overrides.role ?? "admin",
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  return user as DbRow;
 }
 
 export async function createUnit(overrides: {
