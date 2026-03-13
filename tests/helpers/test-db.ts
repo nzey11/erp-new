@@ -46,6 +46,7 @@ export async function cleanDatabase(): Promise<void> {
   await db.tenantMembership.deleteMany();
   await db.tenant.deleteMany();
   await db.unit.deleteMany();
+  // Delete users last (after memberships)
   await db.user.deleteMany();
 }
 

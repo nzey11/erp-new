@@ -379,10 +379,13 @@ export async function createUser(
     email: string;
     role: "admin" | "manager" | "accountant" | "viewer";
     isActive: boolean;
+    tenantId?: string;
   }> = {}
 ) {
   const id = uniqueId();
-  return db.user.create({
+
+  // Create user
+  const user = await db.user.create({
     data: {
       username: overrides.username ?? `user_${id}`,
       password: overrides.password ?? "$2a$10$test_hash",
@@ -391,6 +394,19 @@ export async function createUser(
       isActive: overrides.isActive ?? true,
     },
   });
+
+  // Create tenant and membership for the user (required for login)
+  const tenant = await createTenant({ id: `tenant-${user.id}` });
+  await db.tenantMembership.create({
+    data: {
+      userId: user.id,
+      tenantId: tenant.id,
+      role: overrides.role ?? "admin",
+      isActive: true,
+    },
+  });
+
+  return user;
 }
 
 // =============================================
