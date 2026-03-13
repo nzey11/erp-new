@@ -34,7 +34,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: process.env.DATABASE_URL!,
       SESSION_SECRET: process.env.SESSION_SECRET!,
-      NODE_ENV: "test",
+      NODE_ENV: "production",
+      APP_ENV: "test",
     },
   },
 });
