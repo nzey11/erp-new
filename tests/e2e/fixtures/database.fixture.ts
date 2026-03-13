@@ -129,7 +129,6 @@ export async function createUser(overrides: {
     role: overrides.role ?? "admin",
     isActive: true,
     createdAt: new Date(),
-    updatedAt: new Date(),
   });
 
   return user as DbRow;
