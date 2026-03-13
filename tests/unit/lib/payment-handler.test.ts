@@ -105,7 +105,7 @@ describe("onDocumentConfirmedPayment — idempotency", () => {
       ...makeShipmentEvent("doc-2"),
       payload: {
         ...makeShipmentEvent("doc-2").payload,
-        documentType: "invoice",
+        documentType: "stock_receipt",
       },
     };
 
