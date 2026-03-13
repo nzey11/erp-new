@@ -32,7 +32,7 @@
     "preview:check": "npm run lint && npm run test && npm run build",
     "typecheck": "tsc --noEmit",
     "check:fast": "npm run lint && npm run typecheck && npm run test:unit",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@prisma/client": "^7.4.1",
@@ -76,6 +76,7 @@
     "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "husky": "^9.1.7",
     "nx": "^22.5.2",
     "prisma": "^7.4.1",
     "shadcn": "^3.8.5",
