@@ -1,17 +1,22 @@
-import { test as base, expect, type Page } from "@playwright/test";
-import { createAdminSession } from "./auth.fixture";
+import { test as base, expect, type Page, type BrowserContext } from "@playwright/test";
+import { createAdminSession, createCsrfTokens } from "./auth.fixture";
 
 type TestFixtures = {
   /** A Page already authenticated as admin */
   adminPage: Page;
+  /** The browser context for the admin session (for making API calls) */
+  adminContext: BrowserContext;
+  /** CSRF token for making API requests */
+  csrfToken: string;
 };
 
 export const test = base.extend<TestFixtures>({
-  adminPage: async ({ browser }, use) => {
+  adminContext: async ({ browser }, use) => {
     // Create admin session (specs must call cleanDatabase() in their own beforeEach BEFORE this runs)
     const { sessionToken } = await createAdminSession();
+    const { rawToken, signedToken } = await createCsrfTokens();
 
-    // Create context with session cookie
+    // Create context with both session and CSRF cookies
     const context = await browser.newContext();
     await context.addCookies([
       {
@@ -20,9 +25,47 @@ export const test = base.extend<TestFixtures>({
         domain: "localhost",
         path: "/",
       },
+      {
+        name: "csrf_token",
+        value: signedToken,
+        domain: "localhost",
+        path: "/",
+      },
     ]);
 
-    const page = await context.newPage();
+    // Store CSRF token in context for later use
+    // @ts-expect-error - extending context with custom property
+    context._csrfToken = rawToken;
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    await use(context);
+
+    await context.close();
+  },
+
+  csrfToken: async ({ adminContext }, use) => {
+    // @ts-expect-error - retrieving custom property
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    await use(adminContext._csrfToken as string);
+  },
+
+  adminPage: async ({ adminContext, csrfToken }, use) => {
+    const page = await adminContext.newPage();
+
+    // Intercept ALL API requests to add CSRF header for mutating operations
+    await page.route("/api/**", async (route, request) => {
+      const method = request.method();
+      if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+        const headers = {
+          ...request.headers(),
+          "X-CSRF-Token": csrfToken,
+        };
+        await route.continue({ headers });
+      } else {
+        await route.continue();
+      }
+    });
+
     // Log any page errors for debugging
     page.on("pageerror", (err) => {
       console.error("[PAGE ERROR]", err.message);
@@ -32,8 +75,6 @@ export const test = base.extend<TestFixtures>({
     });
     // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
-
-    await context.close();
   },
 });
 

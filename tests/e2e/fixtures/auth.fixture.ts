@@ -15,6 +15,47 @@ export function signSession(userId: string): string {
   return `${payload}.${signature}`;
 }
 
+/**
+ * Generate a CSRF token (mirrors lib/shared/csrf.ts using Web Crypto API)
+ */
+export function generateCsrfToken(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+/**
+ * Sign a CSRF token using Web Crypto API HMAC-SHA256 (exactly mirrors lib/shared/csrf.ts)
+ */
+export async function signCsrfToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(SESSION_SECRET);
+  const tokenData = encoder.encode(token);
+
+  const key = await globalThis.crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await globalThis.crypto.subtle.sign("HMAC", key, tokenData);
+  const signatureHex = Buffer.from(signature).toString("hex");
+  return `${token}.${signatureHex}`;
+}
+
+/**
+ * Create CSRF tokens for testing.
+ * Returns both the raw token (for X-CSRF-Token header) and signed token (for csrf_token cookie)
+ */
+export async function createCsrfTokens(): Promise<{
+  rawToken: string;
+  signedToken: string;
+}> {
+  const rawToken = generateCsrfToken();
+  const signedToken = await signCsrfToken(rawToken);
+  return { rawToken, signedToken };
+}
+
 /** Create an admin user in the DB and return its session cookie value */
 export async function createAdminSession(): Promise<{
   user: { id: string; username: string; role: string; tenantId: string };

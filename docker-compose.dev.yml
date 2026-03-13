@@ -21,7 +21,7 @@ services:
       - SECURE_COOKIES=false
     depends_on:
       - db
-    command: sh -c "npx prisma generate && npx prisma db push && rm -rf /app/.next && npm run dev"
+    command: sh -c "npx prisma generate && npx prisma db push && npx prisma db seed && rm -rf /app/.next && npm run dev"
 
   db:
     image: postgres:16-alpine
