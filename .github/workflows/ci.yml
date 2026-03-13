@@ -132,7 +132,14 @@ jobs:
           source .env.local 2>/dev/null || source .env 2>/dev/null || true
           set +a
           npx prisma generate
-          # Run migrations (creates tables if needed, applies pending migrations)
+          # Baseline: if _prisma_migrations table doesn't exist, create it and mark all existing migrations as applied.
+          # This handles the transition from 'db push' to 'migrate deploy' on an existing production database.
+          if ! npx prisma migrate status 2>&1 | grep -q "_prisma_migrations"; then
+            echo "Initializing migration history for existing database..."
+            for migration in 20260226_add_variant_hierarchy 20260227_add_product_image_urls 20260227_add_store_page 20260305_add_category_account_code 20260312_add_processed_webhook 20260312_add_reversing_movements 20260312_add_stock_movements 20260313_add_tenant_architecture 20260313_add_warehouse_tenantId; do
+              npx prisma migrate resolve --applied "$migration" 2>/dev/null || true
+            done
+          fi
           npx prisma migrate deploy
           # Seed essential data (idempotent - creates admin if not exists)
           npx prisma db seed
