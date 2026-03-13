@@ -15,8 +15,11 @@ env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 jobs:
-  ci:
-    name: Lint, Test & Build
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Phase 1: Verify — lint, test, build (gates the deploy job)
+  # ─────────────────────────────────────────────────────────────────────────────
+  verify:
+    name: Verify (Lint · Test · Build)
     runs-on: ubuntu-latest
 
     services:
@@ -65,10 +68,10 @@ jobs:
       - name: Push schema to test database
         run: npx prisma db push
 
-      - name: Lint (affected)
+      - name: Lint
         run: npx nx affected -t lint
 
-      - name: Test (affected)
+      - name: Unit & Integration Tests
         run: npx nx affected -t test --parallel=1
 
       - name: E2E Tests
@@ -76,7 +79,7 @@ jobs:
         env:
           CI: true
 
-      - name: Upload E2E test results
+      - name: Upload E2E report on failure
         uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -84,68 +87,104 @@ jobs:
           path: test-results/
           retention-days: 7
 
-      - name: Build (affected)
-        run: npx nx affected -t build
+      # Build runs in CI — NOT on production server
+      - name: Build
+        run: npx next build
 
+      # Package only what's needed to run the app (app/lib/components compiled into .next)
+      - name: Package release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifact
+          path: |
+            .next/
+            public/
+            prisma/
+            scripts/
+            proxy.ts
+            package.json
+            package-lock.json
+            ecosystem.config.js
+            next.config.ts
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Phase 2: Deploy — only if verify passes, only on push to main
+  # Server receives a ready-built artifact; no next build on production
+  # ─────────────────────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: ci
+    needs: verify
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifact
 
-      - name: Build archive
+      - name: Create release archive
         run: |
-          tar -czf deploy.tar.gz \
-            --exclude='.next' \
-            --exclude='node_modules' \
-            --exclude='.env*' \
-            --exclude='dev.db' \
-            --exclude='.git' \
-            --exclude='test-results' \
-            --exclude='playwright-report' \
-            .
-          echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
+          RELEASE_ID=$(date -u +%Y%m%d-%H%M%S)
+          echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+          tar -czf /tmp/release.tar.gz .
+          echo "Archive size: $(du -sh /tmp/release.tar.gz | cut -f1)"
 
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY2 }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Upload archive to server
-        run: scp -i ~/.ssh/deploy_key deploy.tar.gz root@${{ secrets.DEPLOY_HOST }}:/root/
-
-      - name: Deploy on server
         run: |
-          ssh -i ~/.ssh/deploy_key root@${{ secrets.DEPLOY_HOST }} bash << 'ENDSSH'
-          set -e
-          cd /var/www/listopt-erp
-          rm -rf .next app/ components/ lib/ prisma/
-          tar -xzf /root/deploy.tar.gz
+          scp -i ~/.ssh/deploy_key /tmp/release.tar.gz \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/release.tar.gz
+
+      - name: Deploy release on server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            env RELEASE_ID="${{ env.RELEASE_ID }}" bash << 'ENDSSH'
+          set -euo pipefail
+          BASE=/var/www/listopt-erp
+          RELEASE_DIR=$BASE/releases/$RELEASE_ID
+          SHARED_DIR=$BASE/shared
+
+          echo "==> Creating release directory: $RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+
+          echo "==> Extracting archive"
+          tar -xzf /tmp/release.tar.gz -C "$RELEASE_DIR"
+
+          echo "==> Cleaning old deployment files from base directory"
+          rm -f "$BASE/middleware.ts" "$BASE/proxy.ts" 2>/dev/null || true
+
+          echo "==> Linking shared .env"
+          ln -sf "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
+
+          echo "==> Installing dependencies"
+          cd "$RELEASE_DIR"
           npm ci
-          set -a
-          source .env.local 2>/dev/null || source .env 2>/dev/null || true
-          set +a
+
+          echo "==> Generating Prisma client"
           npx prisma generate
-          # Baseline: if _prisma_migrations table doesn't exist, create it and mark all existing migrations as applied.
-          # This handles the transition from 'db push' to 'migrate deploy' on an existing production database.
-          if ! npx prisma migrate status 2>&1 | grep -q "_prisma_migrations"; then
-            echo "Initializing migration history for existing database..."
-            for migration in 20260226_add_variant_hierarchy 20260227_add_product_image_urls 20260227_add_store_page 20260305_add_category_account_code 20260312_add_processed_webhook 20260312_add_reversing_movements 20260312_add_stock_movements 20260313_add_tenant_architecture 20260313_add_warehouse_tenantId; do
-              npx prisma migrate resolve --applied "$migration" 2>/dev/null || true
-            done
-          fi
+
+          echo "==> Running migrations"
           npx prisma migrate deploy
-          # Seed essential data (idempotent - creates admin if not exists)
-          npx prisma db seed
-          npx next build
-          pm2 restart listopt-erp --update-env
-          rm -f /root/deploy.tar.gz
-          echo "Deploy complete."
+
+          echo "==> Switching current symlink"
+          ln -sfn "$RELEASE_DIR" "$BASE/current"
+
+          echo "==> Reloading pm2"
+          pm2 reload "$BASE/current/ecosystem.config.js" --update-env
+
+          echo "==> Cleaning old releases (keep last 5)"
+          ls -dt "$BASE/releases"/*/ 2>/dev/null | tail -n +6 | xargs -r rm -rf
+
+          rm -f /tmp/release.tar.gz
+          echo "==> Deploy complete: $RELEASE_ID"
           pm2 list
           ENDSSH

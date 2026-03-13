@@ -4,7 +4,7 @@ module.exports = {
       name: "listopt-erp",
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",
-      cwd: "/var/www/listopt-erp",
+      cwd: "/var/www/listopt-erp/current",
       instances: 1,
       autorestart: true,
       watch: false,
