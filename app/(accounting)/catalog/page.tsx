@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
+import { csrfFetch } from "@/lib/client/csrf";
 import { ProductsTable } from "@/components/accounting";
 import { PriceListsPanel } from "@/components/accounting/catalog/PriceListsPanel";
 import { PriceListDetail } from "@/components/accounting/catalog/PriceListDetail";
@@ -232,7 +233,7 @@ export default function CatalogPage() {
   const handleDeleteCategory = async (cat: Category) => {
     if (!confirm(`Удалить категорию "${cat.name}"?`)) return;
     try {
-      const res = await fetch(`/api/accounting/categories/${cat.id}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/accounting/categories/${cat.id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка");
@@ -254,12 +255,12 @@ export default function CatalogPage() {
     try {
       const body = { name: catForm.name, parentId: catForm.parentId || null };
       const res = editingCategory
-        ? await fetch(`/api/accounting/categories/${editingCategory.id}`, {
+        ? await csrfFetch(`/api/accounting/categories/${editingCategory.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           })
-        : await fetch("/api/accounting/categories", {
+        : await csrfFetch("/api/accounting/categories", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
