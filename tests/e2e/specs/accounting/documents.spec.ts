@@ -4,6 +4,7 @@ import {
   cleanDatabase, createWarehouse, createUnit, createProduct, createDocument,
   createDocumentItem, createStockRecord, findStockRecord, findDocument,
 } from "../../fixtures/database.fixture";
+import { E2E_TENANT_ID } from "../../fixtures/auth.fixture";
 
 test.describe("Document Workflow", () => {
   let warehouse: { id: string; name: string };
@@ -12,7 +13,8 @@ test.describe("Document Workflow", () => {
 
   test.beforeEach(async () => {
     await cleanDatabase();
-    warehouse = (await createWarehouse({ name: "Основной склад" })) as typeof warehouse;
+    // Warehouse must use the same tenantId as the logged-in admin user (E2E_TENANT_ID)
+    warehouse = (await createWarehouse({ name: "Основной склад", tenantId: E2E_TENANT_ID })) as typeof warehouse;
     unit = await createUnit({ name: "Штука", shortName: "шт" });
     product = (await createProduct({
       name: "Тестовый товар",
@@ -113,7 +115,7 @@ test.describe("Document Workflow", () => {
   });
 
   test("stock transfer between warehouses", async ({ adminPage }) => {
-    const targetWarehouse = await createWarehouse({ name: "Второй склад" });
+    const targetWarehouse = await createWarehouse({ name: "Второй склад", tenantId: E2E_TENANT_ID });
 
     // First create a stock receipt to have stock to transfer
     const receiptDoc = await createDocument({

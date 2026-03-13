@@ -99,7 +99,8 @@ export async function createUser(overrides: {
   password?: string;
   role?: string;
   isActive?: boolean;
-} = {}): Promise<DbRow> {
+  tenantId?: string;  // Optional: use a specific tenantId instead of auto-generating one
+} = {}): Promise<DbRow & { tenantId: string }> {
   const id = cuid();
   const user = await insertRow("User", {
     id,
@@ -112,15 +113,23 @@ export async function createUser(overrides: {
   });
 
   // Create tenant and membership for the user (required for login)
-  const tenantId = `tenant-${user.id}`;
-  await insertRow("Tenant", {
-    id: tenantId,
-    name: `Tenant ${tenantId}`,
-    slug: tenantId,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  const tenantId = overrides.tenantId ?? `tenant-${user.id}`;
+
+  // Only create tenant if it doesn't exist yet (idempotent for shared tenantId)
+  const existing = await queryOne<{ id: string }>(
+    `SELECT id FROM "Tenant" WHERE id = $1`,
+    [tenantId]
+  );
+  if (!existing) {
+    await insertRow("Tenant", {
+      id: tenantId,
+      name: `Tenant ${tenantId}`,
+      slug: tenantId,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
 
   await insertRow("TenantMembership", {
     id: cuid(),
@@ -131,7 +140,7 @@ export async function createUser(overrides: {
     createdAt: new Date(),
   });
 
-  return user as DbRow;
+  return { ...user, tenantId } as DbRow & { tenantId: string };
 }
 
 export async function createUnit(overrides: {
@@ -152,27 +161,13 @@ export async function createUnit(overrides: {
 export async function createWarehouse(overrides: {
   name?: string;
   address?: string;
-  tenantId?: string;
-} = {}): Promise<DbRow> {
+  tenantId: string;  // Required: must match the logged-in user's tenant
+}): Promise<DbRow> {
   const id = cuid();
-
-  // Use provided tenantId or create a default tenant
-  let tenantId = overrides.tenantId;
-  if (!tenantId) {
-    const t = await insertRow<DbRow & { id: string }>("Tenant", {
-      id: `tenant-wh-${id}`,
-      name: `Tenant wh-${id}`,
-      slug: `tenant-wh-${id}`,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    tenantId = t.id as string;
-  }
 
   return insertRow("Warehouse", {
     id,
-    tenantId,
+    tenantId: overrides.tenantId,
     name: overrides.name ?? `Склад ${id}`,
     address: overrides.address ?? `Адрес ${id}`,
     isActive: true,
