@@ -152,10 +152,27 @@ export async function createUnit(overrides: {
 export async function createWarehouse(overrides: {
   name?: string;
   address?: string;
+  tenantId?: string;
 } = {}): Promise<DbRow> {
   const id = cuid();
+
+  // Use provided tenantId or create a default tenant
+  let tenantId = overrides.tenantId;
+  if (!tenantId) {
+    const t = await insertRow<DbRow & { id: string }>("Tenant", {
+      id: `tenant-wh-${id}`,
+      name: `Tenant wh-${id}`,
+      slug: `tenant-wh-${id}`,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    tenantId = t.id as string;
+  }
+
   return insertRow("Warehouse", {
     id,
+    tenantId,
     name: overrides.name ?? `Склад ${id}`,
     address: overrides.address ?? `Адрес ${id}`,
     isActive: true,
