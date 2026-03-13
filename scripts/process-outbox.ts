@@ -19,10 +19,10 @@ import {
   processOutboxEvents,
   getOutboxStats,
   registerOutboxHandler,
-} from "../lib/events/outbox";
-import { onDocumentConfirmedBalance } from "../lib/modules/accounting/handlers/balance-handler";
-import { onDocumentConfirmedJournal } from "../lib/modules/accounting/handlers/journal-handler";
-import { onDocumentConfirmedPayment } from "../lib/modules/accounting/handlers/payment-handler";
+} from "@/lib/events/outbox";
+import { onDocumentConfirmedBalance } from "@/lib/modules/accounting/handlers/balance-handler";
+import { onDocumentConfirmedJournal } from "@/lib/modules/accounting/handlers/journal-handler";
+import { onDocumentConfirmedPayment } from "@/lib/modules/accounting/handlers/payment-handler";
 
 // Register handlers
 registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedBalance);

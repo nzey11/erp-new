@@ -35,7 +35,7 @@ const {
 
 const mockTx = {
   outboxEvent: mockOutboxEvent,
-} as any;
+} as unknown as Parameters<Parameters<typeof import("@/lib/shared/db").db.$transaction>[0]>[0];
 
 const sampleEvent = {
   type: "DocumentConfirmed" as const,

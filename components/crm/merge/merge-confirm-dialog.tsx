@@ -77,7 +77,7 @@ export function MergeConfirmDialog({
             <ul className="list-disc list-inside text-muted-foreground space-y-1">
               <li>All links from victim will be transferred to survivor</li>
               <li>All activities from victim will be transferred to survivor</li>
-              <li>Victim party will be marked as "merged"</li>
+              <li>Victim party will be marked as &quot;merged&quot;</li>
               <li>Future lookups for victim will redirect to survivor</li>
             </ul>
           </div>

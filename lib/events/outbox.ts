@@ -13,6 +13,7 @@
 
 import { db } from "@/lib/shared/db";
 import type { OutboxStatus } from "@/lib/generated/prisma/client";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import type { DomainEvent } from "./types";
 
 // ─── Configuration ─────────────────────────────────────────────────────────
@@ -67,7 +68,7 @@ export async function createOutboxEvent(
       eventType: event.type,
       aggregateType,
       aggregateId,
-      payload: event as any, // Prisma Json type
+      payload: event as unknown as Prisma.JsonObject, // Prisma Json type
       status: "PENDING",
       attempts: 0,
       availableAt: new Date(),
