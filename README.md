@@ -59,23 +59,16 @@ npm run dev
 
 ## 🚢 Деплой
 
-Проект поддерживает деплой на VPS через SSH (архивный метод):
+Проект использует release-based CI/CD через GitHub Actions. Сборка выполняется только в CI — на production сервере `next build` не запускается.
 
-```bash
-# Создать архив
-tar --exclude='node_modules' --exclude='.next' --exclude='.git' \
-    --exclude='*.db' --exclude='.env' -czf deploy.tar.gz .
-
-# Загрузить на сервер
-scp -i ~/.ssh/key deploy.tar.gz root@your-server:/tmp/
-
-# Развернуть на сервере
-ssh -i ~/.ssh/key root@your-server \
-  "cd /var/www/app && tar -xzf /tmp/deploy.tar.gz && \
-   npm install && npm run build && pm2 restart app"
+```
+git push origin main
+  → pre-push: lint + typecheck + unit tests
+  → GitHub Actions: verify (lint / tests / build) → deploy (artifact → VPS)
+  → current symlink switch → pm2 reload → smoke check
 ```
 
-Подробная инструкция: [Wiki - Deployment](https://github.com/nzey11/erp-new/wiki/Deployment)
+Подробная инструкция: [`docs/deploy.md`](./docs/deploy.md)
 
 ## 🧪 Тестирование
 

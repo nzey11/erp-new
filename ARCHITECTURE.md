@@ -279,18 +279,15 @@ lib/modules/accounting/stock/
 
 ## Deployment
 
-Archive method via SSH:
-```bash
-# Create archive (excludes .env, node_modules, .next)
-tar -czf deploy.tar.gz --exclude='node_modules' --exclude='.next' \
-    --exclude='.git' --exclude='.env' --exclude='.env.*' --exclude='*.db' .
+Release-based CI/CD via GitHub Actions. See [`docs/deploy.md`](./docs/deploy.md) for the full reference.
 
-# Deploy to server
-scp -i ~/.ssh/listopt_erp_deploy deploy.tar.gz root@109.172.47.162:/tmp/
-ssh -i ~/.ssh/listopt_erp_deploy root@109.172.47.162 \
-    "cd /var/www/listopt-erp && tar -xzf /tmp/deploy.tar.gz && \
-     npm install && npm run build && pm2 restart listopt-erp"
-```
+**Flow:** `git push origin main` → pre-push checks → GitHub Actions verify (lint/test/build) → artifact deploy to VPS → `current` symlink switch → `pm2 reload` → smoke check
+
+Production server: `/var/www/listopt-erp/`
+- `releases/<id>/` — immutable release snapshots
+- `shared/.env` — symlinked into every release
+- `current` → symlink to active release
+- `bin/` — stable deploy/rollback scripts
 
 ## Environment Variables
 
