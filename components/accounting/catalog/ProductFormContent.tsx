@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { csrfFetch } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -191,7 +192,7 @@ export function ProductFormContent({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/accounting/upload", { method: "POST", body: fd });
+      const res = await csrfFetch("/api/accounting/upload", { method: "POST", body: fd });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Ошибка загрузки"); }
       const { url } = await res.json();
       setFormImageUrl(url);
@@ -207,7 +208,7 @@ export function ProductFormContent({
   const handleGenerateSku = async () => {
     setGeneratingSku(true);
     try {
-      const res = await fetch("/api/accounting/sku", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const res = await csrfFetch("/api/accounting/sku", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
       if (!res.ok) throw new Error("Ошибка генерации");
       const { sku } = await res.json();
       setFormSku(sku);
@@ -230,15 +231,15 @@ export function ProductFormContent({
         ...(!editingProduct && !formSku ? { autoSku: true } : {}),
       };
       const res = editingProduct
-        ? await fetch(`/api/accounting/products/${editingProduct.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/accounting/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        ? await csrfFetch(`/api/accounting/products/${editingProduct.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await csrfFetch("/api/accounting/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Ошибка сохранения"); }
       const savedProduct = await res.json();
 
       const cfEntries = Object.entries(customFieldValues).filter(([, v]) => v !== "");
       if (cfEntries.length > 0) {
         const productId = editingProduct?.id || savedProduct.id;
-        await fetch(`/api/accounting/products/${productId}/custom-fields`, {
+        await csrfFetch(`/api/accounting/products/${productId}/custom-fields`, {
           method: "PUT", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fields: cfEntries.map(([definitionId, value]) => ({ definitionId, value })) }),
         });
@@ -257,7 +258,7 @@ export function ProductFormContent({
       if (newCfType === "select" && newCfOptions) {
         body.options = newCfOptions.split(",").map((s) => s.trim()).filter(Boolean);
       }
-      const res = await fetch("/api/accounting/custom-fields", {
+      const res = await csrfFetch("/api/accounting/custom-fields", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Ошибка"); }
@@ -270,7 +271,7 @@ export function ProductFormContent({
 
   const handleDeleteCf = async (cfId: string) => {
     try {
-      const res = await fetch(`/api/accounting/custom-fields/${cfId}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/accounting/custom-fields/${cfId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Ошибка");
       toast.success("Характеристика удалена");
       setCustomFieldValues((prev) => { const next = { ...prev }; delete next[cfId]; return next; });
@@ -305,7 +306,7 @@ export function ProductFormContent({
       return;
     }
     try {
-      const res = await fetch(`/api/accounting/products/${editingProduct.id}/variant-links`, {
+      const res = await csrfFetch(`/api/accounting/products/${editingProduct.id}/variant-links`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ linkedProductId: linkedProduct.id, groupName: newVariantGroupName }),
       });
@@ -320,7 +321,7 @@ export function ProductFormContent({
   const handleRemoveVariantLink = async (linkId: string) => {
     if (!editingProduct) return;
     try {
-      await fetch(`/api/accounting/products/${editingProduct.id}/variant-links?linkId=${linkId}`, { method: "DELETE" });
+      await csrfFetch(`/api/accounting/products/${editingProduct.id}/variant-links?linkId=${linkId}`, { method: "DELETE" });
       setVariantLinks((prev) => prev.filter((vl) => vl.id !== linkId));
       toast.success("Связь удалена");
     } catch { toast.error("Ошибка удаления"); }
@@ -342,7 +343,7 @@ export function ProductFormContent({
   const handleAcceptSuggestion = async (suggestion: VariantSuggestion) => {
     if (!editingProduct) return;
     try {
-      const res = await fetch(`/api/accounting/products/${editingProduct.id}/variant-links`, {
+      const res = await csrfFetch(`/api/accounting/products/${editingProduct.id}/variant-links`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ linkedProductId: suggestion.productId, groupName: suggestion.suggestedGroupName }),
       });
@@ -372,7 +373,7 @@ export function ProductFormContent({
   const handleAddDiscount = async () => {
     if (!editingProduct || !newDiscountName || !newDiscountValue) { toast.error("Название и значение скидки обязательны"); return; }
     try {
-      const res = await fetch(`/api/accounting/products/${editingProduct.id}/discounts`, {
+      const res = await csrfFetch(`/api/accounting/products/${editingProduct.id}/discounts`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newDiscountName, type: newDiscountType, value: parseFloat(newDiscountValue), validTo: newDiscountValidTo || null }),
       });
@@ -388,7 +389,7 @@ export function ProductFormContent({
   const handleRemoveDiscount = async (discountId: string) => {
     if (!editingProduct) return;
     try {
-      await fetch(`/api/accounting/products/${editingProduct.id}/discounts?discountId=${discountId}`, { method: "DELETE" });
+      await csrfFetch(`/api/accounting/products/${editingProduct.id}/discounts?discountId=${discountId}`, { method: "DELETE" });
       setProductDiscounts((prev) => prev.filter((d) => d.id !== discountId));
       toast.success("Скидка удалена");
       onSaved();

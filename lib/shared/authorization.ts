@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "./auth";
+import { getAuthSession, type TenantAwareSession } from "./auth";
 import { logger } from "./logger";
 import type { ErpRole } from "@/lib/generated/prisma/client";
 
 export type { ErpRole };
+
+// Re-export TenantAwareSession for consumers
+export type { TenantAwareSession };
 
 /** Role hierarchy for comparison */
 const ROLE_HIERARCHY: Record<ErpRole, number> = {
@@ -26,7 +29,9 @@ export type Permission =
   | "payments:read" | "payments:write"
   | "reports:read"
   | "settings:write"
-  | "users:manage";
+  | "users:manage"
+  | "journal:manual" | "journal:manualRestrictedAccounts" | "journal:reverse"
+  | "crm:merge";
 
 /** Permissions granted to each role */
 const ROLE_PERMISSIONS: Record<ErpRole, Permission[]> = {
@@ -42,6 +47,8 @@ const ROLE_PERMISSIONS: Record<ErpRole, Permission[]> = {
     "payments:read", "payments:write",
     "reports:read",
     "settings:write", "users:manage",
+    "journal:manual", "journal:manualRestrictedAccounts", "journal:reverse",
+    "crm:merge",
   ],
   manager: [
     "products:read", "products:write",
@@ -54,6 +61,7 @@ const ROLE_PERMISSIONS: Record<ErpRole, Permission[]> = {
     "pricing:read", "pricing:write",
     "payments:read", "payments:write",
     "reports:read",
+    "crm:merge",
   ],
   accountant: [
     "products:read",
@@ -66,6 +74,7 @@ const ROLE_PERMISSIONS: Record<ErpRole, Permission[]> = {
     "pricing:read", "pricing:write",
     "payments:read", "payments:write",
     "reports:read",
+    "journal:manual", "journal:manualRestrictedAccounts", "journal:reverse",
   ],
   viewer: [
     "products:read",
@@ -99,7 +108,7 @@ export function roleHasPermission(role: ErpRole, permission: Permission): boolea
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
 
-type AuthUser = { id: string; username: string; role: ErpRole };
+type AuthUser = TenantAwareSession;
 
 /** Require authenticated user. Throws on failure. */
 export async function requireAuth(minRole?: ErpRole): Promise<AuthUser> {

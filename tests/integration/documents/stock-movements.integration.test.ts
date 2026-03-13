@@ -18,7 +18,7 @@ import {
   calculateStockFromMovements,
   reconcileStockRecord,
   type DocumentForMovements,
-} from "@/lib/modules/accounting/stock-movements";
+} from "@/lib/modules/accounting/inventory/stock-movements";
 import {
   createWarehouse,
   createProduct,

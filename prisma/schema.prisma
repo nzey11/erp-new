@@ -28,7 +28,89 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Party ownership relations
+  primaryOwnedParties   Party[]      @relation("PartyPrimaryOwner")
+  ownedParties          PartyOwner[]
+  ownerAssignments      PartyOwner[] @relation("OwnerAssigner")
+  reviewedMerges        MergeRequest[]
+
+  // Tenant membership (multi-tenant ready)
+  memberships TenantMembership[]
+
   @@index([isActive])
+}
+
+// =============================================
+// TENANT: Multi-tenant Architecture
+// =============================================
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships  TenantMembership[]
+  settings     TenantSettings?
+  warehouses   Warehouse[]
+}
+
+model TenantMembership {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      ErpRole  @default(viewer)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+  @@index([userId, isActive])
+}
+
+model TenantSettings {
+  id        String   @id @default(cuid())
+  tenantId  String   @unique
+
+  // Company info
+  name      String
+  inn       String?
+  kpp       String?
+  ogrn      String?
+
+  // Tax settings
+  taxRegime            String    @default("usn_income")  // osno, usn_income, usn_income_expense, patent
+  vatRate              Float     @default(20)
+  usnRate              Float     @default(6)
+
+  // Initial capital
+  initialCapital       Float     @default(0)
+  initialCapitalDate   DateTime?
+
+  // Account mappings for auto-posting
+  cashAccountId             String?
+  bankAccountId             String?
+  inventoryAccountId        String?
+  supplierAccountId         String?
+  customerAccountId         String?
+  vatAccountId              String?
+  vatPayableAccountId       String?
+  salesAccountId            String?
+  cogsAccountId             String?
+  profitAccountId           String?
+  retainedEarningsAccountId String?
+
+  fiscalYearStartMonth Int       @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 // =============================================
@@ -368,6 +450,7 @@ model CounterpartyBalance {
 
 model Warehouse {
   id              String   @id @default(cuid())
+  tenantId        String   // Tenant scoping
   name            String
   address         String?
   responsibleName String?
@@ -375,12 +458,14 @@ model Warehouse {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stockRecords      StockRecord[]
   stockMovements    StockMovement[]
   documents         Document[]  @relation("WarehouseDocuments")
   incomingTransfers Document[]  @relation("TargetWarehouseDocuments")
 
   @@index([isActive])
+  @@index([tenantId])
 }
 
 model StockRecord {
@@ -1051,6 +1136,34 @@ model CompanySettings {
 }
 
 // =============================================
+// SYSTEM: Outbox (Durable Event Delivery)
+// =============================================
+
+enum OutboxStatus {
+  PENDING    // Ready to be processed
+  PROCESSING // Claimed by a worker
+  PROCESSED  // Successfully handled
+  FAILED     // Exhausted retries
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  eventType     String       // "DocumentConfirmed"
+  aggregateType String       // "Document"
+  aggregateId   String       // documentId for replay/debug
+  payload       Json         // Full DomainEvent { type, occurredAt, payload }
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now()) // When worker can retry
+  createdAt     DateTime     @default(now())
+  processedAt   DateTime?
+  lastError     String?      @db.Text
+
+  @@index([status, availableAt])
+  @@index([aggregateType, aggregateId])
+}
+
+// =============================================
 // SYSTEM: Webhook Idempotency
 // =============================================
 
@@ -1063,4 +1176,162 @@ model ProcessedWebhook {
 
   @@unique([source, externalId])
   @@index([source, processedAt])
+}
+
+// =============================================
+// PARTY: Identity Layer (Customer 360 Foundation)
+// =============================================
+
+enum PartyType {
+  person
+  organization
+}
+
+enum PartySystemStatus {
+  active
+  merged
+  blocked
+}
+
+enum PartyEntityType {
+  customer
+  counterparty
+}
+
+enum OwnerRole {
+  primary
+  backup
+}
+
+enum MergeStatus {
+  pending
+  approved
+  executed
+  rejected
+}
+
+model Party {
+  id                      String            @id @default(cuid())
+
+  // Identity
+  displayName             String
+  displayNameManual       Boolean           @default(false)
+  type                    PartyType         @default(person)
+
+  // Denormalized caches (PartyLink is source of truth)
+  primaryOwnerUserId      String?
+  primaryCustomerId       String?           @unique
+  primaryCounterpartyId   String?           @unique
+  lastActivityAt          DateTime?
+
+  // Merge tracking
+  status                  PartySystemStatus @default(active)
+  mergedIntoId            String?
+  mergedAt                DateTime?
+
+  // Lifecycle
+  isActive                Boolean           @default(true)
+  notes                   String?           @db.Text
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  // Relations
+  primaryOwner            User?             @relation("PartyPrimaryOwner", fields: [primaryOwnerUserId], references: [id])
+  mergedInto              Party?            @relation("PartyMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom              Party[]           @relation("PartyMerge")
+  links                   PartyLink[]
+  activities              PartyActivity[]
+  owners                  PartyOwner[]
+  mergeRequestsSent       MergeRequest[]    @relation("MergeSurvivor")
+  mergeRequestsReceived   MergeRequest[]    @relation("MergeVictim")
+
+  @@index([primaryOwnerUserId])
+  @@index([lastActivityAt])
+  @@index([status])
+  @@index([type])
+}
+
+model PartyLink {
+  id          String            @id @default(cuid())
+  partyId     String
+  entityType  PartyEntityType
+  entityId    String
+
+  isPrimary   Boolean           @default(false)
+  linkedAt    DateTime          @default(now())
+
+  party       Party             @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId])
+  @@index([partyId])
+}
+
+model PartyActivity {
+  id          String    @id @default(cuid())
+  partyId     String
+  type        String    // "order_placed" | "payment_received" | "manager_interaction"
+
+  // When (explicit, not default)
+  occurredAt  DateTime
+
+  // Source reference
+  sourceType  String    // "document" | "payment" | "interaction" | "manual"
+  sourceId    String?   // Nullable for manual activities
+
+  // Lightweight summary
+  summary     Json      @default("{}")
+
+  party       Party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, type])
+  @@index([partyId, occurredAt(sort: Desc)])
+  @@index([type, occurredAt(sort: Desc)])
+}
+
+model PartyOwner {
+  id          String      @id @default(cuid())
+  partyId     String
+  userId      String
+
+  role        OwnerRole   @default(primary)
+
+  assignedAt  DateTime    @default(now())
+  assignedBy  String?
+
+  isActive    Boolean     @default(true)
+  endedAt     DateTime?
+
+  party       Party       @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id])
+  assigner    User?       @relation("OwnerAssigner", fields: [assignedBy], references: [id])
+
+  @@unique([partyId, role, isActive])
+  @@index([partyId])
+  @@index([userId])
+}
+
+model MergeRequest {
+  id                String        @id @default(cuid())
+
+  survivorId        String
+  victimId          String
+
+  detectionSource   String        // "manual" | "phone_match" | "telegram_match"
+  confidence        Float?
+  matchReason       String?       @db.Text
+
+  status            MergeStatus   @default(pending)
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  executedAt        DateTime?
+
+  createdBy         String?
+  createdAt         DateTime      @default(now())
+
+  survivor          Party         @relation("MergeSurvivor", fields: [survivorId], references: [id])
+  victim            Party         @relation("MergeVictim", fields: [victimId], references: [id])
+  reviewer          User?         @relation(fields: [reviewedBy], references: [id])
+
+  @@unique([survivorId, victimId])
+  @@index([status])
 }

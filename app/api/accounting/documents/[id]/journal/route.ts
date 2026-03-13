@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
-import { getEntriesForDocument } from "@/lib/modules/accounting/journal";
+import { getEntriesForDocument } from "@/lib/modules/accounting/finance/journal";
 
 export async function GET(
   _request: NextRequest,

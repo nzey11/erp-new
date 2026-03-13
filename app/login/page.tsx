@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchCsrfToken } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,8 @@ export default function LoginPage() {
         return;
       }
 
+      // Fetch CSRF token for subsequent requests
+      await fetchCsrfToken();
       router.push("/");
       router.refresh();
     } catch {

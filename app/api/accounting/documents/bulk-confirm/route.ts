@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { getAuthSession } from "@/lib/shared/auth";
-import {
-  affectsStock, affectsBalance, isStockDecrease, isStockIncrease,
-} from "@/lib/modules/accounting/documents";
+import { affectsStock, isStockDecrease, isStockIncrease } from "@/lib/modules/accounting/inventory/predicates";
+import { affectsBalance } from "@/lib/modules/accounting/finance/predicates";
 import {
   updateStockForDocument, checkStockAvailability, updateAverageCostOnReceipt,
   updateAverageCostOnTransfer, updateTotalCostValue,
-} from "@/lib/modules/accounting/stock";
-import { recalculateBalance } from "@/lib/modules/accounting/balance";
-import { autoPostDocument } from "@/lib/modules/accounting/journal";
+} from "@/lib/modules/accounting/inventory/stock";
+import { recalculateBalance } from "@/lib/modules/finance/reports";
+import { autoPostDocument } from "@/lib/modules/accounting/finance/journal";
 
 export async function POST(request: NextRequest) {
   try {

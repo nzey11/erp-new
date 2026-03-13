@@ -19,7 +19,12 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     testTimeout: 30000,
     hookTimeout: 30000,
-    include: ["tests/unit/lib/stock-movements.test.ts"],
+    include: [
+      "tests/unit/lib/stock-movements.test.ts",
+      "tests/unit/lib/cogs.test.ts",
+      "tests/unit/lib/party-owner.test.ts",
+      "tests/unit/lib/party-merge.test.ts",
+    ],
     // Sequential: avoid DB race conditions
     fileParallelism: false,
     sequence: {

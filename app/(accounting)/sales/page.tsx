@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,7 +121,7 @@ function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch(`/api/accounting/ecommerce/orders/${id}`, {
+      const res = await csrfFetch(`/api/accounting/ecommerce/orders/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -136,7 +137,7 @@ function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
 
   const handleConfirm = async (id: string) => {
     try {
-      const res = await fetch(`/api/accounting/documents/${id}/confirm`, { method: "POST" });
+      const res = await csrfFetch(`/api/accounting/documents/${id}/confirm`, { method: "POST" });
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success("Документ подтверждён");
       grid.mutate.refresh();

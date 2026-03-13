@@ -6,12 +6,14 @@ import { createWarehouseSchema } from "@/lib/modules/accounting/schemas/warehous
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("warehouses:read");
+    const session = await requirePermission("warehouses:read");
 
     const { searchParams } = new URL(request.url);
     const active = searchParams.get("active");
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      tenantId: session.tenantId, // Tenant scoping
+    };
     if (active !== null && active !== "") where.isActive = active === "true";
 
     const warehouses = await db.warehouse.findMany({
@@ -27,12 +29,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requirePermission("warehouses:write");
+    const session = await requirePermission("warehouses:write");
 
     const data = await parseBody(request, createWarehouseSchema);
 
     const warehouse = await db.warehouse.create({
-      data: { name: data.name, address: data.address || null, responsibleName: data.responsibleName || null },
+      data: {
+        tenantId: session.tenantId, // Tenant scoping
+        name: data.name,
+        address: data.address || null,
+        responsibleName: data.responsibleName || null,
+      },
     });
 
     return NextResponse.json(warehouse, { status: 201 });

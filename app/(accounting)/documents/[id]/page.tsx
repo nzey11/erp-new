@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,7 +196,7 @@ export default function DocumentDetailPage() {
       price: i === index ? price : item.price,
     }));
     try {
-      const res = await fetch(`/api/accounting/documents/${id}`, {
+      const res = await csrfFetch(`/api/accounting/documents/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: currentItems }),
@@ -211,7 +212,7 @@ export default function DocumentDetailPage() {
 
   const handleConfirm = async () => {
     try {
-      const res = await fetch(`/api/accounting/documents/${id}/confirm`, { method: "POST" });
+      const res = await csrfFetch(`/api/accounting/documents/${id}/confirm`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка");
@@ -225,7 +226,7 @@ export default function DocumentDetailPage() {
 
   const handleCancel = async () => {
     try {
-      const res = await fetch(`/api/accounting/documents/${id}/cancel`, { method: "POST" });
+      const res = await csrfFetch(`/api/accounting/documents/${id}/cancel`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка");
@@ -240,7 +241,7 @@ export default function DocumentDetailPage() {
   const handleDelete = async () => {
     if (!confirm("Удалить документ?")) return;
     try {
-      const res = await fetch(`/api/accounting/documents/${id}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/accounting/documents/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка");
@@ -267,7 +268,7 @@ export default function DocumentDetailPage() {
         price: parseFloat(itemPrice) || 0,
       });
 
-      const res = await fetch(`/api/accounting/documents/${id}`, {
+      const res = await csrfFetch(`/api/accounting/documents/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: currentItems }),
@@ -302,7 +303,7 @@ export default function DocumentDetailPage() {
       }));
 
     try {
-      const res = await fetch(`/api/accounting/documents/${id}`, {
+      const res = await csrfFetch(`/api/accounting/documents/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: currentItems }),
@@ -338,7 +339,7 @@ export default function DocumentDetailPage() {
         })),
       };
 
-      const res = await fetch("/api/accounting/documents", {
+      const res = await csrfFetch("/api/accounting/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

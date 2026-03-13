@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useMemo, useCallback } from "react";
+import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/page-header";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
@@ -295,7 +296,7 @@ export default function StockPage() {
         onSuccess={() => tableRef.current?.refresh()}
         onAfterCreate={async (doc, type) => {
           if (type === "inventory_count") {
-            await fetch(`/api/accounting/documents/${doc.id}/fill-inventory`, { method: "POST" });
+            await csrfFetch(`/api/accounting/documents/${doc.id}/fill-inventory`, { method: "POST" });
           }
         }}
       />

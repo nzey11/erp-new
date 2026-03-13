@@ -19,9 +19,9 @@ export default defineConfig({
     globals: true,
     testTimeout: 10000,
     hookTimeout: 10000,
-    // Stock-movements service test needs a real DB → excluded here, lives in test:service
+    // Stock-movements and cogs service tests need a real DB → excluded here, live in test:service
     include: ["tests/unit/**/*.test.ts"],
-    exclude: ["tests/unit/lib/stock-movements.test.ts"],
+    exclude: ["tests/unit/lib/stock-movements.test.ts", "tests/unit/lib/cogs.test.ts", "tests/unit/lib/party-owner.test.ts", "tests/unit/lib/party-merge.test.ts"],
     // Pure unit tests can run in parallel
     fileParallelism: true,
   },

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { quickOrderSchema } from "@/lib/modules/ecommerce/schemas/quick-order.schema";
-import { createSalesOrderFromCart } from "@/lib/modules/accounting";
+import { createSalesOrderFromCart } from "@/lib/modules/ecom/orders";
 import { logger } from "@/lib/shared/logger";
 
 export async function POST(request: NextRequest) {

@@ -55,7 +55,7 @@ function withRequestId(response: NextResponse, requestId: string): NextResponse 
   return response;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Generate request ID for tracing
@@ -137,7 +137,7 @@ export function middleware(request: NextRequest) {
   ) {
     const secret = process.env.SESSION_SECRET;
     if (secret) {
-      const csrfResult = validateCsrf(request, secret);
+      const csrfResult = await validateCsrf(request, secret);
       if (!csrfResult.valid) {
         logger.warn("csrf", "CSRF validation failed", {
           pathname,

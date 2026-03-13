@@ -1,13 +1,19 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
+import { getCsrfToken } from "@/lib/client/csrf";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Prefetch CSRF token on app load
+  useEffect(() => {
+    getCsrfToken().catch(() => {/* ignore - will retry on next request */});
+  }, []);
+
   return (
     <div className="min-h-screen">
       <AppSidebar />

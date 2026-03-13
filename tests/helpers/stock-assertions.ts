@@ -8,7 +8,7 @@
 
 import { expect } from "vitest";
 import { db } from "@/lib/shared/db";
-import { calculateStockFromMovements } from "@/lib/modules/accounting/stock-movements";
+import { calculateStockFromMovements } from "@/lib/modules/accounting/inventory/stock-movements";
 
 // =============================================
 // StockRecord assertions

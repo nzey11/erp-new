@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   const token = generateCsrfToken();
-  const signedToken = signCsrfToken(token, secret);
+  const signedToken = await signCsrfToken(token, secret);
 
   const response = NextResponse.json({
     token,

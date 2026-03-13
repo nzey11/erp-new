@@ -7,7 +7,7 @@ import {
   calculateStockFromMovements,
   reconcileStockRecord,
   type DocumentForMovements,
-} from "@/lib/modules/accounting/stock-movements";
+} from "@/lib/modules/accounting/inventory/stock-movements";
 import {
   createWarehouse,
   createProduct,
@@ -551,7 +551,7 @@ describe("StockMovementService — stock_transfer", () => {
 import {
   getMovementTypeForDocument,
   documentAffectsStock,
-} from "@/lib/modules/accounting/stock-movements";
+} from "@/lib/modules/accounting/inventory/stock-movements";
 
 describe("getMovementTypeForDocument", () => {
   it.each([

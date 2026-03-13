@@ -5,6 +5,10 @@ import { parseBody, validationError } from "@/lib/shared/validation";
 import { loginSchema } from "@/lib/shared/schemas/auth.schema";
 import { logger } from "@/lib/shared/logger";
 import { compare } from "bcryptjs";
+import {
+  resolveActiveMembershipForUser,
+  MembershipResolutionError,
+} from "@/lib/modules/auth/resolve-membership";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,9 +16,10 @@ export async function POST(request: NextRequest) {
 
     logger.info("auth/login", "Login attempt", { username });
 
+    // 1. Validate credentials
     const user = await db.user.findUnique({
       where: { username },
-      select: { id: true, username: true, password: true, role: true, isActive: true },
+      select: { id: true, username: true, password: true, isActive: true },
     });
 
     if (!user || !user.isActive) {
@@ -34,11 +39,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = signSession(user.id);
-    logger.info("auth/login", "Login successful", { username, userId: user.id, role: user.role });
+    // 2. Resolve tenant membership (v1: auto-select single active membership)
+    let membership;
+    try {
+      membership = await resolveActiveMembershipForUser(user.id);
+    } catch (error) {
+      if (error instanceof MembershipResolutionError) {
+        logger.warn("auth/login", `Membership resolution failed: ${error.code}`, {
+          userId: user.id,
+          username,
+          code: error.code,
+        });
+        return NextResponse.json(
+          { error: error.message },
+          { status: 403 }
+        );
+      }
+      throw error;
+    }
 
+    // 3. Create session (token still simple: just userId)
+    const token = signSession(user.id);
+
+    logger.info("auth/login", "Login successful", {
+      username,
+      userId: user.id,
+      tenantId: membership.tenantId,
+      tenantName: membership.tenantName,
+      role: membership.role,
+    });
+
+    // 4. Return tenant-aware user context (role from membership, not User)
     const response = NextResponse.json({
-      user: { id: user.id, username: user.username, role: user.role },
+      user: {
+        id: user.id,
+        username: user.username,
+        role: membership.role,
+        tenantId: membership.tenantId,
+        tenantName: membership.tenantName,
+        tenantSlug: membership.tenantSlug,
+      },
     });
 
     response.cookies.set("session", token, {

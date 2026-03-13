@@ -2,7 +2,7 @@
 
 import crypto from "crypto";
 import { db } from "@/lib/shared/db";
-import { confirmOrderPayment } from "@/lib/modules/accounting";
+import { confirmOrderPayment } from "@/lib/modules/ecom/orders";
 
 interface PaymentResult {
   order: {

@@ -37,11 +37,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useSyncExternalStore, useEffect } from "react";
+import { clearCsrfToken } from "@/lib/client/csrf";
 
 // Module definitions for the switcher
 const modules = [
   { id: "accounting", name: "Система учёта", icon: Calculator, available: true },
   { id: "finance", name: "Финансы", icon: Wallet, available: true },
+  { id: "crm", name: "CRM", icon: Users, available: true },
   { id: "ecommerce", name: "E-commerce", icon: ShoppingBag, available: true },
   { id: "ai-office", name: "AI Office", icon: Bot, available: false },
 ];
@@ -65,6 +67,10 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Статьи", href: "/finance/categories", icon: BookOpen },
     { name: "План счетов", href: "/finance/accounts", icon: BookMarked },
     { name: "Журнал проводок", href: "/finance/journal", icon: ClipboardList },
+  ],
+  crm: [
+    { name: "Клиенты", href: "/crm/parties", icon: Users },
+    { name: "Объединение", href: "/crm/admin/merge", icon: Users },
   ],
   ecommerce: [
     { name: "Промо-блоки", href: "/ecommerce/promo-blocks", icon: Image },
@@ -95,6 +101,7 @@ export function AppSidebar() {
 
   const getModuleFromPath = (path: string) => {
     if (path.startsWith("/finance")) return "finance";
+    if (path.startsWith("/crm")) return "crm";
     if (path.startsWith("/ecommerce") || path.startsWith("/cms-pages")) return "ecommerce";
     return "accounting";
   };
@@ -114,6 +121,7 @@ export function AppSidebar() {
   const navigation = moduleNavigation[currentModule] || [];
 
   const handleLogout = async () => {
+    clearCsrfToken();
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };

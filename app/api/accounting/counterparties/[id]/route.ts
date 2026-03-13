@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
-import { getBalance } from "@/lib/modules/accounting/balance";
+import { getBalance } from "@/lib/modules/finance/reports";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateCounterpartySchema } from "@/lib/modules/accounting/schemas/counterparties.schema";
 

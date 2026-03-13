@@ -38,12 +38,25 @@ async function main() {
   }
   console.log(`  ✓ ${units.length} units`);
 
-  // Default warehouse
+  // Default tenant (created early for foreign key references)
+  const defaultTenant = await prisma.tenant.upsert({
+    where: { slug: "default" },
+    update: {},
+    create: {
+      id: "default-tenant",
+      name: "Default Organization",
+      slug: "default",
+    },
+  });
+  console.log('  ✓ Default tenant');
+
+  // Default warehouse (linked to tenant)
   await prisma.warehouse.upsert({
     where: { id: "default-warehouse" },
     update: {},
     create: {
       id: "default-warehouse",
+      tenantId: defaultTenant.id,
       name: "Основной склад",
       address: "",
       responsibleName: "",
@@ -64,7 +77,7 @@ async function main() {
 
   // Admin user (password: admin123)
   const passwordHash = await hash("admin123", 12);
-  await prisma.user.upsert({
+  const adminUser = await prisma.user.upsert({
     where: { username: "admin" },
     update: {},
     create: {
@@ -74,6 +87,33 @@ async function main() {
     },
   });
   console.log('  ✓ Admin user (login: admin / admin123)');
+
+  // Admin membership (links admin user to default tenant)
+  await prisma.tenantMembership.upsert({
+    where: { userId_tenantId: { userId: adminUser.id, tenantId: defaultTenant.id } },
+    update: {},
+    create: {
+      userId: adminUser.id,
+      tenantId: defaultTenant.id,
+      role: "admin",
+      isActive: true,
+    },
+  });
+  console.log('  ✓ Admin membership');
+
+  // Default tenant settings
+  await prisma.tenantSettings.upsert({
+    where: { tenantId: defaultTenant.id },
+    update: {},
+    create: {
+      tenantId: defaultTenant.id,
+      name: "Default Organization",
+      taxRegime: "usn_income",
+      vatRate: 20,
+      usnRate: 6,
+    },
+  });
+  console.log('  ✓ Default tenant settings');
 
   // Finance categories (system defaults)
   const financeCategories = [

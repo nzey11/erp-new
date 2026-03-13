@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
-import { getAllEcomOrders } from "@/lib/modules/accounting/ecom-orders";
+import { getAllEcomOrders } from "@/lib/modules/ecom/orders";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryEcomOrdersSchema } from "@/lib/modules/accounting/schemas/ecom-order.schema";
 

@@ -8,11 +8,14 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("warehouses:read");
+    const session = await requirePermission("warehouses:read");
     const { id } = await params;
 
-    const warehouse = await db.warehouse.findUnique({
-      where: { id },
+    const warehouse = await db.warehouse.findFirst({
+      where: {
+        id,
+        tenantId: session.tenantId, // Tenant scoping
+      },
       include: {
         stockRecords: {
           where: { quantity: { not: 0 } },
@@ -36,9 +39,18 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("warehouses:write");
+    const session = await requirePermission("warehouses:write");
     const { id } = await params;
     const data = await parseBody(request, updateWarehouseSchema);
+
+    // Verify warehouse belongs to tenant
+    const existing = await db.warehouse.findFirst({
+      where: { id, tenantId: session.tenantId },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Склад не найден" }, { status: 404 });
+    }
 
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
@@ -61,8 +73,17 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("warehouses:write");
+    const session = await requirePermission("warehouses:write");
     const { id } = await params;
+
+    // Verify warehouse belongs to tenant
+    const existing = await db.warehouse.findFirst({
+      where: { id, tenantId: session.tenantId },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Склад не найден" }, { status: 404 });
+    }
 
     await db.warehouse.update({
       where: { id },

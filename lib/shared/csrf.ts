@@ -1,54 +1,103 @@
 /**
  * CSRF Protection utilities.
  * Generates and validates CSRF tokens for cookie-based authentication.
+ * Compatible with Edge Runtime (uses Web Crypto API).
  */
-
-import crypto from "crypto";
 
 const CSRF_TOKEN_LENGTH = 32;
 const CSRF_COOKIE_NAME = "csrf_token";
 const CSRF_HEADER_NAME = "x-csrf-token";
 
 /**
- * Generate a cryptographically secure CSRF token.
+ * Convert a hex string to Uint8Array.
  */
-export function generateCsrfToken(): string {
-  return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString("hex");
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
 }
 
 /**
- * Create a signed CSRF token using HMAC.
- * The token is signed with SESSION_SECRET to prevent tampering.
+ * Convert Uint8Array to hex string.
  */
-export function signCsrfToken(token: string, secret: string): string {
-  const hmac = crypto
-    .createHmac("sha256", secret)
-    .update(token)
-    .digest("hex");
-  return `${token}.${hmac}`;
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Timing-safe comparison of two strings.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+/**
+ * Generate a cryptographically secure CSRF token.
+ * Uses Web Crypto API for Edge Runtime compatibility.
+ */
+export function generateCsrfToken(): string {
+  const bytes = new Uint8Array(CSRF_TOKEN_LENGTH);
+  crypto.getRandomValues(bytes);
+  return bytesToHex(bytes);
+}
+
+/**
+ * Create a signed CSRF token using HMAC-SHA256.
+ * The token is signed with SESSION_SECRET to prevent tampering.
+ * Uses Web Crypto API for Edge Runtime compatibility.
+ */
+export async function signCsrfToken(token: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const tokenData = encoder.encode(token);
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, tokenData);
+  const signatureHex = bytesToHex(new Uint8Array(signature));
+  return `${token}.${signatureHex}`;
 }
 
 /**
  * Verify a signed CSRF token.
+ * Uses Web Crypto API for Edge Runtime compatibility.
  */
-export function verifyCsrfToken(signedToken: string, secret: string): boolean {
+export async function verifyCsrfToken(signedToken: string, secret: string): Promise<boolean> {
   const [token, signature] = signedToken.split(".");
   if (!token || !signature) return false;
 
-  const expectedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(token)
-    .digest("hex");
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const tokenData = encoder.encode(token);
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const expectedSignature = await crypto.subtle.sign("HMAC", key, tokenData);
+  const expectedHex = bytesToHex(new Uint8Array(expectedSignature));
 
   // Use timing-safe comparison to prevent timing attacks
-  try {
-    return crypto.timingSafeEqual(
-      Buffer.from(signature, "hex"),
-      Buffer.from(expectedSignature, "hex")
-    );
-  } catch {
-    return false;
-  }
+  return timingSafeEqual(signature, expectedHex);
 }
 
 /**
@@ -74,10 +123,10 @@ export function getCsrfTokenFromRequest(request: Request): string | null {
 /**
  * Validate CSRF token from request against cookie.
  */
-export function validateCsrf(
+export async function validateCsrf(
   request: Request,
   secret: string
-): { valid: boolean; error?: string } {
+): Promise<{ valid: boolean; error?: string }> {
   const cookieHeader = request.headers.get("cookie") || "";
   const cookies = Object.fromEntries(
     cookieHeader.split(";").map((c) => {
@@ -92,7 +141,7 @@ export function validateCsrf(
   }
 
   // Verify cookie signature
-  if (!verifyCsrfToken(signedCookieToken, secret)) {
+  if (!(await verifyCsrfToken(signedCookieToken, secret))) {
     return { valid: false, error: "Invalid CSRF cookie signature" };
   }
 

@@ -13,6 +13,10 @@ export async function cleanDatabase(): Promise<void> {
   await db.favorite.deleteMany();
   await db.customerAddress.deleteMany();
   await db.customer.deleteMany();
+  // Journal entries before stock/document tables
+  // Note: onDelete: Cascade on LedgerLine.entryId → cascade-deletes LedgerLine rows
+  await db.journalEntry.deleteMany();
+  await db.companySettings.deleteMany();
   await db.stockMovement.deleteMany(); // Stock movements before document items
   await db.documentItem.deleteMany();
   await db.document.deleteMany();
@@ -40,6 +44,15 @@ export async function cleanDatabase(): Promise<void> {
   await db.warehouse.deleteMany();
   await db.unit.deleteMany();
   await db.user.deleteMany();
+}
+
+/**
+ * Clean only journal-related tables (LedgerLine via cascade, JournalEntry).
+ * Useful in beforeEach of journal test suites when full cleanDatabase() is overkill.
+ */
+export async function cleanJournal(): Promise<void> {
+  // LedgerLine is cascade-deleted when JournalEntry is deleted
+  await db.journalEntry.deleteMany();
 }
 
 /**

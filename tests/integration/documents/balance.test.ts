@@ -5,7 +5,7 @@ import {
   createCounterparty,
   createDocument,
 } from "../../helpers/factories";
-import { recalculateBalance, getBalance } from "@/lib/modules/accounting/balance";
+import { recalculateBalance, getBalance } from "@/lib/modules/finance/reports";
 
 describe("lib/balance - integration", () => {
   beforeEach(async () => {

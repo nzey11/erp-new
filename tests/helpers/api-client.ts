@@ -42,15 +42,26 @@ export function createTestRequest(
 }
 
 /**
- * Mock getAuthSession to return a specific user.
+ * Mock getAuthSession to return a specific user with tenant context.
  * Must be called after vi.mock("@/lib/shared/auth") setup.
  */
-export function mockAuthUser(user: { id: string; username: string; role: ErpRole; isActive?: boolean }) {
+export function mockAuthUser(user: {
+  id: string;
+  username: string;
+  role: ErpRole;
+  tenantId?: string;
+  tenantName?: string;
+  tenantSlug?: string;
+  membershipId?: string;
+}) {
   vi.mocked(authModule.getAuthSession).mockResolvedValue({
     id: user.id,
     username: user.username,
     role: user.role,
-    isActive: user.isActive ?? true,
+    tenantId: user.tenantId ?? "test-tenant",
+    tenantName: user.tenantName ?? "Test Tenant",
+    tenantSlug: user.tenantSlug ?? "test-tenant",
+    membershipId: user.membershipId ?? "test-membership",
   });
 }
 

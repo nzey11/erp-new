@@ -3,6 +3,7 @@ import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createInteractionSchema } from "@/lib/modules/accounting/schemas/counterparties.schema";
+import { recordManagerInteraction } from "@/lib/party";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -35,6 +36,15 @@ export async function POST(request: NextRequest, { params }: Params) {
         subject: data.subject || null,
         description: data.description || null,
       },
+    });
+
+    // Record party activity for timeline
+    await recordManagerInteraction({
+      counterpartyId: id,
+      interactionId: interaction.id,
+      interactionType: data.type,
+      subject: data.subject || undefined,
+      occurredAt: interaction.createdAt,
     });
 
     return NextResponse.json(interaction, { status: 201 });

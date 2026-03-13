@@ -1,6 +1,12 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import {
+  resolveActiveMembershipForUser,
+  MembershipResolutionError,
+} from "@/lib/modules/auth/resolve-membership";
+import { logger } from "@/lib/shared/logger";
+import type { ErpRole } from "@/lib/generated/prisma/client";
 
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -58,8 +64,29 @@ export function verifySessionToken(token: string): string | null {
   }
 }
 
-/** Get the authenticated user from session cookie. Returns user or null. */
-export async function getAuthSession() {
+// ─── Tenant-Aware Session Types ───────────────────────────────────────────────
+
+export interface TenantAwareSession {
+  id: string;
+  username: string;
+  role: ErpRole; // From TenantMembership, not User
+  tenantId: string;
+  tenantName: string;
+  tenantSlug: string;
+  membershipId: string;
+}
+
+// ─── Session Retrieval ────────────────────────────────────────────────────────
+
+/**
+ * Get the authenticated user with tenant context from session cookie.
+ *
+ * Returns null silently for missing/invalid tokens (no logging).
+ * Logs specific reasons for membership failures (for observability).
+ *
+ * @returns TenantAwareSession or null
+ */
+export async function getAuthSession(): Promise<TenantAwareSession | null> {
   try {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session")?.value;
@@ -72,11 +99,49 @@ export async function getAuthSession() {
     const { db } = await import("./db");
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { id: true, username: true, role: true, isActive: true },
+      select: { id: true, username: true, isActive: true },
     });
 
-    if (!user || !user.isActive) return null;
-    return user;
+    // User not found or inactive
+    if (!user) {
+      logger.warn("auth/session", "User not found in database", { userId });
+      return null;
+    }
+
+    if (!user.isActive) {
+      logger.warn("auth/session", "User is inactive", { userId, username: user.username });
+      return null;
+    }
+
+    // Resolve tenant membership
+    try {
+      const membership = await resolveActiveMembershipForUser(userId);
+
+      return {
+        id: user.id,
+        username: user.username,
+        role: membership.role,
+        tenantId: membership.tenantId,
+        tenantName: membership.tenantName,
+        tenantSlug: membership.tenantSlug,
+        membershipId: membership.membershipId,
+      };
+    } catch (error) {
+      // Log specific membership resolution failures
+      if (error instanceof MembershipResolutionError) {
+        logger.warn("auth/session", `Membership resolution failed: ${error.code}`, {
+          userId,
+          username: user.username,
+          code: error.code,
+        });
+      } else {
+        logger.error("auth/session", "Unexpected error during membership resolution", {
+          userId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return null;
+    }
   } catch {
     return null;
   }

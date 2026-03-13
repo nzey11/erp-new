@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requireAuth } from "@/lib/shared/authorization";
-import { reverseEntry } from "@/lib/modules/accounting/journal";
+import { reverseEntry } from "@/lib/modules/accounting/finance/journal";
 import { z } from "zod";
 
 const updatePaymentSchema = z.object({
@@ -47,7 +47,7 @@ export async function PATCH(
         where: { sourceId: id, sourceType: "finance_payment", isReversed: false },
       });
       if (oldEntry) {
-        await reverseEntry(oldEntry.id);
+        await reverseEntry(oldEntry.id, { bypassAutoCheck: true });
       }
       // Re-post: build new journal entry directly (bypass idempotency check)
       const cashAccountCode = updated.paymentMethod === "cash" ? "50" : "51";
@@ -117,7 +117,7 @@ export async function DELETE(
       const entry = await db.journalEntry.findFirst({
         where: { sourceId: id, sourceType: "finance_payment", isReversed: false },
       });
-      if (entry) await reverseEntry(entry.id);
+      if (entry) await reverseEntry(entry.id, { bypassAutoCheck: true });
     } catch { /* non-critical */ }
 
     await db.payment.delete({ where: { id } });

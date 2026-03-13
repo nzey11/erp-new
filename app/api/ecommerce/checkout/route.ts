@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
-import { checkoutSchema, createSalesOrderFromCart } from "@/lib/modules/accounting";
+import { checkoutSchema } from "@/lib/modules/accounting";
+import { createSalesOrderFromCart } from "@/lib/modules/ecom/orders";
 import { logger } from "@/lib/shared/logger";
 
 /** POST /api/ecommerce/checkout — Create order from cart */

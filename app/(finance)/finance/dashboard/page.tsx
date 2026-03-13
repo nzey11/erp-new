@@ -63,8 +63,8 @@ export default function FinanceDashboardPage() {
           fetch(`/api/finance/reports/cash-flow?${params}`).then((r) => r.json()),
           fetch("/api/finance/reports/balances").then((r) => r.json()),
         ]);
-        setCashFlow(cf);
-        setBalances(bal);
+        setCashFlow(cf?.inflows ? cf : null);
+        setBalances(bal?.netBalance !== undefined ? bal : null);
       } catch {
         toast.error("Ошибка загрузки данных");
       } finally {
@@ -142,7 +142,7 @@ export default function FinanceDashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">
-              {cashFlow ? formatRub(cashFlow.inflows.total) : "—"}
+              {cashFlow?.inflows ? formatRub(cashFlow.inflows.total) : "—"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
           </CardContent>
@@ -157,7 +157,7 @@ export default function FinanceDashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">
-              {cashFlow ? formatRub(cashFlow.outflows.total) : "—"}
+              {cashFlow?.outflows ? formatRub(cashFlow.outflows.total) : "—"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
           </CardContent>

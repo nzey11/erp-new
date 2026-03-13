@@ -30,10 +30,13 @@ export async function calculateDeliveryCost(input: DeliveryCalcInput): Promise<D
   };
 }
 
-/** Get pickup warehouses */
-export async function getPickupWarehouses() {
+/** Get pickup warehouses for a specific tenant */
+export async function getPickupWarehouses(tenantId: string) {
   return db.warehouse.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      tenantId, // Tenant scoping
+    },
     select: { id: true, name: true, address: true },
     orderBy: { name: "asc" },
   });

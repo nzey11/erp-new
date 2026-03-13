@@ -24,7 +24,7 @@ export async function fetchCsrfToken(): Promise<string> {
 
   const data = await response.json();
   cachedToken = data.token;
-  return cachedToken;
+  return cachedToken!;
 }
 
 /**

@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
-import { affectsStock, affectsBalance, getDocTypeName, getDocStatusName } from "@/lib/modules/accounting/documents";
-import { createReversingMovements, hasReversingMovements } from "@/lib/modules/accounting/stock-movements";
-import { recalculateBalance } from "@/lib/modules/accounting/balance";
+import { affectsStock } from "@/lib/modules/accounting/inventory/predicates";
+import { affectsBalance } from "@/lib/modules/accounting/finance/predicates";
+import { getDocTypeName, getDocStatusName } from "@/lib/modules/accounting/documents";
+import { createReversingMovements, hasReversingMovements } from "@/lib/modules/accounting/inventory/stock-movements";
+import { recalculateBalance } from "@/lib/modules/finance/reports";
 import { logger } from "@/lib/shared/logger";
+import { validateTransition, DocumentStateError } from "@/lib/modules/accounting/document-states";
+import type { DocumentStatus } from "@/lib/generated/prisma/client";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -22,11 +26,14 @@ export async function POST(_request: NextRequest, { params }: Params) {
     if (!doc) {
       return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
     }
-    if (doc.status !== "confirmed") {
-      return NextResponse.json(
-        { error: "Только подтверждённые документы можно отменить" },
-        { status: 400 }
-      );
+
+    try {
+      validateTransition(doc.type, doc.status as DocumentStatus, "cancelled");
+    } catch (e) {
+      if (e instanceof DocumentStateError) {
+        return NextResponse.json({ error: e.message }, { status: 400 });
+      }
+      throw e;
     }
 
     // Cancel the document

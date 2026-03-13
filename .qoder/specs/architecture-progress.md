@@ -127,27 +127,40 @@ This file tracks the implementation progress of architecture improvements. Each 
 
 ### 1.2 Simplify confirm() Operation
 
-- [ ] Create `lib/modules/accounting/services/document-confirm.service.ts`
-- [ ] Implement `confirm()` — transactional core
-- [ ] Implement `postConfirmEffects()` — async reactions
-- [ ] Update `app/api/accounting/documents/[id]/confirm/route.ts`
-- [ ] Add error handling for non-critical effects
-- [ ] Add tests for both paths
-- [ ] Monitor for failed post-effects
+- [x] Create `lib/modules/accounting/services/document-confirm.service.ts`
+- [x] Implement `confirmDocumentTransactional()` — ordered critical path (movements → stock → avg cost → status=confirmed)
+- [x] Implement `runPostConfirmEffects()` — isolated try/catch per effect (balance, journal, payment, inventory adjustments)
+- [x] Update `app/api/accounting/documents/[id]/confirm/route.ts` — slim: auth → service → fire-and-forget effects → return
+- [x] Add error handling for non-critical effects (each effect isolated, failures logged not thrown)
+- [ ] Add tests for both paths (transactional core + post-effects)
+- [ ] Monitor for failed post-effects (Phase 2.1 Outbox will add durability)
 
 **New files:**
 - `lib/modules/accounting/services/document-confirm.service.ts`
 
+**Files modified:**
+- `app/api/accounting/documents/[id]/confirm/route.ts` (reduced from 421 → 40 lines)
+
 ### 1.3 State Machines for Documents and Orders
 
-- [ ] Create `lib/modules/accounting/document-states.ts`
-- [ ] Define state transitions for all document types
-- [ ] Implement `canTransition()` function
-- [ ] Implement `validateTransition()` function
-- [ ] Implement `getAvailableTransitions()` function
-- [ ] Update confirm/cancel/ship endpoints to use state machine
-- [ ] Add API endpoint for available transitions (for UI)
-- [ ] Add tests for all transition combinations
+- [x] Create `lib/modules/accounting/document-states.ts`
+- [x] Define state transitions for all document types (12 types × status map)
+- [x] Implement `canTransition(type, from, to)` — pure function, zero deps
+- [x] Implement `validateTransition(type, from, to)` — throws `DocumentStateError` with full context
+- [x] Implement `getAvailableTransitions(type, status)` — for dynamic UI buttons
+- [x] Update confirm flow to use state machine (via `validateForConfirmation` in service)
+- [x] Update cancel route to use state machine (replaces inline `status !== "confirmed"` guard)
+- [x] Fix ecom orders route hole — `validateTransition()` guard before any `db.document.update`
+- [x] Add API endpoint for available transitions (`GET /api/accounting/documents/[id]/transitions`)
+- [x] Add unit tests for all transition combinations (117 tests across all 12 document types)
+
+**New files:**
+- `lib/modules/accounting/document-states.ts`
+
+**Files modified:**
+- `app/api/accounting/documents/[id]/cancel/route.ts` (inline guard → validateTransition)
+- `app/api/accounting/ecommerce/orders/[id]/route.ts` (plug added, hole closed)
+- `lib/modules/accounting/services/document-confirm.service.ts` (uses validateTransition in validateForConfirmation)
 
 **New files:**
 - `lib/modules/accounting/document-states.ts`

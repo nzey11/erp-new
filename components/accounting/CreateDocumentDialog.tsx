@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { csrfFetch } from "@/lib/client/csrf";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -113,7 +114,7 @@ export function CreateDocumentDialog({
       if (createTargetWarehouseId) body.targetWarehouseId = createTargetWarehouseId;
       if (createCounterpartyId) body.counterpartyId = createCounterpartyId;
 
-      const res = await fetch("/api/accounting/documents", {
+      const res = await csrfFetch("/api/accounting/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

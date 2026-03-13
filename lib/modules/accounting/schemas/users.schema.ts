@@ -8,11 +8,12 @@ export const createUserSchema = z.object({
   role: z.enum(["admin", "manager", "accountant", "viewer"]).default("viewer"),
 });
 
-// PUT /api/accounting/users/[id]
+// PUT /api/accounting/users/[id] - Profile/administrative fields only
+// NOTE: isActive is managed via separate lifecycle endpoints (activate/deactivate)
 export const updateUserSchema = z.object({
   username: z.string().min(1).optional(),
   password: z.string().min(6, "Пароль минимум 6 символов").optional(),
   email: z.string().email("Некорректный email").nullable().optional(),
   role: z.enum(["admin", "manager", "accountant", "viewer"]).optional(),
-  isActive: z.boolean().optional(),
+  // isActive removed - use POST /:id/activate or POST /:id/deactivate
 });

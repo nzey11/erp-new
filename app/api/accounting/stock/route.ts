@@ -6,17 +6,19 @@ import { queryStockSchema } from "@/lib/modules/accounting/schemas/reports.schem
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("stock:read");
+    const session = await requirePermission("stock:read");
 
     const query = parseQuery(request, queryStockSchema);
-    
+
     const warehouseId = query.warehouseId;
     const productId = query.productId;
     const search = query.search || "";
     const nonZero = query.nonZero !== "false";
     const enhanced = query.enhanced === "true";
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      warehouse: { tenantId: session.tenantId }, // Tenant scoping
+    };
     if (warehouseId) where.warehouseId = warehouseId;
     if (productId) where.productId = productId;
     if (nonZero) where.quantity = { not: 0 };

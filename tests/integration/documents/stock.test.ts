@@ -15,7 +15,7 @@ import {
   updateAverageCostOnReceipt,
   updateAverageCostOnTransfer,
   updateTotalCostValue,
-} from "@/lib/modules/accounting/stock";
+} from "@/lib/modules/accounting/inventory/stock";
 import { db } from "@/lib/shared/db";
 
 describe("lib/stock - integration", () => {

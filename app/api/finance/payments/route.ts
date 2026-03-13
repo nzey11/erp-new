@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
 import { requireAuth } from "@/lib/shared/authorization";
 import { z } from "zod";
-import { autoPostPayment } from "@/lib/modules/accounting/journal";
+import { autoPostPayment } from "@/lib/modules/accounting/finance/journal";
 
 const createPaymentSchema = z.object({
   type: z.enum(["income", "expense"]),

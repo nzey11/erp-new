@@ -4,13 +4,16 @@ import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("stock:read");
+    const session = await requirePermission("stock:read");
 
     const { searchParams } = new URL(request.url);
     const warehouseId = searchParams.get("warehouseId") || "";
     const search = searchParams.get("search") || "";
 
-    const where: Record<string, unknown> = { quantity: { not: 0 } };
+    const where: Record<string, unknown> = {
+      quantity: { not: 0 },
+      warehouse: { tenantId: session.tenantId }, // Tenant scoping
+    };
     if (warehouseId) where.warehouseId = warehouseId;
     if (search) {
       where.product = {

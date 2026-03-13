@@ -1,5 +1,37 @@
+/**
+ * Kernel vocabulary for document types and statuses.
+ *
+ * This file is a BACKWARD-COMPATIBLE SHIM (Phase 1.4).
+ * Domain predicates have been extracted to their owner modules:
+ *
+ *   inventory predicates → lib/modules/accounting/inventory/predicates.ts
+ *   finance predicates   → lib/modules/accounting/finance/predicates.ts
+ *
+ * All existing imports from this file continue to work unchanged.
+ * New code should import directly from the domain module.
+ */
+
 import { db } from "@/lib/shared/db";
 import type { DocumentType, DocumentStatus } from "@/lib/generated/prisma/client";
+
+// ── Re-exports from domain modules ────────────────────────────────────────────
+
+export {
+  STOCK_INCREASE_TYPES,
+  STOCK_DECREASE_TYPES,
+  affectsStock,
+  isStockIncrease,
+  isStockDecrease,
+  isInventoryCount,
+} from "@/lib/modules/accounting/inventory/predicates";
+
+export {
+  BALANCE_AFFECTING_TYPES,
+  affectsBalance,
+  isPaymentType,
+} from "@/lib/modules/accounting/finance/predicates";
+
+// ── Kernel vocabulary (stays here) ────────────────────────────────────────────
 
 /** Document type prefixes for auto-numbering */
 const DOC_TYPE_PREFIX: Record<DocumentType, string> = {
@@ -42,30 +74,6 @@ const DOC_STATUS_NAME: Record<DocumentStatus, string> = {
   cancelled: "Отменён",
 };
 
-/** Document types that increase stock */
-export const STOCK_INCREASE_TYPES: DocumentType[] = [
-  "stock_receipt",
-  "incoming_shipment",
-  "customer_return",
-];
-
-/** Document types that decrease stock */
-export const STOCK_DECREASE_TYPES: DocumentType[] = [
-  "write_off",
-  "outgoing_shipment",
-  "supplier_return",
-];
-
-/** Document types that affect counterparty balance */
-export const BALANCE_AFFECTING_TYPES: DocumentType[] = [
-  "incoming_shipment",
-  "outgoing_shipment",
-  "supplier_return",
-  "customer_return",
-  "incoming_payment",
-  "outgoing_payment",
-];
-
 /** Generate document number: ПР-00001 */
 export async function generateDocumentNumber(type: DocumentType): Promise<string> {
   const prefix = DOC_TYPE_PREFIX[type];
@@ -87,37 +95,6 @@ export function getDocStatusName(status: DocumentStatus): string {
   return DOC_STATUS_NAME[status] ?? status;
 }
 
-/** Does document type affect stock? */
-export function affectsStock(type: DocumentType): boolean {
-  return (
-    STOCK_INCREASE_TYPES.includes(type) ||
-    STOCK_DECREASE_TYPES.includes(type) ||
-    type === "stock_transfer"
-  );
-  // inventory_count does NOT directly affect stock —
-  // it creates linked write_off / stock_receipt documents instead
-}
-
-/** Is document type an inventory count? */
-export function isInventoryCount(type: DocumentType): boolean {
-  return type === "inventory_count";
-}
-
-/** Does document type affect counterparty balance? */
-export function affectsBalance(type: DocumentType): boolean {
-  return BALANCE_AFFECTING_TYPES.includes(type);
-}
-
-/** Does document type increase stock? */
-export function isStockIncrease(type: DocumentType): boolean {
-  return STOCK_INCREASE_TYPES.includes(type);
-}
-
-/** Does document type decrease stock? */
-export function isStockDecrease(type: DocumentType): boolean {
-  return STOCK_DECREASE_TYPES.includes(type);
-}
-
 /** Get prefix for document type */
 export function getDocTypePrefix(type: DocumentType): string {
   return DOC_TYPE_PREFIX[type];
@@ -128,16 +105,14 @@ export function requiresWarehouse(type: DocumentType): boolean {
   return type !== "incoming_payment" && type !== "outgoing_payment";
 }
 
-/** Does document type require a counterparty? */
+/**
+ * Does document type require a counterparty?
+ * Structural constraint — stays in kernel.
+ */
 export function requiresCounterparty(type: DocumentType): boolean {
   return [
     "purchase_order", "incoming_shipment", "supplier_return",
     "sales_order", "outgoing_shipment", "customer_return",
     "incoming_payment", "outgoing_payment",
   ].includes(type);
-}
-
-/** Is document type a payment? */
-export function isPaymentType(type: DocumentType): boolean {
-  return type === "incoming_payment" || type === "outgoing_payment";
 }

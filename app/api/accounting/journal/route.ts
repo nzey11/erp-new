@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
-import { getJournalEntries } from "@/lib/modules/accounting/journal";
+import { getJournalEntries } from "@/lib/modules/accounting/finance/journal";
 
 export async function GET(request: NextRequest) {
   try {
