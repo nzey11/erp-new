@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState, useSyncExternalStore, useEffect } from "react";
 import { clearCsrfToken } from "@/lib/client/csrf";
+import { VersionBadge } from "@/components/VersionBadge";
 
 // Module definitions for the switcher
 const modules = [
@@ -285,6 +286,7 @@ export function AppSidebar() {
           <LogOut className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Выйти</span>}
         </button>
+        {!collapsed && <VersionBadge />}
       </div>
     </div>
   );

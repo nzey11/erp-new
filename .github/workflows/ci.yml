@@ -101,7 +101,6 @@ jobs:
             public/
             prisma/
             scripts/
-            proxy.ts
             package.json
             package-lock.json
             ecosystem.config.js
@@ -124,43 +123,52 @@ jobs:
         with:
           name: release-artifact
 
-      - name: Create release archive
+      - name: Create release archive with metadata
         run: |
           RELEASE_ID=$(date -u +%Y%m%d-%H%M%S)
           echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+
+          # Generate release.json — readable via /api/version
+          cat > release.json << EOF
+          {
+            "releaseId": "$RELEASE_ID",
+            "gitSha": "${{ github.sha }}",
+            "gitRef": "${{ github.ref }}",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
           tar -czf /tmp/release.tar.gz .
           echo "Archive size: $(du -sh /tmp/release.tar.gz | cut -f1)"
 
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.DEPLOY_SSH_KEY2 }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Upload archive to server
         run: |
           scp -i ~/.ssh/deploy_key /tmp/release.tar.gz \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/release.tar.gz
+            root@${{ secrets.DEPLOY_HOST }}:/tmp/release.tar.gz
 
       - name: Deploy release on server
         run: |
           ssh -i ~/.ssh/deploy_key \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            root@${{ secrets.DEPLOY_HOST }} \
             env RELEASE_ID="${{ env.RELEASE_ID }}" bash << 'ENDSSH'
           set -euo pipefail
           BASE=/var/www/listopt-erp
           RELEASE_DIR=$BASE/releases/$RELEASE_ID
           SHARED_DIR=$BASE/shared
+          BIN_DIR=$BASE/bin
 
           echo "==> Creating release directory: $RELEASE_DIR"
           mkdir -p "$RELEASE_DIR"
 
           echo "==> Extracting archive"
           tar -xzf /tmp/release.tar.gz -C "$RELEASE_DIR"
-
-          echo "==> Cleaning old deployment files from base directory"
-          rm -f "$BASE/middleware.ts" "$BASE/proxy.ts" 2>/dev/null || true
 
           echo "==> Linking shared .env"
           ln -sf "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
@@ -181,10 +189,64 @@ jobs:
           echo "==> Reloading pm2"
           pm2 reload "$BASE/current/ecosystem.config.js" --update-env
 
-          echo "==> Cleaning old releases (keep last 5)"
-          ls -dt "$BASE/releases"/*/ 2>/dev/null | tail -n +6 | xargs -r rm -rf
+          echo "==> Installing deployment scripts to stable bin/"
+          mkdir -p "$BIN_DIR"
+          cp "$RELEASE_DIR/scripts/deploy-release.sh"   "$BIN_DIR/deploy-release.sh"
+          cp "$RELEASE_DIR/scripts/rollback-release.sh" "$BIN_DIR/rollback-release.sh"
+          chmod +x "$BIN_DIR/"*.sh
+
+          echo "==> Cleaning old releases (keep last 7, protect current + bootstrap)"
+          CURRENT_REAL=$(readlink -f "$BASE/current" 2>/dev/null | sed 's:/$::')
+          ls -dt "$BASE/releases"/*/  2>/dev/null \
+            | sed 's:/$::' \
+            | grep -v "^${CURRENT_REAL}$" \
+            | grep -v 'bootstrap$' \
+            | tail -n +8 \
+            | xargs -r rm -rf
 
           rm -f /tmp/release.tar.gz
           echo "==> Deploy complete: $RELEASE_ID"
           pm2 list
+          ENDSSH
+
+      - name: Smoke check
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            root@${{ secrets.DEPLOY_HOST }} \
+            env RELEASE_ID="${{ env.RELEASE_ID }}" bash << 'ENDSSH'
+          set -euo pipefail
+
+          echo "==> Smoke check: waiting for app to come online..."
+          STATUS=""
+          for i in $(seq 1 12); do
+            STATUS=$(pm2 list --no-color 2>/dev/null | grep listopt-erp | grep -o 'online\|stopped\|errored' | head -1 || echo "unknown")
+            if [[ "$STATUS" == "online" ]]; then break; fi
+            echo "  Attempt $i/12: status=$STATUS, waiting 5s..."
+            sleep 5
+          done
+
+          if [[ "$STATUS" != "online" ]]; then
+            echo "ERROR: App did not come online after 60s (status: $STATUS)"
+            pm2 logs listopt-erp --lines 50 --nostream
+            exit 1
+          fi
+
+          echo "==> pm2 status: online"
+
+          RESPONSE=$(curl -sf http://127.0.0.1:3000/api/version 2>/dev/null || echo "")
+          if [[ -z "$RESPONSE" ]]; then
+            echo "ERROR: /api/version did not respond"
+            pm2 logs listopt-erp --lines 30 --nostream
+            exit 1
+          fi
+
+          ACTIVE_ID=$(echo "$RESPONSE" | grep -o '"releaseId":"[^"]*"' | cut -d'"' -f4 || echo "?")
+          echo "==> Active releaseId : $ACTIVE_ID"
+          echo "==> Expected releaseId: $RELEASE_ID"
+
+          if [[ "$ACTIVE_ID" != "$RELEASE_ID" ]]; then
+            echo "WARNING: releaseId mismatch — app may be serving a cached previous release"
+          fi
+
+          echo "==> Smoke check passed"
           ENDSSH
