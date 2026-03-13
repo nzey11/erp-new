@@ -52,15 +52,20 @@ export const test = base.extend<TestFixtures>({
   adminPage: async ({ adminContext, csrfToken }, use) => {
     const page = await adminContext.newPage();
 
-    // Intercept ALL API requests to add CSRF header for mutating operations
+    // Intercept ALL API requests to add CSRF header for mutating operations.
+    // Only inject our token if the request doesn't already have one (csrfFetch adds its own).
     await page.route("/api/**", async (route, request) => {
       const method = request.method();
       if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-        const headers = {
-          ...request.headers(),
-          "X-CSRF-Token": csrfToken,
-        };
-        await route.continue({ headers });
+        const existingHeaders = request.headers();
+        // Only add token if not already present (csrfFetch handles its own token)
+        if (!existingHeaders["x-csrf-token"]) {
+          await route.continue({
+            headers: { ...existingHeaders, "X-CSRF-Token": csrfToken },
+          });
+        } else {
+          await route.continue();
+        }
       } else {
         await route.continue();
       }
