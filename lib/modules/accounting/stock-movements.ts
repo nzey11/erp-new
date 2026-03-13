@@ -89,7 +89,10 @@ interface CreateMovementInput {
   variantId?: string | null;
   quantity: number;
   cost: number;
+  totalCost: number;
   type: MovementType;
+  isReversing?: boolean;
+  reversesDocumentId?: string | null;
 }
 
 /**
@@ -104,8 +107,10 @@ async function createMovement(input: CreateMovementInput) {
       variantId: input.variantId,
       quantity: input.quantity,
       cost: input.cost,
-      totalCost: input.quantity * input.cost,
+      totalCost: input.totalCost ?? input.quantity * input.cost,
       type: input.type,
+      isReversing: input.isReversing ?? false,
+      reversesDocumentId: input.reversesDocumentId ?? null,
     },
   });
 }
@@ -173,7 +178,7 @@ interface DocumentItem {
   price: number;
 }
 
-interface DocumentForMovements {
+export interface DocumentForMovements {
   id: string;
   type: DocumentType;
   warehouseId: string | null;
@@ -226,6 +231,7 @@ export async function createMovementsForDocument(
         variantId: item.variantId,
         quantity: item.quantity, // Positive = IN
         cost: item.price,
+        totalCost: item.quantity * item.price,
         type: movementType,
       });
     }
@@ -248,6 +254,7 @@ export async function createMovementsForDocument(
         variantId: item.variantId,
         quantity: -item.quantity, // Negative = OUT
         cost: item.price,
+        totalCost: -item.quantity * item.price,
         type: movementType,
       });
     }
@@ -266,6 +273,7 @@ export async function createMovementsForDocument(
         variantId: item.variantId,
         quantity: -item.quantity, // Negative = OUT
         cost: item.price,
+        totalCost: -item.quantity * item.price,
         type: "transfer_out",
       });
       
@@ -277,6 +285,7 @@ export async function createMovementsForDocument(
         variantId: item.variantId,
         quantity: item.quantity, // Positive = IN
         cost: item.price,
+        totalCost: item.quantity * item.price,
         type: "transfer_in",
       });
     }
@@ -287,6 +296,17 @@ export async function createMovementsForDocument(
     await db.$transaction(
       movements.map((m) => db.stockMovement.create({ data: m }))
     );
+    
+    // Reconcile StockRecord projections for affected products
+    const affectedKeys = new Set<string>();
+    for (const m of movements) {
+      affectedKeys.add(`${m.productId}:${m.warehouseId}`);
+    }
+    
+    for (const key of affectedKeys) {
+      const [productId, warehouseId] = key.split(":");
+      await reconcileStockRecord(productId, warehouseId);
+    }
   }
   
   return { created: movements.length };
@@ -297,18 +317,38 @@ export async function createMovementsForDocument(
 // =============================================
 
 /**
+ * Check if reversing movements already exist for a document.
+ * Used for idempotency in cancel flow.
+ */
+export async function hasReversingMovements(documentId: string): Promise<boolean> {
+  const count = await db.stockMovement.count({
+    where: { reversesDocumentId: documentId },
+  });
+  return count > 0;
+}
+
+/**
  * Create reversing movements when a document is cancelled.
  * 
  * IMPORTANT: This creates NEW movements that reverse the originals.
  * Original movements are NEVER deleted - they remain as audit history.
+ * 
+ * Idempotency: If reversing movements already exist, returns early.
+ * 
+ * @param documentId - The document being cancelled
+ * @returns Number of reversing movements created
  */
 export async function createReversingMovements(
-  documentId: string,
-  cancelledDocumentId: string // ID of the cancellation document (for audit trail)
+  documentId: string
 ): Promise<{ created: number }> {
-  // Get original movements
+  // Idempotency check: already has reversing movements?
+  if (await hasReversingMovements(documentId)) {
+    return { created: 0 };
+  }
+  
+  // Get original movements (non-reversing)
   const originalMovements = await db.stockMovement.findMany({
-    where: { documentId },
+    where: { documentId, isReversing: false },
   });
   
   if (originalMovements.length === 0) {
@@ -317,18 +357,32 @@ export async function createReversingMovements(
   
   // Create reversing movements
   const reversingMovements = originalMovements.map((m) => ({
-    documentId: cancelledDocumentId,
+    documentId,
     productId: m.productId,
     warehouseId: m.warehouseId,
     variantId: m.variantId,
     quantity: -m.quantity, // Reverse the quantity
     cost: m.cost,
+    totalCost: -m.totalCost,
     type: m.type,
+    isReversing: true,
+    reversesDocumentId: documentId,
   }));
   
   await db.$transaction(
     reversingMovements.map((m) => db.stockMovement.create({ data: m }))
   );
+  
+  // Reconcile StockRecord projections for affected products
+  const affectedKeys = new Set<string>();
+  for (const m of originalMovements) {
+    affectedKeys.add(`${m.productId}:${m.warehouseId}`);
+  }
+  
+  for (const key of affectedKeys) {
+    const [productId, warehouseId] = key.split(":");
+    await reconcileStockRecord(productId, warehouseId);
+  }
   
   return { created: reversingMovements.length };
 }

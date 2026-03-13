@@ -13,6 +13,7 @@ export async function cleanDatabase(): Promise<void> {
   await db.favorite.deleteMany();
   await db.customerAddress.deleteMany();
   await db.customer.deleteMany();
+  await db.stockMovement.deleteMany(); // Stock movements before document items
   await db.documentItem.deleteMany();
   await db.document.deleteMany();
   await db.documentCounter.deleteMany();

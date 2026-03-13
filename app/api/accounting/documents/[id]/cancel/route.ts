@@ -3,8 +3,9 @@ import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
 import { affectsStock, affectsBalance, getDocTypeName, getDocStatusName } from "@/lib/modules/accounting/documents";
-import { updateStockForDocument } from "@/lib/modules/accounting/stock";
+import { createReversingMovements, hasReversingMovements } from "@/lib/modules/accounting/stock-movements";
 import { recalculateBalance } from "@/lib/modules/accounting/balance";
+import { logger } from "@/lib/shared/logger";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -43,11 +44,23 @@ export async function POST(_request: NextRequest, { params }: Params) {
       },
     });
 
-    // Recalculate stock (cancelled doc will be excluded from calculation)
+    // Create reversing stock movements (idempotent)
     if (affectsStock(doc.type)) {
-      // TODO: Create reversing stock movements after Prisma generate
-      // See: lib/modules/accounting/stock-movements.ts -> createReversingMovements
-      await updateStockForDocument(id);
+      // Check idempotency: already has reversing movements?
+      const alreadyReversed = await hasReversingMovements(id);
+      
+      if (!alreadyReversed) {
+        const result = await createReversingMovements(id);
+        logger.info("stock", "Created reversing movements", {
+          documentId: id,
+          documentType: doc.type,
+          movementsCreated: result.created,
+        });
+      } else {
+        logger.info("stock", "Reversing movements already exist, skipping", {
+          documentId: id,
+        });
+      }
     }
 
     // Recalculate counterparty balance

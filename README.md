@@ -79,15 +79,79 @@ ssh -i ~/.ssh/key root@your-server \
 
 ## 🧪 Тестирование
 
-```bash
-# Unit и integration тесты
-npm test
+### Слои тестов
 
-# E2E тесты
+| Команда | Что тестирует | Нужна БД |
+|---------|--------------|----------|
+| `npm run test:unit` | Чистые unit-тесты (документы, auth, rate-limit) — без БД, быстро | Нет |
+| `npm run test:service` | Сервисные тесты бизнес-логики (`stock-movements`, `StockRecord`, идемпотентность) | Да |
+| `npm run test:integration` | Интеграционные тесты — API routes, репозитории, транзакции | Да |
+| `npm run test:e2e` | Playwright e2e smoke-тесты UI | Да |
+| `npm run test:all` | Все тесты (`vitest.config.ts`) | Да |
+| `npm run test:cov` | Тесты + отчёт о покрытии | Да |
+
+### Быстрый запуск
+
+```bash
+# 1. Только unit — не нужна БД:
+npm run test:unit
+
+# 2. Сервисные тесты (нужен listopt_erp_test в .env.test):
+npm run test:service
+
+# 3. Интеграционные тесты:
+npm run test:integration
+
+# 4. E2E (Playwright — нужен запущенный сервер):
 npm run test:e2e
 
-# Покрытие кода
-npm run test:coverage
+# 5. Все тесты разом:
+npm run test:all
+```
+
+### Структура тестов
+
+```
+tests/
+  helpers/
+    factories.ts            # Фабрики для всех сущностей БД
+    test-db.ts              # cleanDatabase, disconnectTestDb
+    stock-assertions.ts     # Хелперы: assertStockRecord, assertStockMatchesMovements,
+                            #          assertMovementCount, assertIdempotentOperation ...
+  unit/lib/
+    documents.test.ts       # Чистые unit — маппинг типов документов
+    auth.test.ts            # Чистые unit — HMAC auth helpers
+    rate-limit.test.ts      # Чистые unit — rate limiter
+    stock-movements.test.ts # Сервисные тесты — confirm/cancel/idempotency:
+                            #   incoming_shipment, write_off, stock_transfer
+  integration/
+    documents/
+      stock.test.ts                            # recalculateStock, averageCost
+      balance.test.ts                          # counterparty balance
+      stock-movements.integration.test.ts      # DB persistence, invariants,
+                                               #   idempotency, transfer conservation
+    api/                                       # Next.js API route handlers
+    catalog/                                   # Каталог и варианты
+```
+
+### Ключевые инварианты (проверяются в тестах)
+
+- `StockRecord.quantity` всегда равен сумме всех `StockMovement.quantity` для той же пары `(warehouseId, productId)`
+- Подтверждение документа идемпотентно — повторный вызов не создаёт дубли движений
+- Отмена документа создаёт реверсирующие движения, исходные не удаляются (audit log)
+- Повторная отмена идемпотентна
+- Транзакция на пакет движений либо полностью применяется, либо откатывается
+
+### Настройка тестовой БД
+
+Файл `.env.test` уже настроен. Тестовая БД запускается через Docker:
+
+```bash
+# Поднять тестовую БД (порт 5434)
+docker compose -f docker-compose.dev.yml up -d
+
+# Применить миграции к тестовой БД
+DATABASE_URL="postgresql://test:test@localhost:5434/listopt_erp_test" npx prisma migrate deploy
 ```
 
 ## 📦 Структура проекта
