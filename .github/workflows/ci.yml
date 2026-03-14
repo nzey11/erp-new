@@ -74,6 +74,11 @@ jobs:
       - name: Unit & Integration Tests
         run: npx nx affected -t test --parallel=1
 
+      # Build runs in CI — NOT on production server
+      # Must run before E2E tests because Playwright uses 'next start' (production mode)
+      - name: Build
+        run: npx next build
+
       - name: E2E Tests
         run: npm run test:e2e
         env:
@@ -86,10 +91,6 @@ jobs:
           name: playwright-report
           path: test-results/
           retention-days: 7
-
-      # Build runs in CI — NOT on production server
-      - name: Build
-        run: npx next build
 
       # Package only what's needed to run the app
       - name: Package release artifact
