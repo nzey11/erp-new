@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requirePermission("products:write");
+    const session = await requirePermission("products:write");
 
     const data = await parseBody(request, createProductSchema);
     const {
@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
 
     const product = await db.product.create({
       data: {
+        tenantId: session.tenantId, // Tenant-scoped product
         name,
         sku: finalSku,
         barcode: barcode || null,

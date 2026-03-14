@@ -31,7 +31,8 @@ export type Permission =
   | "settings:write"
   | "users:manage"
   | "journal:manual" | "journal:manualRestrictedAccounts" | "journal:reverse"
-  | "crm:merge";
+  | "crm:merge"
+  | "crm:assignOwner";
 
 /** Permissions granted to each role */
 const ROLE_PERMISSIONS: Record<ErpRole, Permission[]> = {
@@ -49,6 +50,7 @@ const ROLE_PERMISSIONS: Record<ErpRole, Permission[]> = {
     "settings:write", "users:manage",
     "journal:manual", "journal:manualRestrictedAccounts", "journal:reverse",
     "crm:merge",
+    "crm:assignOwner",
   ],
   manager: [
     "products:read", "products:write",
@@ -62,6 +64,7 @@ const ROLE_PERMISSIONS: Record<ErpRole, Permission[]> = {
     "payments:read", "payments:write",
     "reports:read",
     "crm:merge",
+    "crm:assignOwner",
   ],
   accountant: [
     "products:read",

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 
 interface FinanceCategory {
   id: string;
@@ -70,7 +71,7 @@ export default function CategoriesPage() {
     if (!form.name.trim()) { toast.error("Введите название"); return; }
     setSaving(true);
     try {
-      const res = await fetch("/api/finance/categories", {
+      const res = await csrfFetch("/api/finance/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -100,7 +101,7 @@ export default function CategoriesPage() {
       };
       if (!editTarget.isSystem) body.name = form.name;
 
-      const res = await fetch(`/api/finance/categories/${editTarget.id}`, {
+      const res = await csrfFetch(`/api/finance/categories/${editTarget.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -120,7 +121,7 @@ export default function CategoriesPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/finance/categories/${deleteTarget.id}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/finance/categories/${deleteTarget.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error);
       toast.success("Статья удалена");
       setDeleteOpen(false);

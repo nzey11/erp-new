@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Pencil, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 import { cn } from "@/lib/shared/utils";
 
 interface PriceList {
@@ -81,12 +82,12 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
     try {
       const body = { name: formName, description: formDescription || null };
       const res = editingPriceList
-        ? await fetch(`/api/accounting/price-lists/${editingPriceList.id}`, {
+        ? await csrfFetch(`/api/accounting/price-lists/${editingPriceList.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           })
-        : await fetch("/api/accounting/price-lists", {
+        : await csrfFetch("/api/accounting/price-lists", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -106,7 +107,7 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
     e.stopPropagation();
     if (!confirm(`Удалить прайс-лист "${pl.name}"?`)) return;
     try {
-      const res = await fetch(`/api/accounting/price-lists/${pl.id}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/accounting/price-lists/${pl.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success("Прайс-лист удалён");
       if (selectedPriceListId === pl.id) onSelectPriceList(null);

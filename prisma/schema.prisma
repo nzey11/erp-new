@@ -7,54 +7,38 @@ datasource db {
   provider = "postgresql"
 }
 
-// =============================================
-// AUTH: Users
-// =============================================
-
-enum ErpRole {
-  admin      // Full ERP access, user management
-  manager    // CRUD products, counterparties, warehouses, pricing
-  accountant // Pricing and documents write, rest read
-  viewer     // Read-only
-}
-
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String   // bcrypt hashed
-  email     String?  @unique
-  role      ErpRole  @default(viewer)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Party ownership relations
-  primaryOwnedParties   Party[]      @relation("PartyPrimaryOwner")
-  ownedParties          PartyOwner[]
-  ownerAssignments      PartyOwner[] @relation("OwnerAssigner")
-  reviewedMerges        MergeRequest[]
-
-  // Tenant membership (multi-tenant ready)
-  memberships TenantMembership[]
+  id                  String             @id @default(cuid())
+  username            String             @unique
+  password            String
+  email               String?            @unique
+  role                ErpRole            @default(viewer)
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  reviewedMerges      MergeRequest[]
+  primaryOwnedParties Party[]            @relation("PartyPrimaryOwner")
+  ownerAssignments    PartyOwner[]       @relation("OwnerAssigner")
+  ownedParties        PartyOwner[]
+  memberships         TenantMembership[]
 
   @@index([isActive])
 }
 
-// =============================================
-// TENANT: Multi-tenant Architecture
-// =============================================
-
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  memberships  TenantMembership[]
-  settings     TenantSettings?
-  warehouses   Warehouse[]
+  id                 String                    @id @default(cuid())
+  name               String
+  slug               String                    @unique
+  isActive           Boolean                   @default(true)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  catalogProjections ProductCatalogProjection[]
+  documents          Document[]
+  products           Product[]
+  memberships        TenantMembership[]
+  settings           TenantSettings?
+  variants           ProductVariant[]
+  warehouses         Warehouse[]
 }
 
 model TenantMembership {
@@ -64,9 +48,8 @@ model TenantMembership {
   role      ErpRole  @default(viewer)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, tenantId])
   @@index([tenantId])
@@ -74,25 +57,17 @@ model TenantMembership {
 }
 
 model TenantSettings {
-  id        String   @id @default(cuid())
-  tenantId  String   @unique
-
-  // Company info
-  name      String
-  inn       String?
-  kpp       String?
-  ogrn      String?
-
-  // Tax settings
-  taxRegime            String    @default("usn_income")  // osno, usn_income, usn_income_expense, patent
-  vatRate              Float     @default(20)
-  usnRate              Float     @default(6)
-
-  // Initial capital
-  initialCapital       Float     @default(0)
-  initialCapitalDate   DateTime?
-
-  // Account mappings for auto-posting
+  id                        String    @id @default(cuid())
+  tenantId                  String    @unique
+  name                      String
+  inn                       String?
+  kpp                       String?
+  ogrn                      String?
+  taxRegime                 String    @default("usn_income")
+  vatRate                   Float     @default(20)
+  usnRate                   Float     @default(6)
+  initialCapital            Float     @default(0)
+  initialCapitalDate        DateTime?
   cashAccountId             String?
   bankAccountId             String?
   inventoryAccountId        String?
@@ -104,42 +79,974 @@ model TenantSettings {
   cogsAccountId             String?
   profitAccountId           String?
   retainedEarningsAccountId String?
+  fiscalYearStartMonth      Int       @default(1)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  tenant                    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
 
-  fiscalYearStartMonth Int       @default(1)
+model Unit {
+  id        String    @id @default(cuid())
+  name      String
+  shortName String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
 
+model ProductCategory {
+  id        String            @id @default(cuid())
+  name      String
+  parentId  String?
+  order     Int               @default(0)
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  products  Product[]
+  parent    ProductCategory?  @relation("ProductCategoryTree", fields: [parentId], references: [id])
+  children  ProductCategory[] @relation("ProductCategoryTree")
+
+  @@index([parentId, order])
+}
+
+model Product {
+  id               String               @id @default(cuid())
+  name             String
+  sku              String?
+  barcode          String?              @unique
+  description      String?
+  unitId           String
+  categoryId       String?
+  imageUrl         String?
+  imageUrls        Json?                @default("[]")
+  isActive         Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  seoTitle         String?
+  seoDescription   String?
+  seoKeywords      String?
+  slug             String?              @unique
+  publishedToStore Boolean              @default(false)
+  masterProductId  String?
+  isMainInGroup    Boolean              @default(false)
+  variantGroupName String?
+  tenantId         String
+  cartItems        CartItem[]
+  documentItems    DocumentItem[]
+  favorites        Favorite[]
+  orderItems       OrderItem[]
+  category         ProductCategory?     @relation(fields: [categoryId], references: [id])
+  masterProduct    Product?             @relation("ProductMasterVariants", fields: [masterProductId], references: [id])
+  childVariants    Product[]            @relation("ProductMasterVariants")
+  tenant           Tenant               @relation(fields: [tenantId], references: [id])
+  unit             Unit                 @relation(fields: [unitId], references: [id])
+  customFields     ProductCustomField[]
+  discounts        ProductDiscount[]
+  variants         ProductVariant[]
+  variantLinksTo   ProductVariantLink[] @relation("VariantLinksTo")
+  variantLinksFrom ProductVariantLink[] @relation("VariantLinksFrom")
+  purchasePrices   PurchasePrice[]
+  reviews          Review[]
+  salePrices       SalePrice[]
+  stockMovements    StockMovement[]
+  stockRecords      StockRecord[]
+  catalogProjection ProductCatalogProjection?
+
+  @@unique([tenantId, sku]) // Tenant-scoped SKU uniqueness
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@index([tenantId, categoryId])
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([name])
+  @@index([slug])
+  @@index([masterProductId])
+  @@index([variantGroupName])
+}
+
+model CustomFieldDefinition {
+  id        String               @id @default(cuid())
+  name      String
+  fieldType String               @default("text")
+  options   String?
+  isActive  Boolean              @default(true)
+  order     Int                  @default(0)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  values    ProductCustomField[]
+
+  @@index([isActive, order])
+}
+
+model ProductCustomField {
+  id           String                @id @default(cuid())
+  productId    String
+  definitionId String
+  value        String
+  definition   CustomFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  product      Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, definitionId])
+  @@index([definitionId])
+}
+
+model VariantType {
+  id        String          @id @default(cuid())
+  name      String
+  isActive  Boolean         @default(true)
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  options   VariantOption[]
+
+  @@index([isActive, order])
+}
+
+model VariantOption {
+  id            String           @id @default(cuid())
+  variantTypeId String
+  value         String
+  order         Int              @default(0)
+  variants      ProductVariant[]
+  variantType   VariantType      @relation(fields: [variantTypeId], references: [id], onDelete: Cascade)
+
+  @@index([variantTypeId, order])
+}
+
+model ProductVariant {
+  id              String          @id @default(cuid())
+  productId       String
+  optionId        String
+  sku             String?
+  barcode         String?         @unique
+  priceAdjustment Float           @default(0)
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  tenantId        String
+  cartItems       CartItem[]
+  documentItems   DocumentItem[]
+  orderItems      OrderItem[]
+  option          VariantOption   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockMovements  StockMovement[]
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@unique([productId, optionId])
+  @@unique([tenantId, sku]) // Tenant-scoped SKU uniqueness
+  @@index([productId])
+  @@index([tenantId])
+}
+
+model ProductDiscount {
+  id        String       @id @default(cuid())
+  productId String
+  name      String
+  type      DiscountType
+  value     Float
+  validFrom DateTime     @default(now())
+  validTo   DateTime?
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, isActive, validFrom])
+}
+
+model SkuCounter {
+  id         String @id @default(cuid())
+  prefix     String @unique @default("SKU")
+  lastNumber Int    @default(0)
+}
+
+model ProductVariantLink {
+  id              String   @id @default(cuid())
+  productId       String
+  linkedProductId String
+  groupName       String
+  sortOrder       Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  linkedProduct   Product  @relation("VariantLinksTo", fields: [linkedProductId], references: [id], onDelete: Cascade)
+  product         Product  @relation("VariantLinksFrom", fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, linkedProductId])
+  @@index([productId])
+}
+
+/// Storefront catalog list read model (Phase 1)
+/// Denormalized projection for fast catalog queries.
+/// Updated via outbox events on Product/Price/Discount changes.
+model ProductCatalogProjection {
+  productId         String   @id
+
+  tenantId          String
+
+  // Identity
+  name              String
+  slug              String?
+  sku               String?
+  imageUrl          String?
+  description       String?
+
+  // Unit (denormalized)
+  unitId            String?
+  unitShortName     String?
+
+  // Category (denormalized)
+  categoryId        String?
+  categoryName      String?
+
+  // Pricing (current storefront logic)
+  price             Float
+  discountedPrice   Float?
+  discountName      String?
+  discountType      String?
+  discountValue     Float?
+
+  // Rating (aggregated)
+  avgRating         Float    @default(0)
+  reviewCount       Int      @default(0)
+
+  // Variant summary (lightweight)
+  childVariantCount Int      @default(0)
+  priceRangeMin     Float?
+  priceRangeMax     Float?
+
+  // State
+  isActive          Boolean  @default(true)
+  publishedToStore  Boolean  @default(false)
+
+  // Cache invalidation
+  updatedAt         DateTime @updatedAt
+
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, isActive, publishedToStore])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, name])
+}
+
+model Counterparty {
+  id             String                    @id @default(cuid())
+  type           CounterpartyType          @default(customer)
+  name           String
+  legalName      String?
+  inn            String?                   @unique
+  kpp            String?
+  bankAccount    String?
+  bankName       String?
+  bik            String?
+  address        String?
+  phone          String?
+  email          String?
+  contactPerson  String?
+  notes          String?
+  isActive       Boolean                   @default(true)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  balance        CounterpartyBalance?
+  interactions   CounterpartyInteraction[]
+  customer       Customer?
+  documents      Document[]
+  payments       Payment[]
+  purchasePrices PurchasePrice[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([name])
+}
+
+model CounterpartyInteraction {
+  id             String       @id @default(cuid())
+  counterpartyId String
+  type           String
+  subject        String?
+  description    String?
+  createdBy      String?
+  createdAt      DateTime     @default(now())
+  counterparty   Counterparty @relation(fields: [counterpartyId], references: [id], onDelete: Cascade)
+
+  @@index([counterpartyId, createdAt])
+}
+
+model CounterpartyBalance {
+  id             String       @id @default(cuid())
+  counterpartyId String       @unique
+  balanceRub     Float        @default(0)
+  lastUpdatedAt  DateTime     @updatedAt
+  counterparty   Counterparty @relation(fields: [counterpartyId], references: [id], onDelete: Cascade)
+}
+
+model Warehouse {
+  id                String          @id @default(cuid())
+  name              String
+  address           String?
+  responsibleName   String?
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  tenantId          String
+  incomingTransfers Document[]      @relation("TargetWarehouseDocuments")
+  documents         Document[]      @relation("WarehouseDocuments")
+  stockMovements    StockMovement[]
+  stockRecords      StockRecord[]
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([isActive])
+  @@index([tenantId])
+}
+
+model StockRecord {
+  id             String    @id @default(cuid())
+  warehouseId    String
+  productId      String
+  quantity       Float     @default(0)
+  averageCost    Float     @default(0)
+  totalCostValue Float     @default(0)
+  updatedAt      DateTime  @updatedAt
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse      Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, productId])
+  @@index([productId])
+}
+
+model StockMovement {
+  id                 String          @id @default(cuid())
+  documentId         String
+  productId          String
+  warehouseId        String
+  variantId          String?
+  quantity           Float
+  cost               Float
+  totalCost          Float
+  type               MovementType
+  createdAt          DateTime        @default(now())
+  isReversing        Boolean         @default(false)
+  reversesDocumentId String?
+  document           Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product            Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant            ProductVariant? @relation(fields: [variantId], references: [id])
+  warehouse          Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([productId, warehouseId])
+  @@index([warehouseId, createdAt])
+  @@index([productId, createdAt])
+  @@index([isReversing])
+}
+
+model DocumentCounter {
+  id         String @id @default(cuid())
+  prefix     String @unique
+  lastNumber Int    @default(0)
+}
+
+model Document {
+  id                 String           @id @default(cuid())
+  number             String           @unique
+  type               DocumentType
+  status             DocumentStatus   @default(draft)
+  date               DateTime         @default(now())
+  warehouseId        String?
+  targetWarehouseId  String?
+  counterpartyId     String?
+  totalAmount        Float            @default(0)
+  currency           String           @default("RUB")
+  paymentType        PaymentType?
+  linkedDocumentId   String?
+  description        String?
+  notes              String?
+  createdBy          String?
+  confirmedAt        DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  customerId         String?
+  deliveryType       String?
+  deliveryAddressId  String?
+  deliveryCost       Float            @default(0)
+  paymentMethod      String?
+  paymentStatus      String           @default("pending")
+  paymentExternalId  String?
+  paidAt             DateTime?
+  shippedAt          DateTime?
+  deliveredAt        DateTime?
+  confirmedBy        String?
+  adjustmentsCreated Boolean          @default(false)
+  tenantId           String
+  counterparty       Counterparty?    @relation(fields: [counterpartyId], references: [id])
+  customer           Customer?        @relation("CustomerOrders", fields: [customerId], references: [id])
+  deliveryAddress    CustomerAddress? @relation("DeliveryAddress", fields: [deliveryAddressId], references: [id])
+  linkedDocument     Document?        @relation("LinkedDocuments", fields: [linkedDocumentId], references: [id])
+  linkedFrom         Document[]       @relation("LinkedDocuments")
+  targetWarehouse    Warehouse?       @relation("TargetWarehouseDocuments", fields: [targetWarehouseId], references: [id])
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  warehouse          Warehouse?       @relation("WarehouseDocuments", fields: [warehouseId], references: [id])
+  items              DocumentItem[]
+  ecommerceOrder     Order?
+  payments           Payment[]
+  reviews            Review[]
+  stockMovements     StockMovement[]
+
+  @@index([tenantId])
+  @@index([tenantId, type, status, date])
+  @@index([tenantId, counterpartyId])
+  @@index([type, status, date])
+  @@index([warehouseId, date])
+  @@index([counterpartyId, date])
+  @@index([number])
+  @@index([customerId])
+  @@index([paymentStatus])
+}
+
+model DocumentItem {
+  id          String          @id @default(cuid())
+  documentId  String
+  productId   String
+  variantId   String?
+  quantity    Float
+  price       Float           @default(0)
+  total       Float           @default(0)
+  expectedQty Float?
+  actualQty   Float?
+  difference  Float?
+  createdAt   DateTime        @default(now())
+  document    Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product     Product         @relation(fields: [productId], references: [id])
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([documentId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model PriceList {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  prices      SalePrice[]
+
+  @@index([isActive])
+}
+
+model PurchasePrice {
+  id         String        @id @default(cuid())
+  productId  String
+  supplierId String?
+  price      Float
+  currency   String        @default("RUB")
+  validFrom  DateTime      @default(now())
+  validTo    DateTime?
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  product    Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier   Counterparty? @relation(fields: [supplierId], references: [id])
+
+  @@index([productId, isActive, validFrom])
+  @@index([supplierId])
+}
+
+model SalePrice {
+  id          String     @id @default(cuid())
+  productId   String
+  priceListId String?
+  price       Float
+  currency    String     @default("RUB")
+  validFrom   DateTime   @default(now())
+  validTo     DateTime?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  priceList   PriceList? @relation(fields: [priceListId], references: [id])
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, priceListId, isActive, validFrom])
+}
+
+model Customer {
+  id               String            @id @default(cuid())
+  telegramId       String            @unique
+  telegramUsername String?
+  name             String?
+  phone            String?
+  email            String?
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  counterpartyId   String?           @unique
+  cartItems        CartItem[]
+  counterparty     Counterparty?     @relation(fields: [counterpartyId], references: [id])
+  addresses        CustomerAddress[]
+  documents        Document[]        @relation("CustomerOrders")
+  favorites        Favorite[]
+  orders           Order[]
+  reviews          Review[]
+
+  @@index([isActive])
+}
+
+model CustomerAddress {
+  id             String     @id @default(cuid())
+  customerId     String
+  label          String     @default("Дом")
+  recipientName  String
+  phone          String
+  city           String
+  street         String
+  building       String
+  apartment      String?
+  postalCode     String?
+  isDefault      Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  customer       Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  deliveryOrders Document[] @relation("DeliveryAddress")
+  orders         Order[]
+
+  @@index([customerId])
+}
+
+model CartItem {
+  id            String          @id @default(cuid())
+  customerId    String
+  productId     String
+  variantId     String?
+  quantity      Int             @default(1)
+  priceSnapshot Float
+  addedAt       DateTime        @default(now())
+  customer      Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product       Product         @relation(fields: [productId], references: [id])
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@unique([customerId, productId, variantId])
+  @@index([customerId])
+}
+
+model Order {
+  id                String             @id @default(cuid())
+  orderNumber       String             @unique
+  customerId        String
+  status            OrderStatus        @default(pending)
+  documentId        String?            @unique
+  deliveryType      DeliveryType
+  deliveryAddressId String?
+  deliveryCost      Float              @default(0)
+  totalAmount       Float
+  paymentMethod     EcomPaymentMethod?
+  paymentStatus     EcomPaymentStatus  @default(pending)
+  paymentExternalId String?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  customer          Customer           @relation(fields: [customerId], references: [id])
+  deliveryAddress   CustomerAddress?   @relation(fields: [deliveryAddressId], references: [id])
+  document          Document?          @relation(fields: [documentId], references: [id])
+  items             OrderItem[]
+  reviews           Review[]
+
+  @@index([customerId, status])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id        String          @id @default(cuid())
+  orderId   String
+  productId String
+  variantId String?
+  quantity  Int
+  price     Float
+  total     Float
+  createdAt DateTime        @default(now())
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Review {
+  id                 String    @id @default(cuid())
+  productId          String
+  customerId         String
+  orderId            String?
+  documentId         String?
+  rating             Int
+  title              String?
+  comment            String?
+  isVerifiedPurchase Boolean   @default(false)
+  isPublished        Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  customer           Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  document           Document? @relation(fields: [documentId], references: [id])
+  order              Order?    @relation(fields: [orderId], references: [id])
+  product            Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, isPublished])
+  @@index([customerId])
+  @@index([documentId])
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  customerId String
+  productId  String
+  addedAt    DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+}
+
+model PromoBlock {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String
+  linkUrl   String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([isActive, order])
 }
 
-// =============================================
-// ERP: Enums
-// =============================================
+model OrderCounter {
+  id         String @id @default(cuid())
+  prefix     String @unique @default("ORD")
+  lastNumber Int    @default(0)
+}
+
+model StorePage {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  content        String
+  seoTitle       String?
+  seoDescription String?
+  isPublished    Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  showInFooter   Boolean  @default(true)
+  showInHeader   Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isPublished, sortOrder])
+  @@index([slug])
+}
+
+model Integration {
+  id        String   @id @default(cuid())
+  type      String   @unique
+  name      String
+  isEnabled Boolean  @default(true)
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, isEnabled])
+}
+
+model FinanceCategory {
+  id                 String    @id @default(cuid())
+  name               String
+  type               String
+  isSystem           Boolean   @default(false)
+  isActive           Boolean   @default(true)
+  order              Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  defaultAccountCode String?
+  payments           Payment[]
+
+  @@index([type, isActive])
+}
+
+model PaymentCounter {
+  id         String @id @default(cuid())
+  prefix     String @unique @default("PAY")
+  lastNumber Int    @default(0)
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  number         String          @unique
+  type           String
+  categoryId     String
+  counterpartyId String?
+  documentId     String?
+  amount         Float
+  paymentMethod  PaymentType
+  date           DateTime        @default(now())
+  description    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  category       FinanceCategory @relation(fields: [categoryId], references: [id])
+  counterparty   Counterparty?   @relation(fields: [counterpartyId], references: [id])
+  document       Document?       @relation(fields: [documentId], references: [id])
+
+  @@index([type, date])
+  @@index([counterpartyId])
+  @@index([documentId])
+}
+
+model Account {
+  id            String          @id @default(cuid())
+  code          String          @unique
+  name          String
+  type          AccountType
+  category      AccountCategory
+  parentId      String?
+  isSystem      Boolean         @default(true)
+  isActive      Boolean         @default(true)
+  order         Int             @default(0)
+  analyticsType String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  parent        Account?        @relation("AccountTree", fields: [parentId], references: [id])
+  children      Account[]       @relation("AccountTree")
+  lines         LedgerLine[]
+
+  @@index([code])
+  @@index([category, isActive])
+}
+
+model JournalEntry {
+  id           String         @id @default(cuid())
+  number       String         @unique
+  date         DateTime       @default(now())
+  description  String?
+  sourceType   String?
+  sourceId     String?
+  sourceNumber String?
+  isManual     Boolean        @default(false)
+  isReversed   Boolean        @default(false)
+  reversedById String?
+  createdBy    String?
+  createdAt    DateTime       @default(now())
+  reversedBy   JournalEntry?  @relation("JournalReversal", fields: [reversedById], references: [id])
+  reversals    JournalEntry[] @relation("JournalReversal")
+  lines        LedgerLine[]
+
+  @@index([date])
+  @@index([sourceType, sourceId])
+}
+
+model LedgerLine {
+  id             String       @id @default(cuid())
+  entryId        String
+  accountId      String
+  debit          Float        @default(0)
+  credit         Float        @default(0)
+  counterpartyId String?
+  warehouseId    String?
+  productId      String?
+  currency       String?
+  amountRub      Float        @default(0)
+  account        Account      @relation(fields: [accountId], references: [id])
+  entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+  @@index([accountId])
+  @@index([counterpartyId])
+}
+
+model JournalCounter {
+  id         String @id @default(cuid())
+  prefix     String @unique @default("JE")
+  lastNumber Int    @default(0)
+}
+
+model CompanySettings {
+  id                        String    @id @default(cuid())
+  name                      String
+  inn                       String?
+  kpp                       String?
+  ogrn                      String?
+  taxRegime                 TaxRegime @default(usn_income)
+  vatRate                   Float     @default(20)
+  usnRate                   Float     @default(6)
+  initialCapital            Float     @default(0)
+  initialCapitalDate        DateTime?
+  cashAccountId             String?
+  bankAccountId             String?
+  inventoryAccountId        String?
+  supplierAccountId         String?
+  customerAccountId         String?
+  vatAccountId              String?
+  vatPayableAccountId       String?
+  salesAccountId            String?
+  cogsAccountId             String?
+  profitAccountId           String?
+  retainedEarningsAccountId String?
+  fiscalYearStartMonth      Int       @default(1)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  eventType     String
+  aggregateType String
+  aggregateId   String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  processedAt   DateTime?
+  lastError     String?
+
+  @@index([status, availableAt])
+  @@index([aggregateType, aggregateId])
+}
+
+model ProcessedWebhook {
+  id          String   @id @default(cuid())
+  source      String
+  externalId  String
+  payload     Json
+  processedAt DateTime @default(now())
+
+  @@unique([source, externalId])
+  @@index([source, processedAt])
+}
+
+model Party {
+  id                    String            @id @default(cuid())
+  displayName           String
+  displayNameManual     Boolean           @default(false)
+  type                  PartyType         @default(person)
+  primaryOwnerUserId    String?
+  primaryCustomerId     String?           @unique
+  primaryCounterpartyId String?           @unique
+  lastActivityAt        DateTime?
+  status                PartySystemStatus @default(active)
+  mergedIntoId          String?
+  mergedAt              DateTime?
+  isActive              Boolean           @default(true)
+  notes                 String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  mergeRequestsSent     MergeRequest[]    @relation("MergeSurvivor")
+  mergeRequestsReceived MergeRequest[]    @relation("MergeVictim")
+  mergedInto            Party?            @relation("PartyMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom            Party[]           @relation("PartyMerge")
+  primaryOwner          User?             @relation("PartyPrimaryOwner", fields: [primaryOwnerUserId], references: [id])
+  activities            PartyActivity[]
+  links                 PartyLink[]
+  owners                PartyOwner[]
+
+  @@index([primaryOwnerUserId])
+  @@index([lastActivityAt])
+  @@index([status])
+  @@index([type])
+}
+
+model PartyLink {
+  id         String          @id @default(cuid())
+  partyId    String
+  entityType PartyEntityType
+  entityId   String
+  isPrimary  Boolean         @default(false)
+  linkedAt   DateTime        @default(now())
+  party      Party           @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId])
+  @@index([partyId])
+}
+
+model PartyActivity {
+  id         String   @id @default(cuid())
+  partyId    String
+  type       String
+  occurredAt DateTime
+  sourceType String
+  sourceId   String?
+  summary    Json     @default("{}")
+  party      Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, type])
+  @@index([partyId, occurredAt(sort: Desc)])
+  @@index([type, occurredAt(sort: Desc)])
+}
+
+model PartyOwner {
+  id         String    @id @default(cuid())
+  partyId    String
+  userId     String
+  role       OwnerRole @default(primary)
+  assignedAt DateTime  @default(now())
+  assignedBy String?
+  isActive   Boolean   @default(true)
+  endedAt    DateTime?
+  assigner   User?     @relation("OwnerAssigner", fields: [assignedBy], references: [id])
+  party      Party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@unique([partyId, role, isActive])
+  @@index([partyId])
+  @@index([userId])
+}
+
+model MergeRequest {
+  id              String      @id @default(cuid())
+  survivorId      String
+  victimId        String
+  detectionSource String
+  confidence      Float?
+  matchReason     String?
+  status          MergeStatus @default(pending)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  executedAt      DateTime?
+  createdBy       String?
+  createdAt       DateTime    @default(now())
+  reviewer        User?       @relation(fields: [reviewedBy], references: [id])
+  survivor        Party       @relation("MergeSurvivor", fields: [survivorId], references: [id])
+  victim          Party       @relation("MergeVictim", fields: [victimId], references: [id])
+
+  @@unique([survivorId, victimId])
+  @@index([status])
+}
+
+enum ErpRole {
+  admin
+  manager
+  accountant
+  viewer
+}
 
 enum DocumentStatus {
   draft
   confirmed
+  cancelled
   shipped
   delivered
-  cancelled
 }
 
 enum DocumentType {
-  // Stock operations
   stock_receipt
   write_off
   stock_transfer
   inventory_count
-  // Purchases
   purchase_order
   incoming_shipment
   supplier_return
-  // Sales
   sales_order
   outgoing_shipment
   customer_return
-  // Finance
   incoming_payment
   outgoing_payment
 }
@@ -156,548 +1063,38 @@ enum CounterpartyType {
   both
 }
 
-// =============================================
-// ERP: Reference Data
-// =============================================
-
-model Unit {
-  id        String   @id @default(cuid())
-  name      String
-  shortName String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  products Product[]
-}
-
-model ProductCategory {
-  id        String   @id @default(cuid())
-  name      String
-  parentId  String?
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  parent   ProductCategory?  @relation("ProductCategoryTree", fields: [parentId], references: [id])
-  children ProductCategory[] @relation("ProductCategoryTree")
-  products Product[]
-
-  @@index([parentId, order])
-}
-
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  sku         String?  @unique
-  barcode     String?  @unique
-  description String?
-  unitId      String
-  categoryId  String?
-  imageUrl    String?
-  imageUrls   Json?    @default("[]")
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // SEO fields (for future e-commerce)
-  seoTitle       String?
-  seoDescription String?
-  seoKeywords    String?
-  slug           String?  @unique
-
-  // E-commerce publishing
-  publishedToStore Boolean @default(false)
-
-  // Variant hierarchy (for e-commerce catalog grouping)
-  masterProductId  String?
-  isMainInGroup    Boolean  @default(false)
-  variantGroupName String?
-
-  unit     Unit              @relation(fields: [unitId], references: [id])
-  category ProductCategory?  @relation(fields: [categoryId], references: [id])
-
-  // Self-reference for variant hierarchy
-  masterProduct Product?  @relation("ProductMasterVariants", fields: [masterProductId], references: [id])
-  childVariants Product[] @relation("ProductMasterVariants")
-
-  stockRecords      StockRecord[]
-  stockMovements    StockMovement[]
-  documentItems     DocumentItem[]
-  purchasePrices    PurchasePrice[]
-  salePrices        SalePrice[]
-  customFields      ProductCustomField[]
-  variants          ProductVariant[]
-  discounts         ProductDiscount[]
-  variantLinksFrom  ProductVariantLink[] @relation("VariantLinksFrom")
-  variantLinksTo    ProductVariantLink[] @relation("VariantLinksTo")
-
-  // E-commerce relations
-  cartItems         CartItem[]
-  orderItems        OrderItem[]      // Legacy - will be removed
-  reviews           Review[]
-  favorites         Favorite[]
-
-  @@index([categoryId])
-  @@index([isActive])
-  @@index([name])
-  @@index([slug])
-  @@index([masterProductId])
-  @@index([variantGroupName])
-}
-
-// =============================================
-// ERP: Product Custom Fields (characteristics)
-// =============================================
-
-model CustomFieldDefinition {
-  id        String   @id @default(cuid())
-  name      String               // "Цвет", "Материал", "Страна производства"
-  fieldType String   @default("text")  // "text", "number", "select", "boolean"
-  options   String?              // JSON array for select type: ["Красный","Синий","Зелёный"]
-  isActive  Boolean  @default(true)
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  values ProductCustomField[]
-
-  @@index([isActive, order])
-}
-
-model ProductCustomField {
-  id           String @id @default(cuid())
-  productId    String
-  definitionId String
-  value        String  // stored as string, parsed by fieldType
-
-  product    Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
-  definition CustomFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, definitionId])
-  @@index([definitionId])
-}
-
-// =============================================
-// ERP: Product Variants (modifications)
-// =============================================
-
-model VariantType {
-  id        String   @id @default(cuid())
-  name      String               // "Размер", "Вес", "Цвет"
-  isActive  Boolean  @default(true)
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  options VariantOption[]
-
-  @@index([isActive, order])
-}
-
-model VariantOption {
-  id            String @id @default(cuid())
-  variantTypeId String
-  value         String  // "S", "M", "L", "XL" or "100г", "200г", "500г"
-  order         Int    @default(0)
-
-  variantType VariantType      @relation(fields: [variantTypeId], references: [id], onDelete: Cascade)
-  variants    ProductVariant[]
-
-  @@index([variantTypeId, order])
-}
-
-model ProductVariant {
-  id        String   @id @default(cuid())
-  productId String
-  optionId  String
-  sku       String?  @unique  // variant-specific SKU override
-  barcode   String?  @unique
-  priceAdjustment Float @default(0)  // +/- from base price
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-
-  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  option  VariantOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-
-  // E-commerce relations
-  cartItems      CartItem[]
-  orderItems     OrderItem[]      // Legacy - will be removed
-  documentItems  DocumentItem[]   // New: link to Document items
-  stockMovements StockMovement[]  // Stock movements for this variant
-
-  @@unique([productId, optionId])
-  @@index([productId])
-}
-
-// =============================================
-// ERP: Discount System
-// =============================================
-
 enum DiscountType {
-  percentage  // e.g. 10% off
-  fixed       // e.g. 500 RUB off
+  percentage
+  fixed
 }
-
-model ProductDiscount {
-  id          String       @id @default(cuid())
-  productId   String
-  name        String               // "Летняя распродажа", "Скидка 10%"
-  type        DiscountType
-  value       Float                // 10 for 10%, or 500 for 500 RUB
-  validFrom   DateTime     @default(now())
-  validTo     DateTime?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId, isActive, validFrom])
-}
-
-// SKU auto-generation counter
-model SkuCounter {
-  id         String @id @default(cuid())
-  prefix     String @unique @default("SKU")
-  lastNumber Int    @default(0)
-}
-
-// =============================================
-// ERP: Product Variant Links (product grouping for website)
-// =============================================
-
-model ProductVariantLink {
-  id              String   @id @default(cuid())
-  productId       String
-  linkedProductId String
-  groupName       String               // "Цвет", "Размер" - variant group name
-  sortOrder       Int      @default(0)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-
-  product       Product @relation("VariantLinksFrom", fields: [productId], references: [id], onDelete: Cascade)
-  linkedProduct Product @relation("VariantLinksTo", fields: [linkedProductId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, linkedProductId])
-  @@index([productId])
-}
-
-// =============================================
-// ERP: Counterparties
-// =============================================
-
-model Counterparty {
-  id            String           @id @default(cuid())
-  type          CounterpartyType @default(customer)
-  name          String
-  legalName     String?
-  inn           String?          @unique
-  kpp           String?
-  bankAccount   String?
-  bankName      String?
-  bik           String?
-  address       String?
-  phone         String?
-  email         String?
-  contactPerson String?
-  notes         String?
-  isActive      Boolean          @default(true)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-
-  // Link to e-commerce Customer (optional, for auto-created counterparties)
-  customer Customer? @relation
-
-  interactions   CounterpartyInteraction[]
-  purchasePrices PurchasePrice[]
-  documents      Document[]
-  balance        CounterpartyBalance?
-  payments       Payment[]
-
-  @@index([type])
-  @@index([isActive])
-  @@index([name])
-}
-
-model CounterpartyInteraction {
-  id             String   @id @default(cuid())
-  counterpartyId String
-  type           String   // "call", "email", "meeting", "note"
-  subject        String?
-  description    String?
-  createdBy      String?
-  createdAt      DateTime @default(now())
-
-  counterparty Counterparty @relation(fields: [counterpartyId], references: [id], onDelete: Cascade)
-
-  @@index([counterpartyId, createdAt])
-}
-
-model CounterpartyBalance {
-  id             String   @id @default(cuid())
-  counterpartyId String   @unique
-  balanceRub     Float    @default(0)
-  lastUpdatedAt  DateTime @updatedAt
-
-  counterparty Counterparty @relation(fields: [counterpartyId], references: [id], onDelete: Cascade)
-}
-
-// =============================================
-// ERP: Warehouses & Stock
-// =============================================
-
-model Warehouse {
-  id              String   @id @default(cuid())
-  tenantId        String   // Tenant scoping
-  name            String
-  address         String?
-  responsibleName String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  stockRecords      StockRecord[]
-  stockMovements    StockMovement[]
-  documents         Document[]  @relation("WarehouseDocuments")
-  incomingTransfers Document[]  @relation("TargetWarehouseDocuments")
-
-  @@index([isActive])
-  @@index([tenantId])
-}
-
-model StockRecord {
-  id             String   @id @default(cuid())
-  warehouseId    String
-  productId      String
-  quantity       Float    @default(0)
-  averageCost    Float    @default(0) // Средняя скользящая себестоимость
-  totalCostValue Float    @default(0) // quantity * averageCost
-  updatedAt      DateTime @updatedAt
-
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@unique([warehouseId, productId])
-  @@index([productId])
-}
-
-// =============================================
-// ERP: Stock Movements (immutable audit log)
-// =============================================
 
 enum MovementType {
-  receipt       // Приход (stock_receipt, incoming_shipment, customer_return)
-  write_off     // Списание
-  shipment      // Отгрузка (outgoing_shipment)
-  return        // Возврат поставщику
-  transfer_out  // Перемещение: исходящий склад
-  transfer_in   // Перемещение: целевой склад
-  adjustment    // Корректировка по инвентаризации
+  receipt
+  write_off
+  shipment
+  return
+  transfer_out
+  transfer_in
+  adjustment
 }
-
-model StockMovement {
-  id                String       @id @default(cuid())
-  documentId        String
-  productId         String
-  warehouseId       String
-  variantId         String?
-  quantity          Float        // Положительное = приход, отрицательное = расход
-  cost              Float        // Себестоимость единицы
-  totalCost         Float        // quantity * cost
-  type              MovementType
-  isReversing       Boolean      @default(false) // true для движений, созданных при отмене
-  reversesDocumentId String?     // ID документа, который отменяется (для audit trail)
-  createdAt         DateTime     @default(now())
-
-  document         Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
-  warehouse        Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  variant          ProductVariant?  @relation(fields: [variantId], references: [id])
-
-  @@index([documentId])
-  @@index([productId, warehouseId])
-  @@index([warehouseId, createdAt])
-  @@index([productId, createdAt])
-  @@index([isReversing])
-}
-
-// =============================================
-// ERP: Documents (core engine)
-// =============================================
-
-model DocumentCounter {
-  id         String @id @default(cuid())
-  prefix     String @unique
-  lastNumber Int    @default(0)
-}
-
-model Document {
-  id                String         @id @default(cuid())
-  number            String         @unique
-  type              DocumentType
-  status            DocumentStatus @default(draft)
-  date              DateTime       @default(now())
-
-  warehouseId       String?
-  warehouse         Warehouse?     @relation("WarehouseDocuments", fields: [warehouseId], references: [id])
-
-  targetWarehouseId String?
-  targetWarehouse   Warehouse?     @relation("TargetWarehouseDocuments", fields: [targetWarehouseId], references: [id])
-
-  counterpartyId    String?
-  counterparty      Counterparty?  @relation(fields: [counterpartyId], references: [id])
-
-  totalAmount       Float          @default(0)
-  currency          String         @default("RUB")
-  paymentType       PaymentType?
-
-  linkedDocumentId  String?
-  linkedDocument    Document?      @relation("LinkedDocuments", fields: [linkedDocumentId], references: [id])
-  linkedFrom        Document[]     @relation("LinkedDocuments")
-
-  description       String?
-  notes             String?
-  createdBy         String?
-  confirmedAt       DateTime?
-  confirmedBy       String?
-  cancelledAt       DateTime?
-  adjustmentsCreated Boolean @default(false) // Для inventory_count: корректировки успешно созданы
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-
-  items             DocumentItem[]
-  payments          Payment[]
-  stockMovements    StockMovement[]
-
-  // E-commerce order fields (for type = sales_order)
-  customerId        String?
-  deliveryType      String?          // "pickup" | "courier"
-  deliveryAddressId String?
-  deliveryCost      Float           @default(0)
-  paymentMethod     String?          // "tochka" | "cash"
-  paymentStatus     String          @default("pending")  // pending, paid, failed, refunded
-  paymentExternalId String?
-  paidAt            DateTime?
-  shippedAt         DateTime?
-  deliveredAt       DateTime?
-
-  customer        Customer?         @relation("CustomerOrders", fields: [customerId], references: [id])
-  deliveryAddress CustomerAddress?  @relation("DeliveryAddress", fields: [deliveryAddressId], references: [id])
-
-  // Legacy relation - will be removed after migration
-  ecommerceOrder   Order?
-
-  // Reviews for this order
-  reviews          Review[]
-
-  @@index([type, status, date])
-  @@index([warehouseId, date])
-  @@index([counterpartyId, date])
-  @@index([number])
-  @@index([customerId])
-  @@index([paymentStatus])
-}
-
-model DocumentItem {
-  id          String   @id @default(cuid())
-  documentId  String
-  productId   String
-  variantId   String?   // E-commerce product variant
-  quantity    Float
-  price       Float    @default(0)
-  total       Float    @default(0)
-
-  expectedQty Float?
-  actualQty   Float?
-  difference  Float?
-
-  createdAt   DateTime @default(now())
-
-  document Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  product  Product         @relation(fields: [productId], references: [id])
-  variant  ProductVariant? @relation(fields: [variantId], references: [id])
-
-  @@index([documentId])
-  @@index([productId])
-  @@index([variantId])
-}
-
-// =============================================
-// ERP: Pricing
-// =============================================
-
-model PriceList {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  prices SalePrice[]
-
-  @@index([isActive])
-}
-
-model PurchasePrice {
-  id         String    @id @default(cuid())
-  productId  String
-  supplierId String?
-  price      Float
-  currency   String    @default("RUB")
-  validFrom  DateTime  @default(now())
-  validTo    DateTime?
-  isActive   Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-
-  product  Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  supplier Counterparty? @relation(fields: [supplierId], references: [id])
-
-  @@index([productId, isActive, validFrom])
-  @@index([supplierId])
-}
-
-model SalePrice {
-  id          String    @id @default(cuid())
-  productId   String
-  priceListId String?
-  price       Float
-  currency    String    @default("RUB")
-  validFrom   DateTime  @default(now())
-  validTo     DateTime?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-
-  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  priceList PriceList? @relation(fields: [priceListId], references: [id])
-
-  @@index([productId, priceListId, isActive, validFrom])
-}
-
-// =============================================
-// E-COMMERCE: Enums
-// =============================================
 
 enum OrderStatus {
-  pending      // Ожидает оплаты
-  paid         // Оплачен
-  processing   // Комплектуется
-  shipped      // Отправлен
-  delivered    // Доставлен
-  cancelled    // Отменён
+  pending
+  paid
+  processing
+  shipped
+  delivered
+  cancelled
 }
 
 enum DeliveryType {
-  pickup       // Самовывоз
-  courier      // Курьерская доставка
+  pickup
+  courier
 }
 
 enum EcomPaymentMethod {
-  tochka       // Точка Банк
-  cash         // При получении
+  tochka
+  cash
 }
 
 enum EcomPaymentStatus {
@@ -707,480 +1104,34 @@ enum EcomPaymentStatus {
   refunded
 }
 
-// =============================================
-// E-COMMERCE: Customers
-// =============================================
-
-model Customer {
-  id               String   @id @default(cuid())
-  telegramId       String   @unique
-  telegramUsername  String?
-  name             String?
-  phone            String?
-  email            String?
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Link to ERP Counterparty (auto-created on first order)
-  counterpartyId String?  @unique
-  counterparty   Counterparty? @relation(fields: [counterpartyId], references: [id])
-
-  // Legacy relation - will be removed after migration
-  orders    Order[]
-
-  // New relation to Document (sales_order)
-  documents Document[] @relation("CustomerOrders")
-
-  reviews   Review[]
-  favorites Favorite[]
-  addresses CustomerAddress[]
-  cartItems CartItem[]
-
-  @@index([isActive])
-}
-
-model CustomerAddress {
-  id            String   @id @default(cuid())
-  customerId    String
-  label         String   @default("Дом")
-  recipientName String
-  phone         String
-  city          String
-  street        String
-  building      String
-  apartment     String?
-  postalCode    String?
-  isDefault     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  // Legacy relation - will be removed after migration
-  orders Order[]
-
-  // New relation to Document (delivery address)
-  deliveryOrders Document[] @relation("DeliveryAddress")
-
-  @@index([customerId])
-}
-
-// =============================================
-// E-COMMERCE: Cart
-// =============================================
-
-model CartItem {
-  id            String   @id @default(cuid())
-  customerId    String
-  productId     String
-  variantId     String?
-  quantity      Int      @default(1)
-  priceSnapshot Float
-  addedAt       DateTime @default(now())
-
-  customer Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  product  Product         @relation(fields: [productId], references: [id])
-  variant  ProductVariant? @relation(fields: [variantId], references: [id])
-
-  @@unique([customerId, productId, variantId])
-  @@index([customerId])
-}
-
-// =============================================
-// E-COMMERCE: Orders
-// =============================================
-
-model Order {
-  id                String            @id @default(cuid())
-  orderNumber       String            @unique
-  customerId        String
-  status            OrderStatus       @default(pending)
-  documentId        String?           @unique
-  deliveryType      DeliveryType
-  deliveryAddressId String?
-  deliveryCost      Float             @default(0)
-  totalAmount       Float
-  paymentMethod     EcomPaymentMethod?
-  paymentStatus     EcomPaymentStatus @default(pending)
-  paymentExternalId String?
-  notes             String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  paidAt            DateTime?
-  shippedAt         DateTime?
-  deliveredAt       DateTime?
-
-  customer        Customer         @relation(fields: [customerId], references: [id])
-  deliveryAddress CustomerAddress? @relation(fields: [deliveryAddressId], references: [id])
-  document        Document?        @relation(fields: [documentId], references: [id])
-  items           OrderItem[]
-  reviews         Review[]
-
-  @@index([customerId, status])
-  @@index([orderNumber])
-}
-
-model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  productId String
-  variantId String?
-  quantity  Int
-  price     Float
-  total     Float
-  createdAt DateTime @default(now())
-
-  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product         @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
-
-  @@index([orderId])
-  @@index([productId])
-}
-
-// =============================================
-// E-COMMERCE: Reviews
-// =============================================
-
-model Review {
-  id                 String   @id @default(cuid())
-  productId          String
-  customerId         String
-  orderId            String?   // Legacy - will be removed after migration
-  documentId         String?   // New: link to Document (sales_order)
-  rating             Int      // 1-5
-  title              String?
-  comment            String?
-  isVerifiedPurchase Boolean  @default(false)
-  isPublished        Boolean  @default(false)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  order    Order?   @relation(fields: [orderId], references: [id])
-  document Document? @relation(fields: [documentId], references: [id])
-
-  @@index([productId, isPublished])
-  @@index([customerId])
-  @@index([documentId])
-}
-
-// =============================================
-// E-COMMERCE: Favorites
-// =============================================
-
-model Favorite {
-  id         String   @id @default(cuid())
-  customerId String
-  productId  String
-  addedAt    DateTime @default(now())
-
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@unique([customerId, productId])
-}
-
-// =============================================
-// E-COMMERCE: Promo Blocks
-// =============================================
-
-model PromoBlock {
-  id        String   @id @default(cuid())
-  title     String
-  subtitle  String?
-  imageUrl  String
-  linkUrl   String?
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([isActive, order])
-}
-
-// =============================================
-// E-COMMERCE: Order Counter
-// =============================================
-
-model OrderCounter {
-  id         String @id @default(cuid())
-  prefix     String @unique @default("ORD")
-  lastNumber Int    @default(0)
-}
-
-// =============================================
-// E-COMMERCE: CMS Pages
-// =============================================
-
-model StorePage {
-  id             String   @id @default(cuid())
-  title          String
-  slug           String   @unique
-  content        String   @db.Text
-  seoTitle       String?
-  seoDescription String?
-  isPublished    Boolean  @default(false)
-  sortOrder      Int      @default(0)
-  showInFooter   Boolean  @default(true)
-  showInHeader   Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@index([isPublished, sortOrder])
-  @@index([slug])
-}
-
-// =============================================
-// INTEGRATIONS: External API connections
-// =============================================
-
-model Integration {
-  id        String   @id @default(cuid())
-  type      String   @unique  // "telegram", "1c", "moysklad", etc.
-  name      String
-  isEnabled Boolean  @default(true)
-  settings  Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([type, isEnabled])
-}
-
-// =============================================
-// FINANCE: Categories & Payments
-// =============================================
-
-model FinanceCategory {
-  id                  String   @id @default(cuid())
-  name                String
-  type                String   // "income" | "expense"
-  isSystem            Boolean  @default(false)
-  isActive            Boolean  @default(true)
-  order               Int      @default(0)
-  defaultAccountCode  String?  // e.g. "44", "26", "91.1", "91.2"
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  payments Payment[]
-
-  @@index([type, isActive])
-}
-
-model PaymentCounter {
-  id         String @id @default(cuid())
-  prefix     String @unique @default("PAY")
-  lastNumber Int    @default(0)
-}
-
-model Payment {
-  id             String          @id @default(cuid())
-  number         String          @unique
-  type           String          // "income" | "expense"
-  categoryId     String
-  counterpartyId String?
-  documentId     String?
-  amount         Float
-  paymentMethod  PaymentType
-  date           DateTime        @default(now())
-  description    String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-
-  category     FinanceCategory @relation(fields: [categoryId], references: [id])
-  counterparty Counterparty?   @relation(fields: [counterpartyId], references: [id])
-  document     Document?       @relation(fields: [documentId], references: [id])
-
-  @@index([type, date])
-  @@index([counterpartyId])
-  @@index([documentId])
-}
-
-// =============================================
-// ACCOUNTING: Chart of Accounts (План счетов)
-// =============================================
-
 enum AccountType {
-  active           // Активный (Дебет - увеличение)
-  passive          // Пассивный (Кредит - увеличение)
-  active_passive   // Активно-пассивный
+  active
+  passive
+  active_passive
 }
 
 enum AccountCategory {
-  asset       // Активы (1xxx)
-  liability   // Обязательства (2xxx)
-  equity      // Капитал (3xxx)
-  income      // Доходы (4xxx/90)
-  expense     // Расходы (5xxx/90)
-  off_balance // Забалансовые (0xx)
+  asset
+  liability
+  equity
+  income
+  expense
+  off_balance
 }
-
-model Account {
-  id            String         @id @default(cuid())
-  code          String         @unique // "41", "41.1", "60", "90.1"
-  name          String // "Товары", "Расчеты с поставщиками"
-  type          AccountType
-  category      AccountCategory
-  parentId      String?
-  parent        Account?       @relation("AccountTree", fields: [parentId], references: [id])
-  children      Account[]     @relation("AccountTree")
-  isSystem      Boolean        @default(true)
-  isActive      Boolean        @default(true)
-  order         Int            @default(0)
-  analyticsType String? // "counterparty", "warehouse", "product"
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  lines LedgerLine[]
-
-  @@index([code])
-  @@index([category, isActive])
-}
-
-model JournalEntry {
-  id           String   @id @default(cuid())
-  number       String   @unique
-  date         DateTime @default(now())
-  description  String?
-
-  sourceType   String? // "incoming_shipment", "sales_order", "manual"
-  sourceId     String? // Document ID
-  sourceNumber String?
-
-  isManual    Boolean   @default(false)
-  isReversed  Boolean   @default(false)
-  reversedBy  JournalEntry?  @relation("JournalReversal", fields: [reversedById], references: [id])
-  reversedById String?
-  reversals   JournalEntry[] @relation("JournalReversal")
-  createdBy   String?
-  createdAt   DateTime  @default(now())
-
-  lines LedgerLine[]
-
-  @@index([date])
-  @@index([sourceType, sourceId])
-}
-
-model LedgerLine {
-  id             String   @id @default(cuid())
-  entryId        String
-  accountId      String
-
-  debit          Float    @default(0)
-  credit         Float    @default(0)
-
-  counterpartyId String?
-  warehouseId    String?
-  productId      String?
-
-  currency       String?
-  amountRub      Float    @default(0) // Amount in RUB
-
-  entry     JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  account   Account      @relation(fields: [accountId], references: [id])
-
-  @@index([entryId])
-  @@index([accountId])
-  @@index([counterpartyId])
-}
-
-model JournalCounter {
-  id         String @id @default(cuid())
-  prefix     String @unique @default("JE")
-  lastNumber Int    @default(0)
-}
-
-// =============================================
-// COMPANY: Settings
-// =============================================
 
 enum TaxRegime {
-  osno              // ОСНО с НДС
-  usn_income        // УСН Доходы
-  usn_income_expense // УСН Доходы-Расходы
-  patent            // Патент
+  osno
+  usn_income
+  usn_income_expense
+  patent
 }
-
-model CompanySettings {
-  id                        String    @id @default(cuid())
-  name                      String
-  inn                       String?
-  kpp                       String?
-  ogrn                      String?
-
-  taxRegime                 TaxRegime @default(usn_income)
-  vatRate                   Float     @default(20)
-  usnRate                   Float     @default(6)
-
-  initialCapital            Float     @default(0)
-  initialCapitalDate        DateTime?
-
-  // Account mappings for auto-posting
-  cashAccountId             String?
-  bankAccountId             String?
-  inventoryAccountId        String?
-  supplierAccountId         String?
-  customerAccountId         String?
-  vatAccountId              String?
-  vatPayableAccountId       String?
-  salesAccountId            String?
-  cogsAccountId             String?
-  profitAccountId           String?
-  retainedEarningsAccountId String?
-
-  fiscalYearStartMonth      Int       @default(1)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// =============================================
-// SYSTEM: Outbox (Durable Event Delivery)
-// =============================================
 
 enum OutboxStatus {
-  PENDING    // Ready to be processed
-  PROCESSING // Claimed by a worker
-  PROCESSED  // Successfully handled
-  FAILED     // Exhausted retries
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
 }
-
-model OutboxEvent {
-  id            String       @id @default(cuid())
-  eventType     String       // "DocumentConfirmed"
-  aggregateType String       // "Document"
-  aggregateId   String       // documentId for replay/debug
-  payload       Json         // Full DomainEvent { type, occurredAt, payload }
-  status        OutboxStatus @default(PENDING)
-  attempts      Int          @default(0)
-  availableAt   DateTime     @default(now()) // When worker can retry
-  createdAt     DateTime     @default(now())
-  processedAt   DateTime?
-  lastError     String?      @db.Text
-
-  @@index([status, availableAt])
-  @@index([aggregateType, aggregateId])
-}
-
-// =============================================
-// SYSTEM: Webhook Idempotency
-// =============================================
-
-model ProcessedWebhook {
-  id          String   @id @default(cuid())
-  source      String   // "tochka", "telegram", etc.
-  externalId  String   // Unique ID from the source
-  payload     Json     // Original payload for debugging
-  processedAt DateTime @default(now())
-
-  @@unique([source, externalId])
-  @@index([source, processedAt])
-}
-
-// =============================================
-// PARTY: Identity Layer (Customer 360 Foundation)
-// =============================================
 
 enum PartyType {
   person
@@ -1208,130 +1159,4 @@ enum MergeStatus {
   approved
   executed
   rejected
-}
-
-model Party {
-  id                      String            @id @default(cuid())
-
-  // Identity
-  displayName             String
-  displayNameManual       Boolean           @default(false)
-  type                    PartyType         @default(person)
-
-  // Denormalized caches (PartyLink is source of truth)
-  primaryOwnerUserId      String?
-  primaryCustomerId       String?           @unique
-  primaryCounterpartyId   String?           @unique
-  lastActivityAt          DateTime?
-
-  // Merge tracking
-  status                  PartySystemStatus @default(active)
-  mergedIntoId            String?
-  mergedAt                DateTime?
-
-  // Lifecycle
-  isActive                Boolean           @default(true)
-  notes                   String?           @db.Text
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-
-  // Relations
-  primaryOwner            User?             @relation("PartyPrimaryOwner", fields: [primaryOwnerUserId], references: [id])
-  mergedInto              Party?            @relation("PartyMerge", fields: [mergedIntoId], references: [id])
-  mergedFrom              Party[]           @relation("PartyMerge")
-  links                   PartyLink[]
-  activities              PartyActivity[]
-  owners                  PartyOwner[]
-  mergeRequestsSent       MergeRequest[]    @relation("MergeSurvivor")
-  mergeRequestsReceived   MergeRequest[]    @relation("MergeVictim")
-
-  @@index([primaryOwnerUserId])
-  @@index([lastActivityAt])
-  @@index([status])
-  @@index([type])
-}
-
-model PartyLink {
-  id          String            @id @default(cuid())
-  partyId     String
-  entityType  PartyEntityType
-  entityId    String
-
-  isPrimary   Boolean           @default(false)
-  linkedAt    DateTime          @default(now())
-
-  party       Party             @relation(fields: [partyId], references: [id], onDelete: Cascade)
-
-  @@unique([entityType, entityId])
-  @@index([partyId])
-}
-
-model PartyActivity {
-  id          String    @id @default(cuid())
-  partyId     String
-  type        String    // "order_placed" | "payment_received" | "manager_interaction"
-
-  // When (explicit, not default)
-  occurredAt  DateTime
-
-  // Source reference
-  sourceType  String    // "document" | "payment" | "interaction" | "manual"
-  sourceId    String?   // Nullable for manual activities
-
-  // Lightweight summary
-  summary     Json      @default("{}")
-
-  party       Party     @relation(fields: [partyId], references: [id], onDelete: Cascade)
-
-  @@unique([sourceType, sourceId, type])
-  @@index([partyId, occurredAt(sort: Desc)])
-  @@index([type, occurredAt(sort: Desc)])
-}
-
-model PartyOwner {
-  id          String      @id @default(cuid())
-  partyId     String
-  userId      String
-
-  role        OwnerRole   @default(primary)
-
-  assignedAt  DateTime    @default(now())
-  assignedBy  String?
-
-  isActive    Boolean     @default(true)
-  endedAt     DateTime?
-
-  party       Party       @relation(fields: [partyId], references: [id], onDelete: Cascade)
-  user        User        @relation(fields: [userId], references: [id])
-  assigner    User?       @relation("OwnerAssigner", fields: [assignedBy], references: [id])
-
-  @@unique([partyId, role, isActive])
-  @@index([partyId])
-  @@index([userId])
-}
-
-model MergeRequest {
-  id                String        @id @default(cuid())
-
-  survivorId        String
-  victimId          String
-
-  detectionSource   String        // "manual" | "phone_match" | "telegram_match"
-  confidence        Float?
-  matchReason       String?       @db.Text
-
-  status            MergeStatus   @default(pending)
-  reviewedBy        String?
-  reviewedAt        DateTime?
-  executedAt        DateTime?
-
-  createdBy         String?
-  createdAt         DateTime      @default(now())
-
-  survivor          Party         @relation("MergeSurvivor", fields: [survivorId], references: [id])
-  victim            Party         @relation("MergeVictim", fields: [victimId], references: [id])
-  reviewer          User?         @relation(fields: [reviewedBy], references: [id])
-
-  @@unique([survivorId, victimId])
-  @@index([status])
 }

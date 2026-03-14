@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTestRequest, jsonResponse } from "../../helpers/api-client";
 import {
   createUnit,
@@ -8,6 +8,7 @@ import {
   createCartItem,
   createOrder,
   createOrderItem,
+  createTenant,
 } from "../../helpers/factories";
 import { getTestDb } from "../../helpers/test-db";
 
@@ -61,11 +62,22 @@ function mockNoCustomer() {
 describe("API: E-commerce Cart & Orders", () => {
   let unit: Awaited<ReturnType<typeof createUnit>>;
   let customer: Awaited<ReturnType<typeof createCustomer>>;
+  let storeTenantId: string;
+  const originalStoreTenantId = process.env.STORE_TENANT_ID;
 
   beforeEach(async () => {
+    // Create store tenant for e-commerce
+    const storeTenant = await createTenant({ id: "store-tenant", name: "Store Tenant" });
+    storeTenantId = storeTenant.id;
+    process.env.STORE_TENANT_ID = storeTenantId;
+
     unit = await createUnit({ name: "Штука", shortName: "шт" });
     customer = await createCustomer({ name: "Тестовый Покупатель", phone: "+79001234567" });
     mockNoCustomer();
+  });
+
+  afterEach(() => {
+    process.env.STORE_TENANT_ID = originalStoreTenantId;
   });
 
   // ==========================================
@@ -85,7 +97,7 @@ describe("API: E-commerce Cart & Orders", () => {
 
     it("should return cart items", async () => {
       mockCustomer(customer);
-      const product = await createProduct({ name: "Тест Товар", unitId: unit.id, publishedToStore: true });
+      const product = await createProduct({ name: "Тест Товар", unitId: unit.id, publishedToStore: true, tenantId: storeTenantId });
       await createSalePrice(product.id, { price: 5000 });
       await createCartItem(customer.id, product.id, { priceSnapshot: 5000, quantity: 2 });
 
@@ -108,7 +120,7 @@ describe("API: E-commerce Cart & Orders", () => {
   describe("POST /api/ecommerce/cart", () => {
     it("should add item to cart", async () => {
       mockCustomer(customer);
-      const product = await createProduct({ name: "Новый Товар", unitId: unit.id, publishedToStore: true });
+      const product = await createProduct({ name: "Новый Товар", unitId: unit.id, publishedToStore: true, tenantId: storeTenantId });
       await createSalePrice(product.id, { price: 3000 });
 
       const req = createTestRequest("/api/ecommerce/cart", {
@@ -130,7 +142,7 @@ describe("API: E-commerce Cart & Orders", () => {
 
     it("should upsert quantity for existing item", async () => {
       mockCustomer(customer);
-      const product = await createProduct({ name: "Existing", unitId: unit.id, publishedToStore: true });
+      const product = await createProduct({ name: "Existing", unitId: unit.id, publishedToStore: true, tenantId: storeTenantId });
       await createSalePrice(product.id, { price: 1000 });
       await createCartItem(customer.id, product.id, { priceSnapshot: 1000, quantity: 2 });
 
@@ -154,7 +166,7 @@ describe("API: E-commerce Cart & Orders", () => {
   describe("DELETE /api/ecommerce/cart", () => {
     it("should remove item from cart", async () => {
       mockCustomer(customer);
-      const product = await createProduct({ name: "To Remove", unitId: unit.id });
+      const product = await createProduct({ name: "To Remove", unitId: unit.id, tenantId: storeTenantId });
       const cartItem = await createCartItem(customer.id, product.id, { priceSnapshot: 1000 });
 
       const req = createTestRequest("/api/ecommerce/cart", {
@@ -180,7 +192,7 @@ describe("API: E-commerce Cart & Orders", () => {
   describe("POST /api/ecommerce/checkout", () => {
     it("should create order from cart", async () => {
       mockCustomer(customer);
-      const product = await createProduct({ name: "Checkout Item", unitId: unit.id, publishedToStore: true });
+      const product = await createProduct({ name: "Checkout Item", unitId: unit.id, publishedToStore: true, tenantId: storeTenantId });
       await createSalePrice(product.id, { price: 2500 });
       await createCartItem(customer.id, product.id, { priceSnapshot: 2500, quantity: 2 });
 
@@ -232,7 +244,7 @@ describe("API: E-commerce Cart & Orders", () => {
 
   describe("POST /api/ecommerce/orders/quick-order", () => {
     it("should create a quick order without authentication", async () => {
-      const product = await createProduct({ name: "Quick Item", unitId: unit.id, publishedToStore: true });
+      const product = await createProduct({ name: "Quick Item", unitId: unit.id, publishedToStore: true, tenantId: storeTenantId });
       await createSalePrice(product.id, { price: 1500 });
 
       const req = createTestRequest("/api/ecommerce/orders/quick-order", {
@@ -260,7 +272,7 @@ describe("API: E-commerce Cart & Orders", () => {
     });
 
     it("should reject for inactive product", async () => {
-      const product = await createProduct({ name: "Inactive", unitId: unit.id, isActive: false });
+      const product = await createProduct({ name: "Inactive", unitId: unit.id, isActive: false, tenantId: storeTenantId });
 
       const req = createTestRequest("/api/ecommerce/orders/quick-order", {
         method: "POST",
@@ -355,8 +367,8 @@ describe("API: E-commerce Cart & Orders", () => {
   describe("GET /api/ecommerce/orders", () => {
     it("should return customer orders", async () => {
       mockCustomer(customer);
-      const product = await createProduct({ name: "Ordered Item", unitId: unit.id });
-      const order = await createOrder(customer.id, { orderNumber: "ORD-000001", totalAmount: 5000 });
+      const product = await createProduct({ name: "Ordered Item", unitId: unit.id, tenantId: storeTenantId });
+      const order = await createOrder(customer.id, { orderNumber: "ORD-000001", totalAmount: 5000, tenantId: storeTenantId });
       await createOrderItem(order.id, product.id, { quantity: 2, price: 2500 });
 
       const req = createTestRequest("/api/ecommerce/orders");

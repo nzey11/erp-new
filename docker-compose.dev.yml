@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -20,8 +18,8 @@ services:
       - SESSION_SECRET=dev-secret-key-change-in-production
       - SECURE_COOKIES=false
     depends_on:
-      - db
-    command: sh -c "npx prisma generate && npx prisma db push && npx prisma db seed && rm -rf /app/.next && npm run dev"
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16-alpine
@@ -33,6 +31,11 @@ services:
       - POSTGRES_DB=listopt_erp
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d listopt_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

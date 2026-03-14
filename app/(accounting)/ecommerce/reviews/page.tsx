@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Star, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 import { cn, formatDateTime } from "@/lib/shared/utils";
 
 interface Review {
@@ -62,7 +63,7 @@ export default function ReviewsPage() {
   const togglePublished = async (review: Review) => {
     setUpdating(review.id);
     try {
-      const res = await fetch(`/api/accounting/ecommerce/reviews?id=${review.id}`, {
+      const res = await csrfFetch(`/api/accounting/ecommerce/reviews?id=${review.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublished: !review.isPublished }),
@@ -87,7 +88,7 @@ export default function ReviewsPage() {
 
     setDeleting(id);
     try {
-      const res = await fetch(`/api/accounting/ecommerce/reviews?id=${id}`, {
+      const res = await csrfFetch(`/api/accounting/ecommerce/reviews?id=${id}`, {
         method: "DELETE",
       });
 

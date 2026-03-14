@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 
 interface PromoBlock {
   id: string;
@@ -105,7 +106,7 @@ export default function PromoBlocksPage() {
         ? `/api/accounting/ecommerce/promo-blocks?id=${editingBlock.id}`
         : "/api/accounting/ecommerce/promo-blocks";
 
-      const res = await fetch(url, {
+      const res = await csrfFetch(url, {
         method: editingBlock ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -131,7 +132,7 @@ export default function PromoBlocksPage() {
 
     setDeleting(id);
     try {
-      const res = await fetch(`/api/accounting/ecommerce/promo-blocks?id=${id}`, {
+      const res = await csrfFetch(`/api/accounting/ecommerce/promo-blocks?id=${id}`, {
         method: "DELETE",
       });
 
@@ -151,7 +152,7 @@ export default function PromoBlocksPage() {
 
   const toggleActive = async (block: PromoBlock) => {
     try {
-      const res = await fetch(`/api/accounting/ecommerce/promo-blocks?id=${block.id}`, {
+      const res = await csrfFetch(`/api/accounting/ecommerce/promo-blocks?id=${block.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...block, isActive: !block.isActive }),

@@ -8,6 +8,28 @@ import {
 import { logger } from "@/lib/shared/logger";
 import type { ErpRole } from "@/lib/generated/prisma/client";
 
+// ─── Session Cookie Configuration ─────────────────────────────────────────────
+
+/**
+ * Session cookie options for invalidation.
+ * Shared between getAuthSession() and logout route to prevent drift.
+ */
+export const SESSION_COOKIE_INVALIDATE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.SECURE_COOKIES === "true",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 0,
+};
+
+/**
+ * Clear the session cookie (invalidate stale session).
+ * Used when session references a non-existent or inactive user.
+ */
+async function clearSessionCookie(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<void> {
+  cookieStore.set("session", "", SESSION_COOKIE_INVALIDATE_OPTIONS);
+}
+
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
@@ -102,14 +124,17 @@ export async function getAuthSession(): Promise<TenantAwareSession | null> {
       select: { id: true, username: true, isActive: true },
     });
 
-    // User not found or inactive
+    // User not found - clear stale session
     if (!user) {
-      logger.warn("auth/session", "User not found in database", { userId });
+      logger.warn("auth/session", "User not found in database, clearing session", { userId });
+      await clearSessionCookie(cookieStore);
       return null;
     }
 
+    // User inactive - clear session
     if (!user.isActive) {
-      logger.warn("auth/session", "User is inactive", { userId, username: user.username });
+      logger.warn("auth/session", "User is inactive, clearing session", { userId, username: user.username });
+      await clearSessionCookie(cookieStore);
       return null;
     }
 
@@ -127,19 +152,20 @@ export async function getAuthSession(): Promise<TenantAwareSession | null> {
         membershipId: membership.membershipId,
       };
     } catch (error) {
-      // Log specific membership resolution failures
+      // Log specific membership resolution failures and clear session
       if (error instanceof MembershipResolutionError) {
-        logger.warn("auth/session", `Membership resolution failed: ${error.code}`, {
+        logger.warn("auth/session", `Membership resolution failed, clearing session: ${error.code}`, {
           userId,
           username: user.username,
           code: error.code,
         });
       } else {
-        logger.error("auth/session", "Unexpected error during membership resolution", {
+        logger.error("auth/session", "Unexpected error during membership resolution, clearing session", {
           userId,
           error: error instanceof Error ? error.message : String(error),
         });
       }
+      await clearSessionCookie(cookieStore);
       return null;
     }
   } catch {

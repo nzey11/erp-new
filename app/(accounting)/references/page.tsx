@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 import Link from "next/link";
 
 
@@ -110,8 +111,8 @@ export default function ReferencesPage() {
     setSavingUnit(true);
     try {
       const res = editingUnit
-        ? await fetch(`/api/accounting/units/${editingUnit.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) })
-        : await fetch("/api/accounting/units", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) });
+        ? await csrfFetch(`/api/accounting/units/${editingUnit.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) })
+        : await csrfFetch("/api/accounting/units", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) });
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success(editingUnit ? "Единица обновлена" : "Единица создана");
       setUnitDialogOpen(false);
@@ -145,8 +146,8 @@ export default function ReferencesPage() {
     try {
       const body = { name: plForm.name, description: plForm.description || null };
       const res = editingPriceList
-        ? await fetch(`/api/accounting/price-lists/${editingPriceList.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/accounting/price-lists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        ? await csrfFetch(`/api/accounting/price-lists/${editingPriceList.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await csrfFetch("/api/accounting/price-lists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success(editingPriceList ? "Прайс-лист обновлён" : "Прайс-лист создан");
       setPlDialogOpen(false);
@@ -187,8 +188,8 @@ export default function ReferencesPage() {
         body.options = cfForm.options.split(",").map((s) => s.trim()).filter(Boolean);
       }
       const res = editingCf
-        ? await fetch(`/api/accounting/custom-fields/${editingCf.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/accounting/custom-fields", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        ? await csrfFetch(`/api/accounting/custom-fields/${editingCf.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await csrfFetch("/api/accounting/custom-fields", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success(editingCf ? "Характеристика обновлена" : "Характеристика создана");
       setCfDialogOpen(false);
@@ -202,7 +203,7 @@ export default function ReferencesPage() {
 
   const deleteCf = async (id: string) => {
     try {
-      const res = await fetch(`/api/accounting/custom-fields/${id}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/accounting/custom-fields/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Ошибка");
       toast.success("Характеристика удалена");
       loadAll();

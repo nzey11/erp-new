@@ -12,6 +12,7 @@ import {
 import { ImageIcon, Link2, Globe, MoreHorizontal, Archive, ArchiveRestore, Copy, Trash2, Download, Upload, Crown, GitBranch, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
+import { csrfFetch } from "@/lib/client/csrf";
 import { ProductFiltersBar, toApiValue, type ProductFilters } from "./catalog/ProductFilters";
 import { CSVImportWizard } from "./catalog/CSVImportWizard";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -139,7 +140,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
 
   const handleArchive = async (product: Product) => {
     try {
-      const res = await fetch(`/api/accounting/products/${product.id}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/accounting/products/${product.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Ошибка архивации");
       toast.success("Товар перемещён в архив");
       grid.mutate.refresh();
@@ -150,7 +151,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
 
   const handleRestore = async (product: Product) => {
     try {
-      const res = await fetch(`/api/accounting/products/${product.id}`, {
+      const res = await csrfFetch(`/api/accounting/products/${product.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: true }),
@@ -165,7 +166,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
 
   const handleDuplicate = async (product: Product) => {
     try {
-      const res = await fetch(`/api/accounting/products/${product.id}/duplicate`, { method: "POST" });
+      const res = await csrfFetch(`/api/accounting/products/${product.id}/duplicate`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка дублирования");
@@ -215,7 +216,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
   const handleBulkArchive = async () => {
     if (selectedIds.size === 0) return;
     try {
-      const res = await fetch("/api/accounting/products/bulk", {
+      const res = await csrfFetch("/api/accounting/products/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "archive", productIds: Array.from(selectedIds) }),
@@ -232,7 +233,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
   const handleBulkRestore = async () => {
     if (selectedIds.size === 0) return;
     try {
-      const res = await fetch("/api/accounting/products/bulk", {
+      const res = await csrfFetch("/api/accounting/products/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "restore", productIds: Array.from(selectedIds) }),
@@ -250,7 +251,7 @@ export function ProductsTable({ onProductSelect, categoryId }: ProductsTableProp
     if (selectedIds.size === 0) return;
     if (!confirm(`Удалить ${selectedIds.size} товар(ов) безвозвратно?`)) return;
     try {
-      const res = await fetch("/api/accounting/products/bulk", {
+      const res = await csrfFetch("/api/accounting/products/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", productIds: Array.from(selectedIds) }),

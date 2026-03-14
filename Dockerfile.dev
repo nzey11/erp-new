@@ -15,6 +15,10 @@ RUN npm ci
 # Generate Prisma client
 RUN npx prisma generate
 
+# Copy entrypoint script
+COPY docker-entrypoint.dev.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.dev.sh
+
 # Expose port
 EXPOSE 3000
 
@@ -22,5 +26,5 @@ EXPOSE 3000
 ENV CHOKIDAR_USEPOLLING=true
 ENV WATCHPACK_POLLING=true
 
-# Start dev server
-CMD ["npm", "run", "dev"]
+# Start with entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.dev.sh"]

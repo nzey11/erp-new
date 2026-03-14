@@ -103,6 +103,7 @@ export async function createProduct(
     isActive: boolean;
     publishedToStore: boolean;
     description: string;
+    tenantId: string;
   }> = {}
 ) {
   const id = uniqueId();
@@ -114,8 +115,16 @@ export async function createProduct(
     unitId = unit.id;
   }
 
+  // Get or create tenant if not provided
+  let tenantId = overrides.tenantId;
+  if (!tenantId) {
+    const tenant = await createTenant();
+    tenantId = tenant.id;
+  }
+
   return db.product.create({
     data: {
+      tenantId,
       name: overrides.name ?? `Товар ${id}`,
       sku: overrides.sku ?? `SKU-${id}`,
       barcode: overrides.barcode,
@@ -171,19 +180,37 @@ export async function createDocument(
     date: Date;
     confirmedAt: Date;
     cancelledAt: Date;
+    tenantId: string;
   }> = {}
 ) {
   const id = uniqueId();
 
   // Create warehouse if not provided
   let warehouseId = overrides.warehouseId;
+  let tenantId = overrides.tenantId;
   if (!warehouseId) {
-    const warehouse = await createWarehouse();
+    const warehouse = await createWarehouse({ tenantId });
     warehouseId = warehouse.id;
+    tenantId = warehouse.tenantId;  // Use warehouse's tenantId
+  }
+
+  // If still no tenantId, get from warehouse or create default
+  if (!tenantId && warehouseId) {
+    const warehouse = await db.warehouse.findUnique({
+      where: { id: warehouseId },
+      select: { tenantId: true },
+    });
+    tenantId = warehouse?.tenantId ?? undefined;
+  }
+
+  if (!tenantId) {
+    const tenant = await createTenant();
+    tenantId = tenant.id;
   }
 
   return db.document.create({
     data: {
+      tenantId,
       number: overrides.number ?? `DOC-${id}`,
       type: overrides.type ?? "stock_receipt",
       status: overrides.status ?? "draft",
@@ -309,12 +336,27 @@ export async function createProductVariant(
     barcode: string;
     priceAdjustment: number;
     isActive: boolean;
+    tenantId: string;
   }> = {}
 ) {
+  // Get tenantId from overrides or from parent product
+  let tenantId = overrides.tenantId;
+  if (!tenantId) {
+    const product = await db.product.findUnique({
+      where: { id: productId },
+      select: { tenantId: true },
+    });
+    if (!product?.tenantId) {
+      throw new Error(`Cannot create ProductVariant: Product ${productId} not found or has no tenantId`);
+    }
+    tenantId = product.tenantId;
+  }
+
   return db.productVariant.create({
     data: {
       productId,
       optionId,
+      tenantId,
       sku: overrides.sku ?? null,
       barcode: overrides.barcode ?? null,
       priceAdjustment: overrides.priceAdjustment ?? 0,
@@ -407,6 +449,29 @@ export async function createUser(
   });
 
   return user;
+}
+
+// =============================================
+// Party Factory
+// =============================================
+
+export async function createParty(
+  overrides: Partial<{
+    displayName: string;
+    type: "person" | "organization";
+    status: "active" | "merged" | "blocked";
+    primaryOwnerUserId: string | null;
+  }> = {}
+) {
+  const id = uniqueId();
+  return db.party.create({
+    data: {
+      displayName: overrides.displayName ?? `Партия ${id}`,
+      type: overrides.type ?? "person",
+      status: overrides.status ?? "active",
+      primaryOwnerUserId: overrides.primaryOwnerUserId ?? null,
+    },
+  });
 }
 
 // =============================================
@@ -559,9 +624,18 @@ export async function createOrder(
     totalAmount: number;
     deliveryCost: number;
     notes: string;
+    tenantId: string;
   }> = {}
 ) {
   const id = uniqueId();
+  
+  // Get or create tenantId
+  let tenantId = overrides.tenantId;
+  if (!tenantId) {
+    const tenant = await createTenant();
+    tenantId = tenant.id;
+  }
+  
   // Ensure counterparty exists
   let counterparty = await db.counterparty.findFirst({
     where: { type: "customer" },
@@ -576,6 +650,7 @@ export async function createOrder(
   }
   return db.document.create({
     data: {
+      tenantId,
       number: overrides.orderNumber ?? `ЗК-${id}`,
       type: "sales_order",
       status: overrides.status ?? "draft",

@@ -64,6 +64,9 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requirePermission("documents:write");
 
+    // tenantId ONLY from session — never from request body (security)
+    const tenantId = user.tenantId;
+
     const data = await parseBody(request, createDocumentSchema);
     const {
       type,
@@ -79,6 +82,40 @@ export async function POST(request: NextRequest) {
     } = data;
 
     const number = await generateDocumentNumber(type);
+
+    // Validate tenant consistency with warehouse
+    if (warehouseId) {
+      const warehouse = await db.warehouse.findUnique({
+        where: { id: warehouseId },
+        select: { tenantId: true },
+      });
+      if (!warehouse) {
+        return NextResponse.json({ error: "Склад не найден" }, { status: 404 });
+      }
+      if (warehouse.tenantId !== tenantId) {
+        return NextResponse.json(
+          { error: "Склад принадлежит другому тенанту" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate tenant consistency with target warehouse (for stock_transfer)
+    if (targetWarehouseId) {
+      const targetWarehouse = await db.warehouse.findUnique({
+        where: { id: targetWarehouseId },
+        select: { tenantId: true },
+      });
+      if (!targetWarehouse) {
+        return NextResponse.json({ error: "Целевой склад не найден" }, { status: 404 });
+      }
+      if (targetWarehouse.tenantId !== tenantId) {
+        return NextResponse.json(
+          { error: "Целевой склад принадлежит другому тенанту" },
+          { status: 400 }
+        );
+      }
+    }
 
     // Calculate total from items
     let totalAmount = 0;
@@ -100,6 +137,7 @@ export async function POST(request: NextRequest) {
 
     const document = await db.document.create({
       data: {
+        tenantId,  // From session, not from client
         number,
         type,
         date: date ? new Date(date) : new Date(),

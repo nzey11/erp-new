@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 import { ProductsTable } from "@/components/accounting";
 
 interface Unit {
@@ -85,8 +86,8 @@ export default function ProductsPage() {
     setSavingUnit(true);
     try {
       const res = editingUnit
-        ? await fetch(`/api/accounting/units/${editingUnit.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) })
-        : await fetch("/api/accounting/units", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) });
+        ? await csrfFetch(`/api/accounting/units/${editingUnit.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) })
+        : await csrfFetch("/api/accounting/units", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unitForm) });
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success(editingUnit ? "Единица обновлена" : "Единица создана");
       setUnitDialogOpen(false);
@@ -120,8 +121,8 @@ export default function ProductsPage() {
     try {
       const body = { name: categoryForm.name, parentId: categoryForm.parentId || null };
       const res = editingCategory
-        ? await fetch(`/api/accounting/categories/${editingCategory.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/accounting/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        ? await csrfFetch(`/api/accounting/categories/${editingCategory.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await csrfFetch("/api/accounting/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success(editingCategory ? "Категория обновлена" : "Категория создана");
       setCategoryDialogOpen(false);

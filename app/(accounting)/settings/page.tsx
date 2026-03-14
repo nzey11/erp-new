@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Pencil, UserPlus, Save, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 
 interface User {
@@ -77,7 +78,7 @@ export default function SettingsPage() {
     if (!companyForm.name) { toast.error("Название обязательно"); return; }
     setSavingCompany(true);
     try {
-      const res = await fetch("/api/accounting/settings/company", {
+      const res = await csrfFetch("/api/accounting/settings/company", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...companyForm, fiscalYearStartMonth: Number(companyForm.fiscalYearStartMonth) }),
@@ -122,8 +123,8 @@ export default function SettingsPage() {
         role: userForm.role,
       };
       const res = editingUser
-        ? await fetch(`/api/accounting/users/${editingUser.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/accounting/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        ? await csrfFetch(`/api/accounting/users/${editingUser.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        : await csrfFetch("/api/accounting/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
       if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
       toast.success(editingUser ? "Пользователь обновлён" : "Пользователь создан");

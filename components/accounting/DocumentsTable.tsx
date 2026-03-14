@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Check, X, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub, formatDate } from "@/lib/shared/utils";
+import { csrfFetch } from "@/lib/client/csrf";
 import Link from "next/link";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 
@@ -137,7 +138,7 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
 
   const handleConfirm = async (id: string) => {
     try {
-      const res = await fetch(`/api/accounting/documents/${id}/confirm`, { method: "POST" });
+      const res = await csrfFetch(`/api/accounting/documents/${id}/confirm`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка");
@@ -152,7 +153,7 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
 
   const handleCancel = async (id: string) => {
     try {
-      const res = await fetch(`/api/accounting/documents/${id}/cancel`, { method: "POST" });
+      const res = await csrfFetch(`/api/accounting/documents/${id}/cancel`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Ошибка");
@@ -169,7 +170,7 @@ function DocumentsTable({ groupFilter = "", defaultTypeFilter = "", onRefresh }:
     if (selectedIds.size === 0) return;
     setBulkConfirming(true);
     try {
-      const res = await fetch("/api/accounting/documents/bulk-confirm", {
+      const res = await csrfFetch("/api/accounting/documents/bulk-confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selectedIds) }),

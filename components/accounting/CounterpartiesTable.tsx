@@ -1,6 +1,17 @@
+/**
+ * Counterparties Table
+ *
+ * Displays counterparties in a data grid with search, filter, and balance display.
+ *
+ * Migration Status: Tier 1
+ * - Feature flag: TABLE_SYSTEM_V1.tables.counterpartiesTable
+ * - Preset: counterpartyPreset
+ * - Maturity Level: Level 1+ (columns + balance + onRowClick parity)
+ */
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,6 +23,8 @@ import { ExternalLink } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import { useRouter } from "next/navigation";
+import { usePresetTable } from "@/lib/table-system/feature-flags";
+import { PresetCounterpartiesTable } from "./PresetCounterpartiesTable";
 
 export interface Counterparty {
   id: string;
@@ -36,10 +49,20 @@ interface CounterpartiesTableProps {
   onCounterpartySelect?: (counterparty: Counterparty) => void;
 }
 
-export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTableProps) {
+/**
+ * Legacy counterparties table implementation.
+ * Uses inline column definitions.
+ */
+function LegacyCounterpartiesTable({ onCounterpartySelect }: CounterpartiesTableProps) {
   const router = useRouter();
-
+  const [mounted, setMounted] = useState(false);
   const [typeFilter, setTypeFilter] = useState("all");
+
+  // Fix hydration mismatch: only render Select after mount
+  // Radix UI generates different IDs on server vs client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const grid = useDataGrid<Counterparty>({
     endpoint: "/api/accounting/counterparties",
@@ -167,7 +190,7 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
           onChange: grid.setSearch,
           placeholder: "Поиск по названию, ИНН, телефону...",
         },
-        filters: (
+        filters: mounted ? (
           <Select value={typeFilter} onValueChange={handleTypeChange}>
             <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -177,6 +200,8 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
               <SelectItem value="both">Покупатель/Поставщик</SelectItem>
             </SelectContent>
           </Select>
+        ) : (
+          <div className="w-48 h-9 border rounded-md bg-muted/50" />
         ),
         actions: (
           <Button onClick={() => router.push("/counterparties/new")}>
@@ -186,4 +211,23 @@ export function CounterpartiesTable({ onCounterpartySelect }: CounterpartiesTabl
       }}
     />
   );
+}
+
+/**
+ * Counterparties table with feature flag switch.
+ *
+ * When TABLE_SYSTEM_V1.tables.counterpartiesTable is true:
+ * - Uses PresetCounterpartiesTable (preset-driven)
+ *
+ * When false:
+ * - Uses LegacyCounterpartiesTable (inline columns)
+ */
+export function CounterpartiesTable(props: CounterpartiesTableProps) {
+  const usePreset = usePresetTable("counterpartiesTable");
+
+  if (usePreset) {
+    return <PresetCounterpartiesTable {...props} />;
+  }
+
+  return <LegacyCounterpartiesTable {...props} />;
 }

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       data: {
         productId,
         optionId,
+        tenantId: product.tenantId, // Inherit tenant from parent product
         sku: sku || null,
         barcode: barcode || null,
         priceAdjustment: priceAdjustment ?? 0,

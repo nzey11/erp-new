@@ -75,6 +75,34 @@ export async function getOrCreateCounterparty(customerId: string): Promise<strin
 }
 
 /**
+ * Get tenant ID for e-commerce store.
+ *
+ * Resolution order:
+ * 1. STORE_TENANT_ID env var (production)
+ * 2. "default-tenant" fallback (development/test only)
+ * 3. Error if not configured in production
+ */
+async function getStoreTenantId(): Promise<string> {
+  // 1. Production: explicit config required
+  const envTenantId = process.env.STORE_TENANT_ID;
+  if (envTenantId) return envTenantId;
+
+  // 2. Development/test: safe fallback
+  if (process.env.NODE_ENV !== "production") {
+    const defaultTenant = await db.tenant.findUnique({
+      where: { id: "default-tenant" },
+    });
+    if (defaultTenant) return defaultTenant.id;
+  }
+
+  // 3. Production without config: explicit error
+  throw new Error(
+    "STORE_TENANT_ID not configured. " +
+    "Set STORE_TENANT_ID environment variable for e-commerce store."
+  );
+}
+
+/**
  * Create sales_order document from cart.
  * Called during checkout.
  */
@@ -111,6 +139,9 @@ export async function createSalesOrderFromCart(params: {
     }
   }
 
+  // Get tenant ID for e-commerce store
+  const tenantId = await getStoreTenantId();
+
   const counterpartyId = await getOrCreateCounterparty(customerId);
 
   const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -121,6 +152,7 @@ export async function createSalesOrderFromCart(params: {
   const document = await db.$transaction(async (tx) => {
     const doc = await tx.document.create({
       data: {
+        tenantId,  // E-commerce store tenant
         number: documentNumber,
         type: "sales_order",
         status: "draft",
@@ -172,8 +204,17 @@ export async function createSalesOrderFromCart(params: {
  * Confirm order payment.
  * Called when payment is received (webhook from payment provider).
  *
- * Uses the state machine to validate the draft → confirmed transition
- * before writing to the database.
+ * ADAPTER PATTERN: This function is a facade that delegates to the proper
+ * confirm flow (confirmDocumentTransactional). It does NOT directly update
+ * document status to bypass the domain service.
+ *
+ * Known compromise: payment metadata update and document confirm are two
+ * separate DB operations (not atomic). This is acceptable for the cleanup
+ * phase — the critical bypass (direct status update) is removed.
+ *
+ * @param params.documentId - The sales_order document ID
+ * @param params.paymentExternalId - External payment ID from provider
+ * @param params.paymentMethod - Payment method (tochka or cash)
  */
 export async function confirmOrderPayment(params: {
   documentId: string;
@@ -194,33 +235,29 @@ export async function confirmOrderPayment(params: {
     throw new Error("Document is not a sales order");
   }
 
-  if (document.paymentStatus === "paid") {
-    return; // Already paid — idempotent
+  // Idempotency: already paid and confirmed
+  if (document.paymentStatus === "paid" && document.status === "confirmed") {
+    return;
   }
 
-  // Validate the transition through the state machine
-  try {
-    validateTransition(document.type, document.status as DocumentStatus, "confirmed");
-  } catch (e) {
-    if (e instanceof DocumentStateError) {
-      throw new Error(`Cannot confirm payment: ${e.message}`);
-    }
-    throw e;
-  }
-
-  await db.$transaction(async (tx) => {
-    await tx.document.update({
-      where: { id: documentId },
-      data: {
-        paymentStatus: "paid",
-        paymentMethod,
-        paymentExternalId,
-        paidAt: new Date(),
-        status: "confirmed",
-        confirmedAt: new Date(),
-      },
-    });
+  // Step 1: Update payment metadata (ecommerce-specific fields)
+  // Note: This is a separate operation from confirm, not atomic.
+  // Errors here will prevent confirm from running.
+  await db.document.update({
+    where: { id: documentId },
+    data: {
+      paymentStatus: "paid",
+      paymentMethod,
+      paymentExternalId,
+      paidAt: new Date(),
+    },
   });
+
+  // Step 2: Delegate to proper confirm flow
+  // This creates stock movements, writes outbox event, triggers handlers.
+  // Uses "system:webhook" as actor for audit trail.
+  // If this fails, the payment metadata is already saved — webhook can retry.
+  await confirmDocumentTransactional(documentId, "system:webhook");
 
   // Record party activity for timeline
   await recordPaymentReceived({
@@ -495,6 +532,9 @@ export async function cancelEcommerceOrder(params: {
 
 /**
  * Update order status (admin: shipped / delivered).
+ *
+ * Uses state machine to validate the transition before updating.
+ * Throws DocumentStateError if transition is not allowed.
  */
 export async function updateOrderStatus(
   documentId: string,
@@ -511,6 +551,9 @@ export async function updateOrderStatus(
   if (document.type !== "sales_order") {
     throw new Error("Document is not a sales order");
   }
+
+  // Validate transition through state machine
+  validateTransition(document.type, document.status as DocumentStatus, status);
 
   const updateData: Record<string, unknown> = {};
 

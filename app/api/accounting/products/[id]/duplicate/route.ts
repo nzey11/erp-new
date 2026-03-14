@@ -6,7 +6,7 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function POST(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("products:write");
+    const session = await requirePermission("products:write");
     const { id } = await params;
 
     // Fetch the source product with relations to copy
@@ -23,9 +23,15 @@ export async function POST(_request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
     }
 
+    // Verify source product belongs to user's tenant
+    if (source.tenantId && source.tenantId !== session.tenantId) {
+      return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+    }
+
     // Create the duplicated product
     const duplicated = await db.product.create({
       data: {
+        tenantId: source.tenantId || session.tenantId, // Inherit tenant from source or use session
         name: `${source.name} (копия)`,
         sku: null, // SKU should be unique, so we don't copy it
         barcode: null, // Barcode should be unique too

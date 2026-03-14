@@ -9,6 +9,7 @@ import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 import { formatDate } from "@/lib/shared/utils";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 
@@ -36,7 +37,7 @@ export default function CmsPagesListPage() {
 
   const handleTogglePublish = async (page: StorePage) => {
     try {
-      const res = await fetch(`/api/accounting/cms-pages/${page.id}`, {
+      const res = await csrfFetch(`/api/accounting/cms-pages/${page.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublished: !page.isPublished }),
@@ -53,7 +54,7 @@ export default function CmsPagesListPage() {
     if (!confirm("Удалить страницу? Это действие необратимо.")) return;
     setDeleting(id);
     try {
-      const res = await fetch(`/api/accounting/cms-pages/${id}`, {
+      const res = await csrfFetch(`/api/accounting/cms-pages/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Ошибка удаления");

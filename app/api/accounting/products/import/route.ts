@@ -13,7 +13,7 @@ interface ImportResult {
 
 export async function POST(request: NextRequest) {
   try {
-    await requirePermission("products:write");
+    const session = await requirePermission("products:write");
 
     const data = await parseBody(request, importProductsSchema);
     const { products, updateExisting } = data;
@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
           // Create new product
           const newProduct = await db.product.create({
             data: {
+              tenantId: session.tenantId, // Tenant-scoped product
               name: row.name,
               sku: row.sku || null,
               barcode: row.barcode || null,

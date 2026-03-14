@@ -11,6 +11,7 @@ import {
   createCategory,
   createPriceList,
   createSalePrice,
+  createTenant,
 } from "../../helpers/factories";
 
 describe("Catalog features - integration", () => {
@@ -610,6 +611,7 @@ describe("Catalog features - integration", () => {
 
       const copy = await db.product.create({
         data: {
+          tenantId: original.tenantId,
           name: `${updated.name} (копия)`,
           description: updated.description,
           unitId: updated.unitId,
@@ -840,10 +842,11 @@ describe("Catalog features - integration", () => {
     });
 
     it("should create new product on import when SKU not found", async () => {
-      // Create a unit first (import needs a unit)
+      // Create a unit and tenant first (import needs a unit and tenant)
       const unit = await db.unit.create({
         data: { name: "Штука импорт", shortName: "шт.и" },
       });
+      const tenant = await createTenant({ name: "Import Tenant" });
 
       const existingCount = await db.product.count();
 
@@ -854,6 +857,7 @@ describe("Catalog features - integration", () => {
       // Create new product (simulating import)
       const newProduct = await db.product.create({
         data: {
+          tenantId: tenant.id,
           name: "Импортированный товар",
           sku: "NEW-IMPORT-001",
           unitId: unit.id,

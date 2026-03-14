@@ -6,6 +6,7 @@ import {
   createCounterpartySchema,
   queryCounterpartiesSchema,
 } from "@/lib/modules/accounting/schemas/counterparties.schema";
+import { resolveParty } from "@/lib/party";
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,6 +71,9 @@ export async function POST(request: NextRequest) {
         notes: data.notes || null,
       },
     });
+
+    // Ensure Party exists for CRM integration
+    await resolveParty({ counterpartyId: counterparty.id });
 
     return NextResponse.json(counterparty, { status: 201 });
   } catch (error) {

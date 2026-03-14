@@ -246,6 +246,7 @@ export async function createDocument(overrides: {
   totalAmount?: number;
   date?: Date;
   confirmedAt?: Date | null;
+  tenantId?: string | null;
 } = {}): Promise<DbRow> {
   const id = cuid();
   return insertRow("Document", {
@@ -259,6 +260,7 @@ export async function createDocument(overrides: {
     totalAmount: overrides.totalAmount ?? 0,
     date: overrides.date ?? new Date(),
     confirmedAt: overrides.confirmedAt ?? null,
+    tenantId: overrides.tenantId ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });

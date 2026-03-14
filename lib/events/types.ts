@@ -5,7 +5,7 @@
  * TypeScript narrows the payload automatically in handlers.
  *
  * Phase 1.5 scope: DocumentConfirmed only.
- * Future phases: DocumentCancelled, StockMovementCreated, ...
+ * Phase 2: Product catalog events for projection updates.
  */
 
 import type { DocumentType } from "@/lib/generated/prisma/client";
@@ -27,9 +27,40 @@ export interface DocumentConfirmedEvent {
   };
 }
 
+/**
+ * Product catalog events for ProductCatalogProjection updates.
+ * Payload contains only productId - handler reads current state from source tables.
+ */
+export interface ProductUpdatedEvent {
+  readonly type: "product.updated";
+  readonly occurredAt: Date;
+  readonly payload: {
+    readonly productId: string;
+  };
+}
+
+export interface SalePriceUpdatedEvent {
+  readonly type: "sale_price.updated";
+  readonly occurredAt: Date;
+  readonly payload: {
+    readonly productId: string;
+  };
+}
+
+export interface DiscountUpdatedEvent {
+  readonly type: "discount.updated";
+  readonly occurredAt: Date;
+  readonly payload: {
+    readonly productId: string;
+  };
+}
+
 // ─── Union — grows here, nowhere else ──────────────────────────────────────
 
 export type DomainEvent =
-  | DocumentConfirmedEvent;
+  | DocumentConfirmedEvent
+  | ProductUpdatedEvent
+  | SalePriceUpdatedEvent
+  | DiscountUpdatedEvent;
   // | DocumentCancelledEvent   (Phase 1.5+)
   // | StockMovementCreatedEvent (Phase 1.5+)

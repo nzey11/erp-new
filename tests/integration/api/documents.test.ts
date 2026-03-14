@@ -23,14 +23,19 @@ describe("API: Documents CRUD", () => {
   let viewerUser: Awaited<ReturnType<typeof createUser>>;
   let warehouse: Awaited<ReturnType<typeof createWarehouse>>;
   let product: Awaited<ReturnType<typeof createProduct>>;
+  let tenantId: string;
 
   beforeEach(async () => {
     adminUser = await createUser({ role: "admin" });
     viewerUser = await createUser({ role: "viewer" });
-    warehouse = await createWarehouse({ name: "Основной склад" });
-    product = await createProduct({ name: "Товар A" });
+    tenantId = `tenant-${adminUser.id}`;
+    warehouse = await createWarehouse({ name: "Основной склад", tenantId });
+    product = await createProduct({ name: "Товар A", tenantId });
     mockAuthNone();
   });
+
+  // Helper to get correct tenantId for a user
+  const getTenantId = (userId: string) => `tenant-${userId}`;
 
   // ==========================================
   // POST /api/accounting/documents
@@ -38,7 +43,7 @@ describe("API: Documents CRUD", () => {
 
   describe("POST /api/accounting/documents", () => {
     it("should create a draft document with items", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
 
       const req = createTestRequest("/api/accounting/documents", {
         method: "POST",
@@ -75,7 +80,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should reject when viewer tries to create", async () => {
-      mockAuthUser(viewerUser);
+      mockAuthUser({ ...viewerUser, tenantId: getTenantId(viewerUser.id) });
 
       const req = createTestRequest("/api/accounting/documents", {
         method: "POST",
@@ -87,7 +92,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should reject with missing document type", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
 
       const req = createTestRequest("/api/accounting/documents", {
         method: "POST",
@@ -108,7 +113,7 @@ describe("API: Documents CRUD", () => {
 
   describe("GET /api/accounting/documents", () => {
     it("should return paginated documents", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
       await createDocument({ type: "write_off", warehouseId: warehouse.id });
 
@@ -125,7 +130,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should filter by document type", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
       await createDocument({ type: "write_off", warehouseId: warehouse.id });
 
@@ -140,7 +145,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should filter by status", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       await createDocument({ type: "stock_receipt", status: "draft" });
       await createDocument({ type: "stock_receipt", status: "confirmed", confirmedAt: new Date() });
 
@@ -161,7 +166,7 @@ describe("API: Documents CRUD", () => {
 
   describe("GET /api/accounting/documents/[id]", () => {
     it("should return document by id with items", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
       await createDocumentItem(doc.id, product.id, { quantity: 5, price: 200 });
 
@@ -176,7 +181,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should return 404 for non-existent document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
 
       const req = createTestRequest("/api/accounting/documents/nonexistent");
       const res = await GET_BY_ID(req, { params: Promise.resolve({ id: "nonexistent" }) });
@@ -190,7 +195,7 @@ describe("API: Documents CRUD", () => {
 
   describe("PUT /api/accounting/documents/[id]", () => {
     it("should update a draft document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}`, {
@@ -206,7 +211,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should replace document items on update", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
       await createDocumentItem(doc.id, product.id, { quantity: 5, price: 100 });
 
@@ -231,7 +236,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should reject update for confirmed document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({
         type: "stock_receipt",
         status: "confirmed",
@@ -254,7 +259,7 @@ describe("API: Documents CRUD", () => {
 
   describe("DELETE /api/accounting/documents/[id]", () => {
     it("should delete a draft document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt" });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}`, {
@@ -270,7 +275,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should reject delete for confirmed document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({
         type: "stock_receipt",
         status: "confirmed",
@@ -292,7 +297,7 @@ describe("API: Documents CRUD", () => {
 
   describe("POST /api/accounting/documents/[id]/confirm", () => {
     it("should confirm a draft document with items", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
       await createDocumentItem(doc.id, product.id, { quantity: 10, price: 100 });
 
@@ -309,7 +314,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should reject confirming an already confirmed document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({
         type: "stock_receipt",
         status: "confirmed",
@@ -325,7 +330,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should reject confirming a document with no items", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}/confirm`, {
@@ -340,7 +345,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should update stock after confirming stock_receipt", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt", warehouseId: warehouse.id });
       await createDocumentItem(doc.id, product.id, { quantity: 15, price: 50 });
 
@@ -366,7 +371,7 @@ describe("API: Documents CRUD", () => {
 
   describe("POST /api/accounting/documents/[id]/cancel", () => {
     it("should cancel a confirmed document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       // First create and confirm a document
       const doc = await createDocument({
         type: "stock_receipt",
@@ -389,7 +394,7 @@ describe("API: Documents CRUD", () => {
     });
 
     it("should reject cancelling a draft document", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const doc = await createDocument({ type: "stock_receipt", status: "draft" });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}/cancel`, {

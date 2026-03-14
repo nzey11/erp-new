@@ -45,16 +45,33 @@ export function DataGrid<TData>({
   const [isScrolled, setIsScrolled] = useState(false);
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null);
 
+  // SSR safety: track mounted state to avoid hydration mismatch
+  // Persistence values differ between server (empty) and client (localStorage)
+  const [mounted, setMounted] = useState(false);
+
   // State
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const sorting = externalSorting ?? internalSorting;
 
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() =>
-    persistenceKey ? loadColumnSizing(persistenceKey) : {}
-  );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
-    persistenceKey ? loadColumnVisibility(persistenceKey) : {}
-  );
+  // Initialize with empty state for SSR consistency
+  // Load persisted values after mount to avoid hydration mismatch
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Load persisted state after mount (client-only)
+  useEffect(() => {
+    if (persistenceKey) {
+      const savedSizing = loadColumnSizing(persistenceKey);
+      const savedVisibility = loadColumnVisibility(persistenceKey);
+      if (Object.keys(savedSizing).length > 0) {
+        setColumnSizing(savedSizing);
+      }
+      if (Object.keys(savedVisibility).length > 0) {
+        setColumnVisibility(savedVisibility);
+      }
+    }
+    setMounted(true);
+  }, [persistenceKey]);
 
   // Persist column sizing (debounced)
   const sizingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);

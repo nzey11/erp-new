@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
+import { csrfFetch } from "@/lib/client/csrf";
 
 interface FinanceCategory {
   id: string;
@@ -167,7 +168,7 @@ export default function PaymentsPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/finance/payments/${editingPayment.id}`, {
+      const res = await csrfFetch(`/api/finance/payments/${editingPayment.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -201,7 +202,7 @@ export default function PaymentsPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/finance/payments", {
+      const res = await csrfFetch("/api/finance/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -233,7 +234,7 @@ export default function PaymentsPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/finance/payments/${deleteTarget.id}`, { method: "DELETE" });
+      const res = await csrfFetch(`/api/finance/payments/${deleteTarget.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error);
       toast.success("Платёж удалён");
       setDeleteOpen(false);

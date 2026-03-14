@@ -15,6 +15,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { formatRub, formatDate } from "@/lib/shared/utils";
+import { csrfFetch } from "@/lib/client/csrf";
 import { ArrowLeft, Pencil, X, Check, UserX, UserCheck } from "lucide-react";
 
 interface CounterpartyInteraction {
@@ -150,12 +151,12 @@ function CounterpartyDetailPage() {
     setSaving(true);
     try {
       const res = isNew
-        ? await fetch("/api/accounting/counterparties", {
+        ? await csrfFetch("/api/accounting/counterparties", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(form),
           })
-        : await fetch(`/api/accounting/counterparties/${id}`, {
+        : await csrfFetch(`/api/accounting/counterparties/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(form),
@@ -185,7 +186,7 @@ function CounterpartyDetailPage() {
   const handleToggleActive = async () => {
     if (!counterparty) return;
     try {
-      const res = await fetch(`/api/accounting/counterparties/${id}`, {
+      const res = await csrfFetch(`/api/accounting/counterparties/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !counterparty.isActive }),

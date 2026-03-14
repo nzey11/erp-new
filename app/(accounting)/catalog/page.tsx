@@ -136,6 +136,7 @@ function TreeNode({ category, level, selectedId, expanded, onSelect, onToggle, o
 }
 
 export default function CatalogPage() {
+  const [mounted, setMounted] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [flatCategories, setFlatCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -145,6 +146,8 @@ export default function CatalogPage() {
 
   // Main tabs state
   const [activeTab, setActiveTab] = useState("products");
+
+  useEffect(() => { setMounted(true); }, []);
   
   // Price lists state
   const [selectedPriceList, setSelectedPriceList] = useState<{
@@ -291,6 +294,8 @@ export default function CatalogPage() {
           <TabsTrigger value="pricelists">Прайс-листы</TabsTrigger>
         </TabsList>
 
+        {mounted && (
+          <>
         <TabsContent value="products" className="mt-6">
           <div className="flex gap-6">
             {/* Left: Category Tree */}
@@ -375,6 +380,8 @@ export default function CatalogPage() {
             />
           )}
         </TabsContent>
+          </>
+        )}
       </Tabs>
 
       {/* Category Dialog */}

@@ -29,13 +29,16 @@ describe("API: Products CRUD", () => {
     mockAuthNone();
   });
 
+  // Helper to get correct tenantId for a user
+  const getTenantId = (userId: string) => `tenant-${userId}`;
+
   // ==========================================
   // POST /api/accounting/products
   // ==========================================
 
   describe("POST /api/accounting/products", () => {
     it("should create a product with valid data", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
 
       const req = createTestRequest("/api/accounting/products", {
         method: "POST",
@@ -55,7 +58,7 @@ describe("API: Products CRUD", () => {
     });
 
     it("should auto-generate SKU when autoSku is true", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
 
       const req = createTestRequest("/api/accounting/products", {
         method: "POST",
@@ -86,7 +89,7 @@ describe("API: Products CRUD", () => {
     });
 
     it("should reject with missing required fields", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
 
       const req = createTestRequest("/api/accounting/products", {
         method: "POST",
@@ -101,7 +104,7 @@ describe("API: Products CRUD", () => {
     });
 
     it("should reject when viewer tries to create", async () => {
-      mockAuthUser(viewerUser);
+      mockAuthUser({ ...viewerUser, tenantId: getTenantId(viewerUser.id) });
 
       const req = createTestRequest("/api/accounting/products", {
         method: "POST",
@@ -113,7 +116,7 @@ describe("API: Products CRUD", () => {
     });
 
     it("should create product with sale and purchase prices", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
 
       const req = createTestRequest("/api/accounting/products", {
         method: "POST",
@@ -140,7 +143,7 @@ describe("API: Products CRUD", () => {
 
   describe("GET /api/accounting/products", () => {
     it("should return paginated products", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       await createProduct({ name: "Product A", unitId: unit.id });
       await createProduct({ name: "Product B", unitId: unit.id });
 
@@ -157,7 +160,7 @@ describe("API: Products CRUD", () => {
     });
 
     it("should filter by search term", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       await createProduct({ name: "Apple iPhone", unitId: unit.id });
       await createProduct({ name: "Samsung Galaxy", unitId: unit.id });
 
@@ -178,7 +181,7 @@ describe("API: Products CRUD", () => {
 
   describe("PUT /api/accounting/products/[id]", () => {
     it("should update product name", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const product = await createProduct({ name: "Old Name", unitId: unit.id });
 
       const req = createTestRequest(`/api/accounting/products/${product.id}`, {
@@ -200,7 +203,7 @@ describe("API: Products CRUD", () => {
 
   describe("DELETE /api/accounting/products/[id]", () => {
     it("should soft-delete product", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
       const product = await createProduct({ name: "To Delete", unitId: unit.id });
 
       const req = createTestRequest(`/api/accounting/products/${product.id}`, {

@@ -27,6 +27,7 @@ import {
   FileText,
   BookMarked,
   ClipboardList,
+  Merge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,8 +70,8 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Журнал проводок", href: "/finance/journal", icon: ClipboardList },
   ],
   crm: [
-    { name: "Клиенты", href: "/crm/parties", icon: Users },
-    { name: "Объединение", href: "/crm/admin/merge", icon: Users },
+    { name: "Партии", href: "/crm/parties", icon: Users },
+    { name: "Объединение", href: "/crm/admin/merge", icon: Merge },
   ],
   ecommerce: [
     { name: "Промо-блоки", href: "/ecommerce/promo-blocks", icon: Image },

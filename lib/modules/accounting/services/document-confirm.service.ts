@@ -497,6 +497,8 @@ export async function cancelDocumentTransactional(
  * Create write_off (shortages) and stock_receipt (surpluses) linked
  * to the inventory count document.
  * IDEMPOTENT: uses adjustmentsCreated flag + existence check.
+ * 
+ * Adjustment documents inherit tenantId from parent inventory_count document.
  */
 async function createInventoryAdjustments(
   inventoryDocId: string,
@@ -510,10 +512,10 @@ async function createInventoryAdjustments(
   }>,
   createdBy: string | null
 ): Promise<string[]> {
-  // Idempotency check 1: flag
+  // Idempotency check 1: flag + get tenantId from parent
   const inventoryDoc = await db.document.findUnique({
     where: { id: inventoryDocId },
-    select: { adjustmentsCreated: true },
+    select: { adjustmentsCreated: true, tenantId: true },
   });
 
   if (inventoryDoc?.adjustmentsCreated) {
@@ -542,6 +544,14 @@ async function createInventoryAdjustments(
     return existingDocs.map((d) => d.id);
   }
 
+  // Inherit tenantId from parent inventory_count document
+  const tenantId = inventoryDoc?.tenantId;
+  
+  // Guard: tenantId is required for document creation
+  if (!tenantId) {
+    throw new Error("Cannot create adjustment documents: inventory_count document has no tenantId");
+  }
+
   const shortages = items.filter((i) => (i.difference ?? 0) < 0);
   const surpluses = items.filter((i) => (i.difference ?? 0) > 0);
   const createdIds: string[] = [];
@@ -557,6 +567,7 @@ async function createInventoryAdjustments(
 
       const writeOff = await tx.document.create({
         data: {
+          tenantId,  // Inherited from inventory_count
           number,
           type: "write_off",
           status: "confirmed",
@@ -584,6 +595,7 @@ async function createInventoryAdjustments(
 
       const receipt = await tx.document.create({
         data: {
+          tenantId,  // Inherited from inventory_count
           number,
           type: "stock_receipt",
           status: "confirmed",

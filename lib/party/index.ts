@@ -14,6 +14,9 @@ export type {
   ActivityType,
 } from "./types";
 
+// Prisma types
+export type { MergeRequest } from "@/lib/generated/prisma/client";
+
 export { ACTIVITY_TYPES } from "./types";
 
 // Services

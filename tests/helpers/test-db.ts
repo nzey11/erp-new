@@ -24,6 +24,11 @@ export async function cleanDatabase(): Promise<void> {
   await db.stockRecord.deleteMany();
   await db.counterpartyBalance.deleteMany();
   await db.counterpartyInteraction.deleteMany();
+  // Party-related tables (order matters: activities/owners before parties)
+  await db.partyActivity.deleteMany();
+  await db.partyOwner.deleteMany();
+  await db.partyLink.deleteMany();
+  await db.party.deleteMany();
   await db.purchasePrice.deleteMany();
   await db.salePrice.deleteMany();
   await db.priceList.deleteMany();

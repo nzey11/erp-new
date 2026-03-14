@@ -1,22 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { getAuthSession } from "@/lib/shared/auth";
-import { affectsStock, isStockDecrease, isStockIncrease } from "@/lib/modules/accounting/inventory/predicates";
-import { affectsBalance } from "@/lib/modules/accounting/finance/predicates";
-import {
-  updateStockForDocument, checkStockAvailability, updateAverageCostOnReceipt,
-  updateAverageCostOnTransfer, updateTotalCostValue,
-} from "@/lib/modules/accounting/inventory/stock";
-import { recalculateBalance } from "@/lib/modules/finance/reports";
-import { autoPostDocument } from "@/lib/modules/accounting/finance/journal";
+import { bulkConfirmDocuments } from "@/lib/modules/accounting/services/document-bulk-confirm.service";
 
+/**
+ * POST /api/accounting/documents/bulk-confirm
+ *
+ * Confirm multiple documents in bulk.
+ *
+ * Request body:
+ *   { ids: string[] } - Array of document IDs (max 100)
+ *
+ * Response:
+ *   { confirmed: number, skipped: number, errors: string[] }
+ *
+ * Semantics: Sequential Isolated
+ * - Each document processed in its own transaction
+ * - Failures for one document do not affect others
+ * - Errors collected and returned individually
+ *
+ * Bulk-policy skips (not errors):
+ * - Document not found
+ * - inventory_count type (requires manual confirmation)
+ * - Duplicate IDs (deduplicated silently)
+ *
+ * Domain validation errors (collected in errors[]):
+ * - Invalid status transition
+ * - No items
+ * - Stock shortage
+ */
 export async function POST(request: NextRequest) {
   try {
+    // Auth & permission
     await requirePermission("documents:confirm");
     const session = await getAuthSession();
+    const actor = session?.username ?? null;
 
-    const body = await request.json() as { ids?: unknown };
+    // Parse & validate input
+    const body = (await request.json()) as { ids?: unknown };
     const ids = Array.isArray(body.ids) ? (body.ids as string[]) : [];
 
     if (ids.length === 0) {
@@ -26,108 +47,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Максимум 100 документов за раз" }, { status: 400 });
     }
 
-    let confirmed = 0;
-    let skipped = 0;
-    const errors: string[] = [];
+    // Delegate to application service
+    const result = await bulkConfirmDocuments({ ids, actor });
 
-    for (const id of ids) {
-      try {
-        const doc = await db.document.findUnique({
-          where: { id },
-          include: { items: true },
-        });
-
-        if (!doc || doc.status !== "draft" || doc.items.length === 0) {
-          skipped++;
-          continue;
-        }
-
-        // Skip inventory counts in bulk mode (require manual confirmation)
-        if (doc.type === "inventory_count") {
-          skipped++;
-          continue;
-        }
-
-        // Check stock availability for outgoing documents
-        if (isStockDecrease(doc.type) && doc.warehouseId) {
-          const shortages = await checkStockAvailability(
-            doc.warehouseId,
-            doc.items.map((i) => ({ productId: i.productId, quantity: i.quantity }))
-          );
-          if (shortages.length > 0) {
-            skipped++;
-            continue;
-          }
-        }
-
-        // Check stock for transfers
-        if (doc.type === "stock_transfer" && doc.warehouseId) {
-          const shortages = await checkStockAvailability(
-            doc.warehouseId,
-            doc.items.map((i) => ({ productId: i.productId, quantity: i.quantity }))
-          );
-          if (shortages.length > 0) {
-            skipped++;
-            continue;
-          }
-        }
-
-        // Confirm the document
-        const confirmedDoc = await db.document.update({
-          where: { id },
-          data: {
-            status: "confirmed" as const,
-            confirmedAt: new Date(),
-            confirmedBy: session?.username ?? null,
-          },
-          include: { items: true },
-        });
-
-        // Update stock
-        if (affectsStock(doc.type)) {
-          await updateStockForDocument(id);
-
-          if (isStockIncrease(doc.type) && doc.warehouseId) {
-            for (const item of doc.items) {
-              await updateAverageCostOnReceipt(doc.warehouseId, item.productId, item.quantity, item.price);
-            }
-          } else if (doc.type === "stock_transfer" && doc.warehouseId && doc.targetWarehouseId) {
-            for (const item of doc.items) {
-              await updateAverageCostOnTransfer(doc.warehouseId, doc.targetWarehouseId, item.productId, item.quantity);
-              await updateTotalCostValue(doc.warehouseId, item.productId);
-            }
-          } else if (isStockDecrease(doc.type) && doc.warehouseId) {
-            for (const item of doc.items) {
-              await updateTotalCostValue(doc.warehouseId, item.productId);
-            }
-          }
-        }
-
-        // Update counterparty balance
-        if (affectsBalance(doc.type) && doc.counterpartyId) {
-          await recalculateBalance(doc.counterpartyId);
-        }
-
-        // Journal posting
-        try {
-          await autoPostDocument(
-            confirmedDoc.id,
-            doc.number,
-            confirmedDoc.confirmedAt ?? doc.date,
-            doc.createdBy ?? undefined
-          );
-        } catch {
-          // Non-critical
-        }
-
-        confirmed++;
-      } catch {
-        errors.push(id);
-        skipped++;
-      }
-    }
-
-    return NextResponse.json({ confirmed, skipped, errors });
+    return NextResponse.json(result);
   } catch (error) {
     return handleAuthError(error);
   }

@@ -19,15 +19,23 @@ import {
   processOutboxEvents,
   getOutboxStats,
   registerOutboxHandler,
+  type EventHandler,
 } from "@/lib/events/outbox";
 import { onDocumentConfirmedBalance } from "@/lib/modules/accounting/handlers/balance-handler";
 import { onDocumentConfirmedJournal } from "@/lib/modules/accounting/handlers/journal-handler";
 import { onDocumentConfirmedPayment } from "@/lib/modules/accounting/handlers/payment-handler";
+import { onProductCatalogUpdated } from "@/lib/modules/ecommerce/handlers";
 
 // Register handlers
-registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedBalance);
-registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedJournal);
-registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedPayment);
+// DocumentConfirmed handlers
+registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedBalance as unknown as EventHandler);
+registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedJournal as unknown as EventHandler);
+registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedPayment as unknown as EventHandler);
+
+// Product catalog projection handlers
+registerOutboxHandler("product.updated", onProductCatalogUpdated as unknown as EventHandler);
+registerOutboxHandler("sale_price.updated", onProductCatalogUpdated as unknown as EventHandler);
+registerOutboxHandler("discount.updated", onProductCatalogUpdated as unknown as EventHandler);
 
 // ─── Configuration ─────────────────────────────────────────────────────────
 
