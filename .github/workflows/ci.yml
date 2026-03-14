@@ -109,6 +109,9 @@ jobs:
 
       # Build runs in CI — NOT on production server
       # Must run before E2E tests because Playwright uses 'next start' (production mode)
+      - name: Generate Prisma client (pre-build)
+        run: npx prisma generate
+
       - name: Build
         run: npx next build
 
