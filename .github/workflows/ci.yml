@@ -92,21 +92,28 @@ jobs:
           path: test-results/
           retention-days: 7
 
-      # Package only what's needed to run the app
-      - name: Package release artifact
+      # Create tar archive with all deployment files while .next/ is guaranteed present
+      - name: Package release archive
+        run: |
+          tar -czf /tmp/release.tar.gz \
+            .next/ \
+            public/ \
+            prisma/ \
+            prisma.config.ts \
+            scripts/ \
+            package.json \
+            package-lock.json \
+            ecosystem.config.js \
+            next.config.ts
+          echo "Archive size: $(du -sh /tmp/release.tar.gz | cut -f1)"
+          echo "Check .next in archive:"
+          tar -tzf /tmp/release.tar.gz | grep '.next/BUILD_ID' || echo "WARNING: .next/BUILD_ID not found in archive!"
+
+      - name: Upload release archive
         uses: actions/upload-artifact@v4
         with:
           name: release-artifact
-          path: |
-            .next/
-            public/
-            prisma/
-            prisma.config.ts
-            scripts/
-            package.json
-            package-lock.json
-            ecosystem.config.js
-            next.config.ts
+          path: /tmp/release.tar.gz
           retention-days: 1
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -120,27 +127,21 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      - name: Download release artifact
+      - name: Download release archive
         uses: actions/download-artifact@v4
         with:
           name: release-artifact
 
-      - name: Verify artifact contents
-        run: |
-          echo "=== Root contents ==="
-          ls -la
-          echo "=== .next/ exists? ==="
-          ls .next/ | head -5 || echo "ERROR: .next/ directory missing!"
-          echo "=== BUILD_ID ==="
-          cat .next/BUILD_ID || echo "ERROR: no BUILD_ID"
-
-      - name: Create release archive with metadata
+      - name: Create release metadata
         run: |
           RELEASE_ID=$(date -u +%Y%m%d-%H%M%S)
           echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
 
-          # Generate release.json — readable via /api/version
-          cat > release.json << EOF
+          # Extract downloaded archive, inject release.json, repack
+          mkdir -p /tmp/pkg
+          tar -xzf release.tar.gz -C /tmp/pkg
+
+          cat > /tmp/pkg/release.json << EOF
           {
             "releaseId": "$RELEASE_ID",
             "gitSha": "${{ github.sha }}",
@@ -149,8 +150,11 @@ jobs:
           }
           EOF
 
-          tar -czf /tmp/release.tar.gz .
+          tar -czf /tmp/release.tar.gz -C /tmp/pkg .
           echo "Archive size: $(du -sh /tmp/release.tar.gz | cut -f1)"
+          echo "Verify .next in archive:"
+          tar -tzf /tmp/release.tar.gz | grep 'BUILD_ID' | head -3 || echo "WARNING: BUILD_ID missing!"
+          rm -rf /tmp/pkg
 
       - name: Setup SSH
         env:
