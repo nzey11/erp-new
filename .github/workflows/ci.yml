@@ -214,7 +214,8 @@ jobs:
           ln -sfn "$RELEASE_DIR" "$BASE/current"
 
           echo "==> Reloading pm2"
-          pm2 startOrRestart "$BASE/current/ecosystem.config.js" --update-env
+          pm2 delete listopt-erp 2>/dev/null || true
+          pm2 start "$BASE/current/ecosystem.config.js"
           pm2 save
 
           echo "==> Installing deployment scripts to stable bin/"

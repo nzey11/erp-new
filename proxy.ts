@@ -23,7 +23,7 @@ function generateUUID(): string {
 }
 
 // Routes that require NO authentication at all
-const PUBLIC_ROUTES = ["/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/integrations"];
+const PUBLIC_ROUTES = ["/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/integrations", "/api/version"];
 
 // Storefront routes accessible without any session (public pages)
 const STOREFRONT_PUBLIC = ["/store/catalog", "/store/auth", "/api/ecommerce/products", "/api/ecommerce/categories", "/api/ecommerce/promo-blocks", "/api/ecommerce/delivery"];
