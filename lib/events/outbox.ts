@@ -175,6 +175,8 @@ export async function getOutboxStats(): Promise<{
   failed: number;
   dead: number;
   oldestPendingAt?: Date;
+  oldestFailedAt?: Date;
+  oldestDeadAt?: Date;
 }> {
   const stats = await db.outboxEvent.groupBy({
     by: ["status"],
@@ -188,6 +190,20 @@ export async function getOutboxStats(): Promise<{
     select: { createdAt: true },
   });
 
+  // Find oldest failed event (P4-08: age check for alerting)
+  const oldestFailed = await db.outboxEvent.findFirst({
+    where: { status: "FAILED" },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+
+  // Find oldest dead event (P4-08: age check for alerting)
+  const oldestDead = await db.outboxEvent.findFirst({
+    where: { status: "DEAD" },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+
   return {
     pending: stats.find((s) => s.status === "PENDING")?._count ?? 0,
     processing: stats.find((s) => s.status === "PROCESSING")?._count ?? 0,
@@ -195,6 +211,8 @@ export async function getOutboxStats(): Promise<{
     failed: stats.find((s) => s.status === "FAILED")?._count ?? 0,
     dead: stats.find((s) => s.status === "DEAD")?._count ?? 0,
     oldestPendingAt: oldestPending?.createdAt,
+    oldestFailedAt: oldestFailed?.createdAt,
+    oldestDeadAt: oldestDead?.createdAt,
   };
 }
 

@@ -33,6 +33,7 @@ model Tenant {
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
   catalogProjections ProductCatalogProjection[]
+  counterparties     Counterparty[]
   documents          Document[]
   products           Product[]
   memberships        TenantMembership[]
@@ -348,16 +349,19 @@ model Counterparty {
   isActive       Boolean                   @default(true)
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @updatedAt
+  tenantId       String
   balance        CounterpartyBalance?
   interactions   CounterpartyInteraction[]
   customer       Customer?
   documents      Document[]
   payments       Payment[]
   purchasePrices PurchasePrice[]
+  tenant         Tenant                    @relation(fields: [tenantId], references: [id])
 
   @@index([type])
   @@index([isActive])
   @@index([name])
+  @@index([tenantId])
 }
 
 model CounterpartyInteraction {

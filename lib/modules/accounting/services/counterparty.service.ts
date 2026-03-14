@@ -22,6 +22,7 @@ import type { Counterparty } from "@/lib/generated/prisma/client";
 // ---------------------------------------------------------------------------
 
 export interface CreateCounterpartyInput {
+  tenantId: string;
   type: "customer" | "supplier" | "both";
   name: string;
   legalName?: string | null;
@@ -75,6 +76,7 @@ export async function createCounterpartyWithParty(
 
   const counterparty = await db.counterparty.create({
     data: {
+      tenantId: input.tenantId,
       type: input.type,
       name: input.name,
       legalName: input.legalName ?? null,

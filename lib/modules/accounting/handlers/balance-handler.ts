@@ -8,7 +8,7 @@
 
 import type { DocumentConfirmedEvent } from "@/lib/events";
 import { affectsBalance } from "@/lib/modules/accounting/finance/predicates";
-import { recalculateBalance } from "@/lib/modules/finance/reports";
+import { recalculateBalance } from "@/lib/modules/accounting/services/balance.service";
 
 export async function onDocumentConfirmedBalance(
   event: DocumentConfirmedEvent

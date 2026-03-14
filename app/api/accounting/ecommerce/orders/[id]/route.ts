@@ -3,7 +3,7 @@ import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateOrderStatusSchema } from "@/lib/modules/accounting/schemas/ecommerce-admin.schema";
-import { updateOrderStatus, confirmEcommerceOrderPayment, cancelEcommerceOrder } from "@/lib/modules/ecom/orders";
+import { updateOrderStatus, confirmEcommerceOrderPayment, cancelEcommerceOrder } from "@/lib/modules/ecommerce";
 import { validateTransition, DocumentStateError } from "@/lib/modules/accounting/document-states";
 import type { DocumentStatus } from "@/lib/generated/prisma/client";
 import { getAuthSession } from "@/lib/shared/auth";

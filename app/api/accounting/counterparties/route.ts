@@ -50,11 +50,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requirePermission("counterparties:write");
+    const session = await requirePermission("counterparties:write");
 
     const data = await parseBody(request, createCounterpartySchema);
 
     const { counterparty } = await createCounterpartyWithParty({
+      tenantId: session.tenantId,
       type: data.type,
       name: data.name,
       legalName: data.legalName || null,

@@ -6,11 +6,10 @@
  * confirmDocumentTransactional():
  *   validate → create stock movements → update stock projection
  *   → update average costs → mark document confirmed
+ *   → write DocumentConfirmed outbox event
  *
- * publishDocumentConfirmed():
- *   Emits DocumentConfirmed event. All post-confirmation side effects
- *   (balance, journal, payment) are handled by registered event handlers.
- *   This service does NOT know about those handlers.
+ * All post-confirmation side effects (balance, journal, payment) are handled
+ * by outbox event handlers. This service does NOT know about those handlers.
  */
 
 import { db } from "@/lib/shared/db";
@@ -43,7 +42,7 @@ import {
   createReversingMovements,
   hasReversingMovements,
 } from "@/lib/modules/accounting/inventory/stock-movements";
-import { recalculateBalance } from "@/lib/modules/finance/reports";
+import { recalculateBalance } from "./balance.service";
 
 // Re-export so callers only need one import
 export { DocumentStateError } from "@/lib/modules/accounting/document-states";
@@ -347,22 +346,6 @@ export async function confirmDocumentTransactional(
     typeName: getDocTypeName(confirmed.type),
     statusName: getDocStatusName(confirmed.status),
   };
-}
-
-// ---------------------------------------------------------------------------
-// DEPRECATED: publishDocumentConfirmed()
-// ---------------------------------------------------------------------------
-//
-// This function is no longer used. Outbox events are written inside
-// confirmDocumentTransactional() transaction. Kept for backwards compatibility.
-//
-// Phase 2.1: This will be removed after pilot validation.
-//
-export async function publishDocumentConfirmed(
-  _result: ConfirmedDocumentResult
-): Promise<void> {
-  // No-op: events are now written to outbox inside confirmDocumentTransactional()
-  // This function is kept for backwards compatibility during transition.
 }
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryCustomerOrdersSchema } from "@/lib/modules/ecommerce/schemas/products.schema";
-import { getCustomerOrders } from "@/lib/modules/ecom/orders";
+import { getCustomerOrders } from "@/lib/modules/ecommerce";
 
 /** GET /api/ecommerce/orders — Get customer orders (from Document) */
 export async function GET(request: NextRequest) {

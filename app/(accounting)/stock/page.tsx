@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo, useCallback } from "react";
+import { useRef, useState, useMemo, useCallback, useEffect } from "react";
 import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/page-header";
 import { DataGrid } from "@/components/ui/data-grid";
@@ -53,6 +53,13 @@ const STOCK_DOC_TYPES = [
 
 export default function StockPage() {
   const [tab, setTab] = useState("balances");
+
+  // SSR safety: prevent hydration mismatch with Radix UI Tabs
+  // Radix generates non-deterministic IDs during SSR vs client
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Create document dialog
   const [createOpen, setCreateOpen] = useState(false);
@@ -210,14 +217,32 @@ export default function StockPage() {
         }
       />
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="balances">Остатки</TabsTrigger>
-          <TabsTrigger value="inventory">Инвентаризации</TabsTrigger>
-          <TabsTrigger value="write_off">Списания</TabsTrigger>
-          <TabsTrigger value="stock_receipt">Оприходования</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {mounted ? (
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList>
+            <TabsTrigger value="balances">Остатки</TabsTrigger>
+            <TabsTrigger value="inventory">Инвентаризации</TabsTrigger>
+            <TabsTrigger value="write_off">Списания</TabsTrigger>
+            <TabsTrigger value="stock_receipt">Оприходования</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      ) : (
+        // SSR placeholder: static representation to avoid hydration mismatch
+        <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
+          <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-background text-foreground shadow">
+            Остатки
+          </div>
+          <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+            Инвентаризации
+          </div>
+          <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+            Списания
+          </div>
+          <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+            Оприходования
+          </div>
+        </div>
+      )}
 
       {/* Balances tab */}
       {tab === "balances" && (

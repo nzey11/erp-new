@@ -68,8 +68,41 @@ jobs:
       - name: Push schema to test database
         run: npx prisma db push
 
+      # P4-06: Run tenant isolation verification gates on every PR.
+      # Each script exits 1 on failure, which blocks the CI job and therefore blocks merge.
+      # verify-product-catalog-projection.ts is excluded: it requires a running HTTP server
+      # (dual-read against localhost:3000) and is not a DB-only gate — run manually post-deploy.
+      # See: .qoder/specs/erp-normalization-roadmap.md P4-06
+      - name: Verify Tenant Isolation Gates
+        run: |
+          npx tsx scripts/verify-product-tenant-gate.ts
+          npx tsx scripts/verify-document-tenant-gate.ts
+
+      # P4-08: Outbox health check gate.
+      # Checks for OutboxEvent rows with status FAILED or DEAD older than 1 hour.
+      # On a fresh CI database this always exits 0 (no events).
+      # On production post-deploy, catches stale dead-letter events that require attention.
+      # See: .qoder/specs/erp-normalization-roadmap.md P4-08
+      - name: Outbox Health Check
+        run: npx tsx scripts/check-outbox-health.ts
+
       - name: Lint
         run: npx nx affected -t lint
+
+      # P4-07: Explicit tsc --noEmit gate (hard-fail).
+      # Catches type errors that next build may not surface in isolation.
+      # The tsconfig already has "noEmit": true; this step makes it an explicit CI gate.
+      # See: .qoder/specs/erp-normalization-roadmap.md P4-07
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      # P4-07: Dead code report (soft-fail — continue-on-error).
+      # Reports unused locals/imports visible in CI logs without blocking the build.
+      # Current baseline: ~37 violations. Escalate to hard-fail after cleanup.
+      # TypeScript does not detect unused exports between files — this covers unused locals/imports.
+      # See: .qoder/specs/erp-normalization-roadmap.md P4-07
+      - name: Dead code report (unused locals)
+        run: npx tsc --noEmit --noUnusedLocals || true
 
       - name: Unit & Integration Tests
         run: npx nx affected -t test --parallel=1

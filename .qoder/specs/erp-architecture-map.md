@@ -125,6 +125,9 @@ The ERP is a **modular monolith**: all code runs in a single Next.js application
 - `Counterparty` (owned by Accounting)
 - Document or stock data
 
+**Tenant Scoping Note:**
+`Counterparty` is now **fully tenant-scoped at the schema level** (P4-09 complete). `tenantId` field has NOT NULL constraint with FK to `Tenant`. Test factory `createCounterparty()` enforces tenant truthfully via auto-create fallback pattern.
+
 **Main inputs:** Counterparty creation, Customer creation, order placement, payment events  
 **Main outputs:** Unified customer profile, activity timeline, merge-aware identity resolution
 
@@ -487,7 +490,7 @@ This is **P2-01/02/03** in the normalization roadmap.
 | INV-09 | `Product` created | Has `tenantId` | Route + service layer | Sync / no DB constraint yet | **MEDIUM** | STRONG (P4-01) |
 | INV-10 | `Document` created | Has `tenantId` matching warehouse | Route + service layer | Sync / no DB constraint yet | **MEDIUM** | STRONG (P4-02) |
 | INV-11 | Domain event fired | Goes through outbox only (not IEventBus) | Architecture rule — `IEventBus` not wired in production | N/A | **WEAK** (dual wiring) | STRONG (P2-06) |
-| INV-12 | Party merged | All `PartyLink` records point to survivor | `resolveFinalParty()` traversal only (P3-08 will fix PartyLink records atomically) | Sync traversal | **MEDIUM** | STRONG (P3-08) |
+| INV-12 | Party merged | All `PartyLink` records point to survivor | `executeMerge()` updates PartyLink records atomically inside `db.$transaction()` | Sync transaction | **STRONG** | STRONG ✅ |
 
 ---
 
@@ -522,7 +525,7 @@ This is **P2-01/02/03** in the normalization roadmap.
 | Entity | Mirrors | Mirror Quality |
 |--------|---------|---------------|
 | `Party` | Mirrors `Counterparty` and/or `Customer` | MEDIUM — atomic for Counterparty (post P1); lazy for Customer (pre P2) |
-| `PartyLink` | Junction between Party and source entities | MEDIUM — not updated on merge |
+| `PartyLink` | Junction between Party and source entities | STRONG — updated atomically on merge (reassigned to survivor in `executeMerge()` transaction) |
 
 ---
 

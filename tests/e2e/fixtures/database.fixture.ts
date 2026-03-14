@@ -232,10 +232,14 @@ export async function createProduct(overrides: {
 export async function createCounterparty(overrides: {
   name?: string;
   type?: string;
+  tenantId?: string;
 } = {}): Promise<DbRow> {
   const id = cuid();
+  const tenantId = overrides.tenantId ?? E2E_TENANT_ID;
+  await ensureTenant(tenantId);
   return insertRow("Counterparty", {
     id,
+    tenantId,
     name: overrides.name ?? `Контрагент ${id}`,
     type: overrides.type ?? "customer",
     isActive: true,

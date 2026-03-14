@@ -2,3 +2,6 @@
 export * from "./types";
 export * from "./documents";
 export * from "./schemas";
+
+// Services
+export * from "./services/balance.service";

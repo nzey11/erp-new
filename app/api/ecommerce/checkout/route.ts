@@ -3,7 +3,7 @@ import { db } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { checkoutSchema } from "@/lib/modules/accounting";
-import { createSalesOrderFromCart } from "@/lib/modules/ecom/orders";
+import { createSalesOrderFromCart } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 /** POST /api/ecommerce/checkout — Create order from cart */
