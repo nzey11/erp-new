@@ -125,6 +125,15 @@ jobs:
         with:
           name: release-artifact
 
+      - name: Verify artifact contents
+        run: |
+          echo "=== Root contents ==="
+          ls -la
+          echo "=== .next/ exists? ==="
+          ls .next/ | head -5 || echo "ERROR: .next/ directory missing!"
+          echo "=== BUILD_ID ==="
+          cat .next/BUILD_ID || echo "ERROR: no BUILD_ID"
+
       - name: Create release archive with metadata
         run: |
           RELEASE_ID=$(date -u +%Y%m%d-%H%M%S)
