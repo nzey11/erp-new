@@ -101,6 +101,7 @@ jobs:
             .next/
             public/
             prisma/
+            prisma.config.ts
             scripts/
             package.json
             package-lock.json
