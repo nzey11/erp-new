@@ -201,7 +201,8 @@ jobs:
           ln -sfn "$RELEASE_DIR" "$BASE/current"
 
           echo "==> Reloading pm2"
-          pm2 reload "$BASE/current/ecosystem.config.js" --update-env
+          pm2 startOrRestart "$BASE/current/ecosystem.config.js" --update-env
+          pm2 save
 
           echo "==> Installing deployment scripts to stable bin/"
           mkdir -p "$BIN_DIR"
