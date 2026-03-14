@@ -147,6 +147,12 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s' "${{ secrets.DEPLOY_SSH_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          echo "=== Key diagnostics ==="
+          echo "Lines: $(wc -l < ~/.ssh/deploy_key)"
+          echo "Bytes: $(wc -c < ~/.ssh/deploy_key)"
+          echo "First line: $(head -1 ~/.ssh/deploy_key)"
+          echo "Last line: $(tail -1 ~/.ssh/deploy_key)"
+          echo "=== End diagnostics ==="
           ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
