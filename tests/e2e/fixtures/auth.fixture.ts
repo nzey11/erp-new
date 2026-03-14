@@ -1,11 +1,11 @@
 import crypto from "crypto";
 import { hash } from "bcryptjs";
-import { createUser } from "./database.fixture";
+import { createUser, E2E_TENANT_ID } from "./database.fixture";
 
 const SESSION_SECRET = process.env.SESSION_SECRET ?? "test-session-secret-for-testing-only";
 
-// Fixed tenant ID for e2e tests - all test data should use this tenantId
-export const E2E_TENANT_ID = "e2e-default-tenant";
+// Re-exported from database.fixture so all specs can import from either fixture
+export { E2E_TENANT_ID };
 
 /** Sign a userId into a session token (mirrors lib/shared/auth.ts format: userId|expiresAt.signature) */
 export function signSession(userId: string): string {

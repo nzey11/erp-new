@@ -43,10 +43,10 @@ export function PartyFilters({ initialParams }: PartyFiltersProps) {
     return (
       <div className="flex flex-wrap gap-4 items-end">
         <div className="flex-1 min-w-[200px]">
-          <Input placeholder="Поиск по наименованию..." disabled />
+          <Input placeholder="Поиск по наименованию..." value="" disabled />
         </div>
         <div className="w-[180px]">
-          <Input disabled />
+          <Input value="" disabled />
         </div>
         <div className="flex gap-2">
           <Button disabled>Применить</Button>

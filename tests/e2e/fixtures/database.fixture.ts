@@ -94,6 +94,9 @@ function cuid(): string {
 
 export type DbRow = Record<string, unknown> & { id: string };
 
+// Fixed tenant ID used across all E2E tests so test data stays consistent
+export const E2E_TENANT_ID = "e2e-default-tenant";
+
 /** Ensure a Tenant row exists (idempotent - safe to call multiple times) */
 export async function ensureTenant(tenantId: string): Promise<void> {
   const p = getPool();
@@ -201,6 +204,7 @@ export async function createProduct(overrides: {
   unitId?: string;
   categoryId?: string | null;
   publishedToStore?: boolean;
+  tenantId?: string;
 } = {}): Promise<DbRow> {
   const id = cuid();
   let unitId = overrides.unitId;
@@ -208,8 +212,12 @@ export async function createProduct(overrides: {
     const unit = await createUnit();
     unitId = unit.id;
   }
+  // Ensure the tenant exists before inserting the product
+  const tenantId = overrides.tenantId ?? E2E_TENANT_ID;
+  await ensureTenant(tenantId);
   return insertRow("Product", {
     id,
+    tenantId,
     name: overrides.name ?? `Товар ${id}`,
     sku: overrides.sku ?? `SKU-${id}`,
     unitId,
