@@ -254,9 +254,12 @@ export async function createDocument(overrides: {
   totalAmount?: number;
   date?: Date;
   confirmedAt?: Date | null;
-  tenantId?: string | null;
+  tenantId?: string;
 } = {}): Promise<DbRow> {
   const id = cuid();
+  // Ensure the tenant exists before inserting the document
+  const tenantId = overrides.tenantId ?? E2E_TENANT_ID;
+  await ensureTenant(tenantId);
   return insertRow("Document", {
     id,
     number: overrides.number ?? `DOC-${id}`,
@@ -268,7 +271,7 @@ export async function createDocument(overrides: {
     totalAmount: overrides.totalAmount ?? 0,
     date: overrides.date ?? new Date(),
     confirmedAt: overrides.confirmedAt ?? null,
-    tenantId: overrides.tenantId ?? null,
+    tenantId,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
