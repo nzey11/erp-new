@@ -42,7 +42,7 @@ export function PresetCounterpartiesTable({ onCounterpartySelect }: PresetCounte
   // Fix hydration mismatch: only render after mount
   // Radix UI generates different IDs on server vs client
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const grid = useDataGrid<Counterparty>({

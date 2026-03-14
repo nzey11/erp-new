@@ -35,7 +35,7 @@ export function PartyFilters({ initialParams }: PartyFiltersProps) {
   });
 
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   // Prevent hydration mismatch from Radix UI random IDs
