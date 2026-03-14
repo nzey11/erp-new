@@ -3,6 +3,7 @@ import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createDiscountSchema } from "@/lib/modules/accounting/schemas/products.schema";
+import { createOutboxEvent } from "@/lib/events/outbox";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -76,15 +77,27 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
-    const discount = await db.productDiscount.create({
-      data: {
-        productId,
-        name,
-        type,
-        value,
-        validFrom: validFrom ? new Date(validFrom) : new Date(),
-        validTo: validTo ? new Date(validTo) : null,
-      },
+    // P2-03: discount.create + outbox event are atomic — both inside one transaction.
+    const discount = await db.$transaction(async (tx) => {
+      const created = await tx.productDiscount.create({
+        data: {
+          productId,
+          name,
+          type,
+          value,
+          validFrom: validFrom ? new Date(validFrom) : new Date(),
+          validTo: validTo ? new Date(validTo) : null,
+        },
+      });
+
+      await createOutboxEvent(
+        tx,
+        { type: "discount.updated", occurredAt: new Date(), payload: { productId } },
+        "ProductDiscount",
+        productId
+      );
+
+      return created;
     });
 
     return NextResponse.json(discount, { status: 201 });
@@ -98,7 +111,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     await requirePermission("pricing:write");
-    await params;
+    const { id: productId } = await params;
 
     const { searchParams } = new URL(request.url);
     const discountId = searchParams.get("discountId");
@@ -107,9 +120,19 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "discountId обязателен" }, { status: 400 });
     }
 
-    await db.productDiscount.update({
-      where: { id: discountId },
-      data: { isActive: false },
+    // P2-03: discount.update (deactivate) + outbox event are atomic — both inside one transaction.
+    await db.$transaction(async (tx) => {
+      await tx.productDiscount.update({
+        where: { id: discountId },
+        data: { isActive: false },
+      });
+
+      await createOutboxEvent(
+        tx,
+        { type: "discount.updated", occurredAt: new Date(), payload: { productId } },
+        "ProductDiscount",
+        productId
+      );
     });
 
     return NextResponse.json({ success: true });

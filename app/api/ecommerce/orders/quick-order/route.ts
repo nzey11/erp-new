@@ -4,6 +4,7 @@ import { parseBody, validationError } from "@/lib/shared/validation";
 import { quickOrderSchema } from "@/lib/modules/ecommerce/schemas/quick-order.schema";
 import { createSalesOrderFromCart } from "@/lib/modules/ecom/orders";
 import { logger } from "@/lib/shared/logger";
+import { resolveParty } from "@/lib/party";
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,6 +75,8 @@ export async function POST(request: NextRequest) {
       where: { phone: data.customerPhone },
     });
 
+    const isNewCustomer = !customer;
+
     if (!customer) {
       customer = await db.customer.create({
         data: {
@@ -82,6 +85,23 @@ export async function POST(request: NextRequest) {
           phone: data.customerPhone,
         },
       });
+    }
+
+    // P2-05: Ensure every new guest Customer has a Party mirror at creation time.
+    // resolveParty() is not transaction-aware (uses global db client internally);
+    // it cannot share a db.$transaction() with db.customer.create().
+    // Per roadmap: failure must not fail the order flow — log and continue (Party can be backfilled).
+    if (isNewCustomer) {
+      try {
+        await resolveParty({ customerId: customer.id });
+      } catch (partyError) {
+        logger.error(
+          "quick-order",
+          "Party mirror creation failed for new guest Customer — will be backfilled",
+          { customerId: customer.id, error: partyError }
+        );
+        // Intentionally not re-throwing: order must proceed even if Party creation fails.
+      }
     }
 
     // Create Document (sales_order) via ERP module

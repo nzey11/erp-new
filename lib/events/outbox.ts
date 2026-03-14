@@ -12,6 +12,7 @@
  */
 
 import { db } from "@/lib/shared/db";
+import { logger } from "@/lib/shared/logger";
 import type { OutboxStatus } from "@/lib/generated/prisma/client";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import type { DomainEvent } from "./types";
@@ -116,7 +117,7 @@ export async function markOutboxProcessed(eventId: string): Promise<void> {
 
 /**
  * Mark an event as failed and schedule retry.
- * If max retries exceeded, mark as permanently failed.
+ * If max retries exceeded, transition to DEAD (terminal state).
  */
 export async function markOutboxFailed(
   eventId: string,
@@ -124,7 +125,7 @@ export async function markOutboxFailed(
 ): Promise<void> {
   const event = await db.outboxEvent.findUnique({
     where: { id: eventId },
-    select: { attempts: true },
+    select: { attempts: true, eventType: true, aggregateType: true, aggregateId: true },
   });
 
   if (!event) return;
@@ -132,14 +133,23 @@ export async function markOutboxFailed(
   const newAttempts = event.attempts + 1;
 
   if (newAttempts >= MAX_RETRIES) {
-    // Permanently failed
+    // Terminal state — max retries exhausted. Requires manual intervention or backfill.
     await db.outboxEvent.update({
       where: { id: eventId },
       data: {
-        status: "FAILED",
+        status: "DEAD",
         attempts: newAttempts,
         lastError: error.message,
       },
+    });
+    // Log at error level so monitoring can alert on dead events.
+    logger.error("outbox", "Outbox event moved to DEAD — max retries exhausted", {
+      eventId,
+      eventType: event.eventType,
+      aggregateType: event.aggregateType,
+      aggregateId: event.aggregateId,
+      attempts: newAttempts,
+      lastError: error.message,
     });
   } else {
     // Schedule retry with backoff
@@ -163,6 +173,7 @@ export async function getOutboxStats(): Promise<{
   processing: number;
   processed: number;
   failed: number;
+  dead: number;
   oldestPendingAt?: Date;
 }> {
   const stats = await db.outboxEvent.groupBy({
@@ -182,6 +193,7 @@ export async function getOutboxStats(): Promise<{
     processing: stats.find((s) => s.status === "PROCESSING")?._count ?? 0,
     processed: stats.find((s) => s.status === "PROCESSED")?._count ?? 0,
     failed: stats.find((s) => s.status === "FAILED")?._count ?? 0,
+    dead: stats.find((s) => s.status === "DEAD")?._count ?? 0,
     oldestPendingAt: oldestPending?.createdAt,
   };
 }

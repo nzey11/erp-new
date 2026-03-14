@@ -113,8 +113,8 @@ describe("Outbox Service", () => {
       });
     });
 
-    it("should mark as FAILED when max retries exceeded", async () => {
-      mockOutboxEvent.findUnique.mockResolvedValueOnce({ attempts: 5 });
+    it("should mark as DEAD when max retries exceeded", async () => {
+      mockOutboxEvent.findUnique.mockResolvedValueOnce({ attempts: 5, eventType: "DocumentConfirmed", aggregateType: "Document", aggregateId: "doc-123" });
       mockOutboxEvent.update.mockResolvedValueOnce({ id: "outbox-1" });
 
       await markOutboxFailed("outbox-1", new Error("Handler failed"));
@@ -122,7 +122,7 @@ describe("Outbox Service", () => {
       expect(mockOutboxEvent.update).toHaveBeenCalledWith({
         where: { id: "outbox-1" },
         data: {
-          status: "FAILED",
+          status: "DEAD",
           attempts: 6,
           lastError: "Handler failed",
         },
@@ -154,6 +154,7 @@ describe("Outbox Service", () => {
         processing: 0,
         processed: 100,
         failed: 2,
+        dead: 0,
         oldestPendingAt: new Date("2024-01-01"),
       });
     });
@@ -169,6 +170,7 @@ describe("Outbox Service", () => {
         processing: 0,
         processed: 0,
         failed: 0,
+        dead: 0,
         oldestPendingAt: undefined,
       });
     });

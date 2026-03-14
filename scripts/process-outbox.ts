@@ -76,6 +76,7 @@ async function main(): Promise<void> {
     console.log(`  Processing: ${stats.processing}`);
     console.log(`  Processed:  ${stats.processed}`);
     console.log(`  Failed:     ${stats.failed}`);
+    console.log(`  Dead:       ${stats.dead}`);
     if (stats.oldestPendingAt) {
       console.log(`  Oldest pending: ${stats.oldestPendingAt.toISOString()}`);
     }
@@ -102,6 +103,9 @@ async function main(): Promise<void> {
   // Show final stats
   const stats = await getOutboxStats();
   console.log(`\nRemaining pending: ${stats.pending}`);
+  if (stats.dead > 0) {
+    console.log(`Dead (needs attention): ${stats.dead}`);
+  }
 }
 
 // Run

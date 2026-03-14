@@ -6,7 +6,7 @@ import {
   createCounterpartySchema,
   queryCounterpartiesSchema,
 } from "@/lib/modules/accounting/schemas/counterparties.schema";
-import { resolveParty } from "@/lib/party";
+import { createCounterpartyWithParty } from "@/lib/modules/accounting/services/counterparty.service";
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,26 +54,21 @@ export async function POST(request: NextRequest) {
 
     const data = await parseBody(request, createCounterpartySchema);
 
-    const counterparty = await db.counterparty.create({
-      data: {
-        type: data.type,
-        name: data.name,
-        legalName: data.legalName || null,
-        inn: data.inn || null,
-        kpp: data.kpp || null,
-        bankAccount: data.bankAccount || null,
-        bankName: data.bankName || null,
-        bik: data.bik || null,
-        address: data.address || null,
-        phone: data.phone || null,
-        email: data.email || null,
-        contactPerson: data.contactPerson || null,
-        notes: data.notes || null,
-      },
+    const { counterparty } = await createCounterpartyWithParty({
+      type: data.type,
+      name: data.name,
+      legalName: data.legalName || null,
+      inn: data.inn || null,
+      kpp: data.kpp || null,
+      bankAccount: data.bankAccount || null,
+      bankName: data.bankName || null,
+      bik: data.bik || null,
+      address: data.address || null,
+      phone: data.phone || null,
+      email: data.email || null,
+      contactPerson: data.contactPerson || null,
+      notes: data.notes || null,
     });
-
-    // Ensure Party exists for CRM integration
-    await resolveParty({ counterpartyId: counterparty.id });
 
     return NextResponse.json(counterparty, { status: 201 });
   } catch (error) {

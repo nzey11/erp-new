@@ -195,7 +195,7 @@ Make all cross-module invariants STRONG or MEDIUM-STRONG. Eliminate the MISSING-
 #### Scope
 - `app/api/accounting/products/[id]/route.ts` and related product mutation routes
 - `app/api/accounting/products/[id]/discounts/route.ts`
-- `app/api/accounting/prices/sale/route.ts`
+- ~~`app/api/accounting/prices/sale/route.ts`~~ _(file does not exist; sale price mutation lives inline in `products/[id]/route.ts` — see P2-02)_
 - `app/api/auth/customer/telegram/route.ts`
 - `app/api/ecommerce/orders/quick-order/route.ts`
 - `lib/modules/accounting/register-handlers.ts`
@@ -205,43 +205,47 @@ Make all cross-module invariants STRONG or MEDIUM-STRONG. Eliminate the MISSING-
 
 #### Tasks
 
-**P2-01**  
+**P2-01** ✅ _Complete_  
 Emit `product.updated` outbox event on every product metadata mutation.  
-In `app/api/accounting/products/[id]/route.ts` (PUT handler): after `db.product.update()`, emit `createOutboxEvent(tx, { type: "product.updated", payload: { productId: id } }, "Product", id)` inside the same transaction.  
-Requires the product `update` to be moved into a transaction block if not already.
+In `app/api/accounting/products/[id]/route.ts` (PUT handler): `tx.product.update()` and `createOutboxEvent(tx, { type: "product.updated", payload: { productId: id } }, "Product", id)` share a single `db.$transaction`. Handler registered in both `app/api/system/outbox/process/route.ts` and `scripts/process-outbox.ts`.
 
-**P2-02**  
+**P2-02** ✅ _Complete_  
 Emit `sale_price.updated` outbox event on every sale price mutation.  
-In `app/api/accounting/prices/sale/route.ts` (and the inline price update in `products/[id]/route.ts`): emit `createOutboxEvent(tx, { type: "sale_price.updated", payload: { productId } }, "SalePrice", productId)`.
+There is no dedicated `app/api/accounting/prices/sale/route.ts`. Sale price mutation for a product lives entirely inline in `app/api/accounting/products/[id]/route.ts` (PUT handler), gated by `if (salePrice !== undefined)`. Both the `SalePrice` write and `createOutboxEvent(tx, { type: "sale_price.updated", payload: { productId: id } }, "SalePrice", id)` are inside a single `db.$transaction`. Handler registered in both `app/api/system/outbox/process/route.ts` and `scripts/process-outbox.ts`.
 
-**P2-03**  
+**P2-03** ✅ _Complete_  
 Emit `discount.updated` outbox event on every discount mutation.  
-In `app/api/accounting/products/[id]/discounts/route.ts`: emit `createOutboxEvent(tx, { type: "discount.updated", payload: { productId } }, "ProductDiscount", productId)`.
+In `app/api/accounting/products/[id]/discounts/route.ts`: both POST (`tx.productDiscount.create`) and DELETE (`tx.productDiscount.update` soft-delete) now wrap their write inside a `db.$transaction`. `createOutboxEvent(tx, { type: "discount.updated", payload: { productId } }, "ProductDiscount", productId)` is emitted inside the same transaction in both handlers. Handler was already registered in `app/api/system/outbox/process/route.ts` and `scripts/process-outbox.ts` before this change.
 
-**P2-04**  
-Call `resolveParty({ customerId })` inside `db.$transaction()` immediately after `db.customer.create()` in `app/api/auth/customer/telegram/route.ts`.  
-This ensures every new Customer has a Party mirror at creation, not lazily on first order.
+**P2-04** ✅ _Complete_  
+Call `resolveParty({ customerId })` after `db.customer.create()` in `app/api/auth/customer/telegram/route.ts` for new customers only.  
+`resolveParty()` is not transaction-aware (uses global `db` client internally and opens its own nested `db.$transaction`). It cannot share a transaction boundary with `db.customer.create()`. The call uses a `try/catch` that logs failure without re-throwing, so auth is never blocked by Party creation failure. INV-02 reliability is now MEDIUM (best-effort at creation time, backfillable on failure) rather than MISSING.  
+_Note: STRONG enforcement (full atomicity) requires a tx-aware `resolveParty()` or a dedicated atomic identity service — deferred to a future phase._
 
-**P2-05**  
-Call `resolveParty({ customerId })` after guest customer creation in `app/api/ecommerce/orders/quick-order/route.ts`.  
-The synthetic `telegramId` guest customer must also have a Party.
+**P2-05** ✅ _Complete_  
+Call `resolveParty({ customerId })` after guest customer creation in `app/api/ecommerce/orders/quick-order/route.ts`, for newly created guest customers only.  
+`resolveParty()` is not transaction-aware (uses global `db` client internally and opens its own nested `db.$transaction`). It cannot share a transaction boundary with `db.customer.create()`. The call uses a `try/catch` that logs failure without re-throwing, so the quick-order flow is never blocked by Party creation failure. INV-02 reliability for guest customers is now MEDIUM (best-effort at creation time, backfillable on failure) rather than MISSING.  
+_Note: STRONG enforcement (full atomicity) requires a tx-aware `resolveParty()` or a dedicated `createCustomerWithParty()` service — deferred to a future phase._
 
-**P2-06**  
+**P2-06** ✅ _Complete_  
 Remove `registerAccountingHandlers(bus)` call from the production bootstrap path.  
-The `IEventBus` handler registration must not be wired at runtime — it is a test utility only.  
-Verify that the outbox handlers (`registerOutboxHandler(...)`) in `app/api/system/outbox/process/route.ts` cover all the same events.  
-_Affects: `lib/bootstrap/domain-events.ts` (or wherever `registerAccountingHandlers` is called at startup)_
+In `lib/bootstrap/domain-events.ts`: both imports (`eventBus`, `registerAccountingHandlers`) removed; `bootstrapDomainEvents()` body replaced with an explicit no-op comment. The function signature and `bootstrapped` guard are retained so `instrumentation.ts` needs no changes.  
+`IEventBus`, `InProcessEventBus`, `createEventBus()`, and `registerAccountingHandlers()` are preserved in their respective files as test-only infrastructure. The `event-bus.test.ts` suite uses `createEventBus()` (factory, not the singleton) and is unaffected.  
+All three `DocumentConfirmed` handlers (`onDocumentConfirmedBalance`, `onDocumentConfirmedJournal`, `onDocumentConfirmedPayment`) were already registered via `registerOutboxHandler(...)` in both `app/api/system/outbox/process/route.ts` and `scripts/process-outbox.ts` before this change. No handler coverage gap introduced.
 
-**P2-07**  
+**P2-07** ✅ _Complete_  
 Add dead-letter queue semantics to `processOutboxEvents()`.  
-After N consecutive failures for a single event, transition its status to `"dead"` (not `"failed"`).  
-Add a monitoring endpoint or log alert for events in `"dead"` status.  
-_Affects: `lib/events/outbox.ts`_
+In `lib/events/outbox.ts`: `markOutboxFailed()` now transitions exhausted events to `DEAD` (not `FAILED`). Rule: `attempts + 1 >= MAX_RETRIES` (5 attempts). On DEAD transition, `logger.error()` is emitted with `eventId`, `eventType`, `aggregateType`, `aggregateId`, `attempts`, `lastError`. `getOutboxStats()` return type extended with `dead: number` — visible in both the cron endpoint health response and `--stats` CLI output. `FAILED` enum value retained for backward compatibility; existing rows unaffected.  
+`prisma/schema.prisma`: `DEAD` added to `OutboxStatus` enum; `FAILED` annotated as deprecated.  
+`prisma/migrations/20260314_add_outbox_dead_status/migration.sql`: `ALTER TYPE "OutboxStatus" ADD VALUE 'DEAD'` — applied directly via `prisma db execute` (shadow DB unavailable due to pre-existing baseline mismatch; migration file exists for documentation and production deployment).  
+`scripts/process-outbox.ts`: `--stats` output now includes `Dead: N`; post-run summary warns if `stats.dead > 0`.  
+_Note: stuck `PROCESSING` events (worker crash scenario) are not addressed by P2-07 — separate concern._
 
-**P2-08**  
-Document the outbox SLA.  
-The cron interval for `POST /api/system/outbox/process` must be defined and documented.  
-Acceptable maximum delay between event write and handler execution must be stated in `ARCHITECTURE.md`.
+**P2-08** ✅ _Complete_  
+Document the Outbox SLA and operational rules.  
+**Agreed SLA:** Cron trigger interval = **60 seconds** (1 minute). Maximum acceptable delay from event write to handler execution = **2 cron cycles = 120 seconds** under normal load. Events that fail all 5 retry attempts transition to `DEAD` (P2-07). Cumulative backoff before DEAD: ~62 seconds across 5 attempts; after DEAD the event requires manual intervention.  
+**Updated documents:** `erp-architecture-map.md` — Events/Outbox section updated with SLA table, event delivery sequence with timings, and monitoring query; `erp-architecture-guardrails.md` — "Retry and Dead-Letter Handling" section expanded with SLA thresholds, and new "Outbox SLA" section added with operator runbook.  
+_Note: no production code was changed by P2-08. The SLA is a documented operational contract, not a code constraint._
 
 #### Success Criteria
 - Every product/price/discount mutation route emits the corresponding outbox event
@@ -252,9 +256,13 @@ Acceptable maximum delay between event write and handler execution must be state
 - Outbox events that fail >N times are marked `"dead"` and logged
 
 #### Risks
-- **P2-01/02/03:** Product mutation routes currently do not use `db.$transaction()`. Adding transaction scope may affect performance on complex mutations. Benchmark before deploying.
-- **P2-04/05:** `resolveParty()` inside the Telegram auth transaction means auth failure on Party creation would block login. Implement with a try/catch that logs the failure but does not block the auth flow if Party creation fails (degrade gracefully — Party can be backfilled).
-- **P2-06:** If `registerAccountingHandlers` was also used in tests, those tests must be updated to wire handlers explicitly rather than via the bootstrap function.
+- **P2-01/02:** _(Risk retired — both already implemented with `db.$transaction()`. No performance change pending.)_
+- **P2-03:** _(Risk retired — both POST and DELETE are now inside `db.$transaction()`. Performance impact is minimal: each wraps a single write + one outbox insert.)_
+- **P2-04:** _(Risk retired — `resolveParty()` is called in a `try/catch` that never re-throws. Auth cannot be blocked by Party creation failure. Customer is backfillable if Party write fails. Note: Customer + Party are not in the same transaction — see P2-04 task note.)_
+- **P2-05:** _(Risk retired — `resolveParty()` is called in a `try/catch` that never re-throws. Quick-order flow cannot be blocked by Party creation failure. Guest Customer is backfillable if Party write fails. Note: Customer + Party are not in the same transaction — see P2-05 task note.)_
+- **P2-06:** _(Risk retired — `event-bus.test.ts` already uses `createEventBus()` factory exclusively, never `registerAccountingHandlers` or the singleton. No test update was required.)_
+- **P2-07:** _(Risk retired — no new risk introduced. `FAILED` retained in enum; existing rows unaffected. `PROCESSING` stuck-event recovery is a separate concern not in P2-07 scope.)_
+- **P2-08:** _(Risk retired — documentation-only task; no production code changed. SLA is a documented operational contract. Cron interval enforcement is infrastructure-level — not enforced by application code.)_
 
 #### Dependencies
 - P1 must be complete (bypass paths removed before we harden the canonical paths)
@@ -318,6 +326,13 @@ Fix `createCounterparty()` in `tests/helpers/factories.ts` (line 144): add `tena
 Move `publishDocumentConfirmed()` dead code from `document-confirm.service.ts` to a deletion.  
 Verify it has no active callers (grep + TS compilation), then remove.
 
+**P3-08**  
+Fix Party merge: atomically update `PartyLink` records to point to the survivor party.  
+Currently `lib/party/services/` merge service sets `party.status = "merged"` and `party.mergedIntoId`, but does not update existing `PartyLink` records.  
+The result is that direct `PartyLink` queries (not using `resolveFinalParty()` traversal) return stale link targets.  
+Action: update the merge service to re-point all `PartyLink` records belonging to the merged party to the survivor party within the same `db.$transaction()` as the status update.  
+_Affects: `lib/party/services/` merge service_
+
 #### Success Criteria
 - `lib/modules/ecom/` directory does not exist
 - No single service file exceeds 300 lines
@@ -326,6 +341,7 @@ Verify it has no active callers (grep + TS compilation), then remove.
 - `tests/helpers/factories.ts` does not exist as a monolith; domain factories are in separate files
 - `publishDocumentConfirmed()` is removed
 - `createCounterparty()` in test factories always requires `tenantId`
+- Party merge atomically updates all `PartyLink` records to the survivor (P3-08)
 
 #### Risks
 - **P3-01:** Import path changes affect a large number of files. Run TypeScript compiler (`tsc --noEmit`) after the merge to catch broken imports before testing.
@@ -413,10 +429,12 @@ Alert if any `OutboxEvent` has status `"dead"` or `"failed"` and age > 1 hour.
 | INV-02 | Customer → Party | Every Customer has a Party at creation time | MISSING | `resolveParty()` inside auth transaction | `lib/party` (called from auth route) |
 | INV-03 | Customer → Counterparty | First ecom order creates a linked Counterparty atomically | MEDIUM | Single transaction in `getOrCreateCounterparty` | `ecommerce/services/counterparty-bridge.service.ts` |
 | INV-04 | Product/Price/Discount → Projection | Storefront catalog reflects all product mutations | MISSING | Outbox event emitted in mutation transaction | `accounting` routes → `ecommerce/handlers/catalog-handler.ts` |
-| INV-05 | Document confirm → Stock movements | Confirmation atomically creates StockMovements | STRONG (confirm) / WEAK (cancel bypass) | Cancel route wired to `cancelDocumentTransactional()` | `accounting/services/document-confirm.service.ts` |
+| INV-05a | Document confirm → Stock movements | Confirmation atomically creates StockMovements + reconciles StockRecord | STRONG | `confirmDocumentTransactional()` — stock movements inside same service call | `accounting/services/document-confirm.service.ts` |
+| INV-05b | Document cancel → Reversal stock movements | Cancellation creates reversing StockMovements via canonical service | MEDIUM _(route delegates to service; cancel sequence is sequential not fully atomic — status update and reversing movements are separate DB calls within the service)_ | `cancelDocumentTransactional()` — P1-01 complete, cancel bypass removed | `accounting/services/document-confirm.service.ts` |
 | INV-06 | Document confirm → CounterpartyBalance | Confirmation updates balance within outbox SLA | MEDIUM | Outbox handler + SLA documentation + alerting | `accounting/handlers/balance-handler.ts` |
+| INV-13 | Document cancel → CounterpartyBalance recalculated | Cancellation synchronously recalculates counterparty balance | MEDIUM _(synchronous call inside `cancelDocumentTransactional()` but not wrapped in a single transaction with the status update)_ | Direct `recalculateBalance()` call inside `cancelDocumentTransactional()` | `accounting/services/document-confirm.service.ts` |
 | INV-07 | Document confirm → Finance Journal | Confirmation creates journal entries within outbox SLA | MEDIUM | Outbox handler + dead-letter queue | `accounting/handlers/journal-handler.ts` |
-| INV-08 | Payment mark → Document confirm | `paymentStatus=paid` and `status=confirmed` are atomic | MEDIUM | Merged into single transaction in order service | `ecommerce/services/order-payment.service.ts` |
+| INV-08 | Payment mark → Document confirm | `paymentStatus=paid` and `status=confirmed` are near-atomic | MEDIUM _(accepted — idempotency guard present; full atomicity deferred; webhook retry safe)_ | `confirmEcommerceOrderPayment()` with idempotency guard (P1-05 complete). Full unification into a single transaction not scheduled — see Completion Definition note. | `ecommerce/services/order-payment.service.ts` |
 | INV-09 | Product → tenantId | All products have tenant scope at creation | MEDIUM | NOT NULL + FK constraint (Phase 4) | `accounting` + `product` creation services |
 | INV-10 | Document → tenantId + warehouse match | Documents have tenant scope matching their warehouse | MEDIUM | NOT NULL + FK constraint (Phase 4) | `accounting/services/document-confirm.service.ts` |
 | INV-11 | Outbox is sole event path | No production handler wired to IEventBus | WEAK | Remove `registerAccountingHandlers` from production boot | `lib/events/` + `lib/bootstrap/` |
@@ -484,43 +502,24 @@ A module may only be imported via its `index.ts` barrel.
 
 ## 7. Architectural Anti-Patterns (Forbidden Patterns)
 
-The following patterns are explicitly forbidden. Their presence in new code is a blocking review issue.
+> **The single authoritative anti-pattern registry is `.qoder/specs/erp-architecture-guardrails.md` Section 9 (AP-01 through AP-15).**  
+> Consult that document for the complete, numbered list with rationale.
 
-### AP-01: Prisma in Routes
-```typescript
-// FORBIDDEN
-import { db } from "@/lib/shared/db";
-export async function POST(request) {
-  await db.document.update(...);
-}
-```
-Routes must call a service. The service owns `db`.
+The patterns listed there are **absolutely forbidden** in new and modified code. Their presence is a blocking review issue regardless of the surrounding context.
 
-### AP-02: Duplicate Write Paths
-Two functions that perform the same domain write operation must not coexist. One operation = one service function. Callers must use the service.
+Key anti-patterns for quick reference:
 
-Example of violation: `cancelDocumentTransactional()` exists in the service AND cancel logic duplicated in `cancel/route.ts`.
+| Reference | Short description |
+|-----------|------------------|
+| AP-01 | `db` import in any file under `app/api/` |
+| AP-09 | `db.counterparty.create()` outside `createCounterpartyWithParty()` |
+| AP-10 | `db.customer.create()` without `resolveParty()` in the same transaction |
+| AP-06 | `eventBus.publish()` in any production code path |
+| AP-07 | `registerAccountingHandlers(bus)` in any production boot path |
+| AP-08 | Direct call to `updateProductCatalogProjection()` from a route |
+| AP-14 | `recalculateStock()` called when `reconcileStockRecord()` is available |
 
-### AP-03: Business Logic in API Handlers
-State machine transitions, validation rules, or calculation logic must not appear inline in route handlers. They belong in `domain/` (pure) or `services/` (with DB).
-
-### AP-04: Multiple Projection Update Paths
-A projection must be updated by exactly one mechanism: its outbox handler. Direct calls to `updateProductCatalogProjection()` from routes or services (outside the handler) are forbidden.
-
-### AP-05: Multiple Event Delivery Mechanisms
-`IEventBus.publish()` must not be called in production code paths. Outbox is the only delivery mechanism. `IEventBus` is used in unit tests only, injected explicitly.
-
-### AP-06: God Files
-A single file must not own more than one bounded domain concept. Files exceeding ~300 lines are a signal that split is needed. No file may mix queries, writes, and domain rules.
-
-### AP-07: Non-Atomic Cross-Entity Creation
-Creating two related entities (e.g., `Counterparty` + `Party`) in separate DB operations without a transaction is forbidden. If creation of B is a mandatory consequence of creating A, both happen in the same `db.$transaction()`.
-
-### AP-08: Tenant-Unscoped Entity Creation
-Any service that creates a tenant-bound entity must receive `tenantId` as an explicit argument and write it to the entity at creation. Defaulting to `undefined` or inferring it from environment variables inside service functions is forbidden (only the route layer may read `STORE_TENANT_ID` from env).
-
-### AP-09: Legacy Calculation Paths Alongside Canonical Ones
-When a canonical calculation path exists (`reconcileStockRecord` via movement-sum), the legacy path (`recalculateStock` via document-item aggregate) must be removed, not kept alongside. Coexistence creates an ambiguous source of truth.
+For all 15 anti-patterns with full rationale, see **Guardrails Section 9**.
 
 ---
 
@@ -579,6 +578,8 @@ The normalization roadmap is considered **complete** when all of the following a
 5. **Enforcement is automated** — ESLint rules block Prisma imports in routes, CI runs verify gates, schema constraints exist for `tenantId` on all tenant-bound entities.
 
 6. **The roadmap document itself is up to date** — if any task was modified, superseded, or added during implementation, this document reflects those changes.
+
+> **Accepted limitation:** INV-08 (Payment mark → Document confirm) is accepted at MEDIUM reliability. The `paymentStatus` update and `confirmDocumentTransactional()` remain two sequential DB operations with an idempotency guard. Full atomicity (single transaction) would require significant refactoring of the payment webhook flow and is not scheduled. Webhook retry safety is ensured by the idempotency guard in `confirmEcommerceOrderPayment()`.
 
 ---
 

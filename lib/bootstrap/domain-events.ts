@@ -1,27 +1,26 @@
 /**
  * Bootstrap — Domain Event wiring
  *
- * Single entry point that registers all domain event handlers.
- * Called once at app startup from instrumentation.ts.
+ * P2-06: This function is intentionally a no-op.
  *
- * To add a new domain's handlers in future phases:
- *   1. Create lib/modules/<domain>/register-handlers.ts
- *   2. Import and call registerXxxHandlers(eventBus) here
+ * The IEventBus / registerAccountingHandlers() wiring has been removed from
+ * the production boot path. All production event delivery now goes through
+ * the transactional outbox (lib/events/outbox.ts), processed by:
+ *   - app/api/system/outbox/process/route.ts  (cron endpoint)
+ *   - scripts/process-outbox.ts               (CLI worker)
+ *
+ * IEventBus and InProcessEventBus are retained for unit tests only.
+ * createEventBus() is the test-safe factory (see tests/unit/lib/event-bus.test.ts).
+ *
+ * Do NOT re-add handler registrations here without a Phase decision.
  */
 
-import { eventBus } from "@/lib/events";
-import { registerAccountingHandlers } from "@/lib/modules/accounting/register-handlers";
-
-// Guard against double-registration on dev hot-reload.
-// Node.js module cache keeps this value stable across calls within one process.
+// Guard against double-registration remains as a safety net in case
+// this function is ever re-populated in a future phase.
 let bootstrapped = false;
 
 export function bootstrapDomainEvents(): void {
   if (bootstrapped) return;
   bootstrapped = true;
-  registerAccountingHandlers(eventBus);
-
-  // Future phases:
-  // registerEcomHandlers(eventBus);
-  // registerFinanceHandlers(eventBus);
+  // No-op: production event delivery uses the outbox, not the in-process bus.
 }

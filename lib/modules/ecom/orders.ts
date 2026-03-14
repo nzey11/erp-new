@@ -24,6 +24,7 @@ import {
   type ConfirmedDocumentResult,
   type CancelledDocumentResult,
 } from "@/lib/modules/accounting/services/document-confirm.service";
+import { createCounterpartyWithParty } from "@/lib/modules/accounting/services/counterparty.service";
 
 // Types for e-commerce orders
 export type DeliveryType = "pickup" | "courier";
@@ -41,6 +42,10 @@ interface CartItemInput {
 /**
  * Get or create Counterparty for Customer.
  * Called when customer places their first order.
+ *
+ * Uses createCounterpartyWithParty() to atomically create both the
+ * Counterparty and its CRM Party mirror (INV-01 enforcement).
+ * The customer.counterpartyId link is updated in the same db.$transaction().
  */
 export async function getOrCreateCounterparty(customerId: string): Promise<string> {
   const customer = await db.customer.findUnique({
@@ -56,14 +61,12 @@ export async function getOrCreateCounterparty(customerId: string): Promise<strin
     return customer.counterpartyId;
   }
 
-  const counterparty = await db.counterparty.create({
-    data: {
-      type: "customer",
-      name: customer.name || `Клиент Telegram`,
-      phone: customer.phone,
-      email: customer.email,
-      notes: `Telegram: @${customer.telegramUsername || customer.telegramId}`,
-    },
+  const { counterparty } = await createCounterpartyWithParty({
+    type: "customer",
+    name: customer.name || `Клиент Telegram`,
+    phone: customer.phone,
+    email: customer.email,
+    notes: `Telegram: @${customer.telegramUsername || customer.telegramId}`,
   });
 
   await db.customer.update({
@@ -201,98 +204,38 @@ export async function createSalesOrderFromCart(params: {
 }
 
 /**
- * Confirm order payment.
- * Called when payment is received (webhook from payment provider).
+ * Confirm ecommerce order payment — canonical implementation.
  *
- * ADAPTER PATTERN: This function is a facade that delegates to the proper
- * confirm flow (confirmDocumentTransactional). It does NOT directly update
- * document status to bypass the domain service.
+ * Handles payment confirmation for sales_order documents from any source:
+ * - Webhook (paymentExternalId provided, actor = "system:webhook")
+ * - Admin UI (actor = session username, paymentExternalId optional)
  *
- * Known compromise: payment metadata update and document confirm are two
- * separate DB operations (not atomic). This is acceptable for the cleanup
- * phase — the critical bypass (direct status update) is removed.
+ * Sequence:
+ *   1. Validate document exists and is a sales_order
+ *   2. Idempotency guard (already confirmed + paid → return early)
+ *   3. Update payment metadata (paymentStatus, paymentMethod, paidAt, paymentExternalId)
+ *   4. Delegate to confirmDocumentTransactional() → stock + outbox + handlers
+ *   5. Record party activity for CRM timeline
+ *
+ * Known limitation (roadmap P1-05 TODO):
+ *   Steps 3 and 4 are separate DB operations (not atomic). If step 4 fails,
+ *   paymentStatus=paid is already committed — webhook retry is safe due to
+ *   idempotency guard. Full atomicity requires merging paymentMetadata into
+ *   confirmDocumentTransactional().
  *
  * @param params.documentId - The sales_order document ID
- * @param params.paymentExternalId - External payment ID from provider
- * @param params.paymentMethod - Payment method (tochka or cash)
- */
-export async function confirmOrderPayment(params: {
-  documentId: string;
-  paymentExternalId: string;
-  paymentMethod: PaymentMethod;
-}): Promise<void> {
-  const { documentId, paymentExternalId, paymentMethod } = params;
-
-  const document = await db.document.findUnique({
-    where: { id: documentId },
-  });
-
-  if (!document) {
-    throw new Error("Document not found");
-  }
-
-  if (document.type !== "sales_order") {
-    throw new Error("Document is not a sales order");
-  }
-
-  // Idempotency: already paid and confirmed
-  if (document.paymentStatus === "paid" && document.status === "confirmed") {
-    return;
-  }
-
-  // Step 1: Update payment metadata (ecommerce-specific fields)
-  // Note: This is a separate operation from confirm, not atomic.
-  // Errors here will prevent confirm from running.
-  await db.document.update({
-    where: { id: documentId },
-    data: {
-      paymentStatus: "paid",
-      paymentMethod,
-      paymentExternalId,
-      paidAt: new Date(),
-    },
-  });
-
-  // Step 2: Delegate to proper confirm flow
-  // This creates stock movements, writes outbox event, triggers handlers.
-  // Uses "system:webhook" as actor for audit trail.
-  // If this fails, the payment metadata is already saved — webhook can retry.
-  await confirmDocumentTransactional(documentId, "system:webhook");
-
-  // Record party activity for timeline
-  await recordPaymentReceived({
-    counterpartyId: document.counterpartyId ?? undefined,
-    paymentId: paymentExternalId,
-    amount: document.totalAmount,
-    method: paymentMethod,
-    occurredAt: new Date(),
-  });
-}
-
-/**
- * Confirm ecommerce order payment with proper ERP flow.
- *
- * This function correctly uses confirmDocumentTransactional() to ensure:
- * - Stock movements are created
- * - Outbox event is written
- * - Handlers (balance, journal, payment) are triggered
- *
- * TODO: Unify payment-marking + confirm into one orchestration path
- * with shared transaction boundary for full atomicity.
- *
- * @param documentId - The sales_order document ID
- * @param paymentMethod - Payment method (tochka or cash)
- * @param paymentExternalId - External payment ID (optional)
- * @param actor - User performing the action (for audit)
+ * @param params.paymentMethod - Payment method
+ * @param params.paymentExternalId - External payment ID (optional for admin-initiated)
+ * @param params.actor - Audit actor (null for webhook, username for admin)
  * @returns Confirmed document result
  */
 export async function confirmEcommerceOrderPayment(params: {
   documentId: string;
   paymentMethod: PaymentMethod;
   paymentExternalId?: string;
-  actor: string | null;
+  actor?: string | null;
 }): Promise<ConfirmedDocumentResult> {
-  const { documentId, paymentMethod, paymentExternalId, actor } = params;
+  const { documentId, paymentMethod, paymentExternalId, actor = null } = params;
 
   const document = await db.document.findUnique({
     where: { id: documentId },
@@ -306,9 +249,8 @@ export async function confirmEcommerceOrderPayment(params: {
     throw new Error("Документ не является заказом");
   }
 
-  // Idempotency: if already confirmed with payment, return early
+  // Idempotency: already confirmed + paid → return early
   if (document.status === "confirmed" && document.paymentStatus === "paid") {
-    // Return the document in the expected format
     return {
       ...document,
       typeName: "Заказ",
@@ -320,7 +262,7 @@ export async function confirmEcommerceOrderPayment(params: {
     } as ConfirmedDocumentResult;
   }
 
-  // Step 1: Update payment info (ecommerce-specific)
+  // Step 1: Update payment metadata
   await db.document.update({
     where: { id: documentId },
     data: {
@@ -331,10 +273,11 @@ export async function confirmEcommerceOrderPayment(params: {
     },
   });
 
-  // Step 2: Proper confirm flow (stock, outbox, handlers)
-  const result = await confirmDocumentTransactional(documentId, actor);
+  // Step 2: Proper confirm flow (stock movements, outbox, handlers)
+  const confirmedActor = actor ?? "system:webhook";
+  const result = await confirmDocumentTransactional(documentId, confirmedActor);
 
-  // Record party activity for timeline
+  // Step 3: Record party activity for CRM timeline
   if (document.counterpartyId) {
     await recordPaymentReceived({
       counterpartyId: document.counterpartyId,
@@ -346,6 +289,24 @@ export async function confirmEcommerceOrderPayment(params: {
   }
 
   return result;
+}
+
+/**
+ * @deprecated Use confirmEcommerceOrderPayment() instead.
+ * Kept for backward compatibility with payment.ts webhook handler.
+ * Will be removed when payment.ts is updated (roadmap P3-01/P3-02).
+ */
+export async function confirmOrderPayment(params: {
+  documentId: string;
+  paymentExternalId: string;
+  paymentMethod: PaymentMethod;
+}): Promise<void> {
+  await confirmEcommerceOrderPayment({
+    documentId: params.documentId,
+    paymentMethod: params.paymentMethod,
+    paymentExternalId: params.paymentExternalId,
+    actor: "system:webhook",
+  });
 }
 
 /**

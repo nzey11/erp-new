@@ -1130,7 +1130,8 @@ enum OutboxStatus {
   PENDING
   PROCESSING
   PROCESSED
-  FAILED
+  FAILED    // Deprecated: use DEAD for terminal state. Kept for backward compatibility.
+  DEAD      // Terminal: max retries exhausted. Requires manual intervention or backfill.
 }
 
 enum PartyType {

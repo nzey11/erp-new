@@ -438,18 +438,76 @@ Adding a new event type without updating this inventory is forbidden.
 
 | Scenario | Required behavior |
 |----------|------------------|
-| Handler throws on first attempt | Outbox marks event `"failed"`, retries on next cron run |
-| Handler fails > N consecutive times | Event transitions to `"dead"` status (P2-07) |
-| `"dead"` events | Must trigger alert / log entry; require manual investigation |
+| Handler throws on first attempt | Outbox marks event `PENDING` with incremented `attempts` and `availableAt = now + backoff` |
+| Handler fails ≤ 4 times (attempts 1–4) | Event remains `PENDING` with backoff delay; retried on next eligible cron run |
+| Handler fails on attempt 5 (`attempts + 1 >= MAX_RETRIES`) | Event transitions to `DEAD`; `logger.error()` emitted with `eventId`, `eventType`, `aggregateType`, `aggregateId`, `attempts`, `lastError` |
+| `"dead"` events | Require manual investigation; never retried automatically; must be visible in monitoring |
 | Missing retry behavior | Architectural gap — must be added as a roadmap task |
+
+**Retry backoff schedule** (`BASE_BACKOFF_MS = 1000`, `MAX_RETRIES = 5`):
+
+| Attempt | Backoff delay | Cumulative delay |
+|---------|--------------|------------------|
+| 1 | 2 s | 2 s |
+| 2 | 4 s | 6 s |
+| 3 | 8 s | 14 s |
+| 4 | 16 s | 30 s |
+| 5 (DEAD) | 32 s | ~62 s |
 
 No event may be silently dropped. If an event cannot be processed, it must be observable.
 
-### What Must Be Monitored
+### Outbox SLA (P2-08)
 
-- Count of `OutboxEvent` with status `"pending"` older than 1 cron cycle
-- Count of `OutboxEvent` with status `"dead"` or `"failed"` after max retries
-- Cron health: last successful run timestamp
+**Agreed SLA:** Under normal operating conditions, an outbox event must be delivered to its handler(s) within **120 seconds** of being written.
+
+| Parameter | Value |
+|-----------|-------|
+| Cron trigger interval | 60 seconds |
+| Max acceptable end-to-end delay | 120 seconds (2 cron cycles) |
+| Max retry attempts before DEAD | 5 |
+| Batch size per cron run | 10 (default), up to 100 |
+| SLA breach threshold | `pending` event with `createdAt` > 2 minutes |
+| Dead-letter threshold | Any event with `status = 'DEAD'` |
+
+**What must be monitored:**
+
+| Signal | Alert condition | Severity |
+|--------|----------------|----------|
+| `pending` count + age | Any `PENDING` event with `createdAt` > 2 minutes | WARNING |
+| `dead` count | `dead > 0` | ERROR — immediate |
+| `failed` count trend | Growing `failed` count without DEAD progression | WARNING |
+| `processing` count | `processing > 0` for > 5 minutes (stuck PROCESSING) | WARNING |
+| Cron last-run | No successful POST to `/api/system/outbox/process` in > 2 minutes | ERROR |
+
+**Operator runbook:**
+
+_If `dead > 0`:_
+1. Query: `SELECT * FROM "OutboxEvent" WHERE status = 'DEAD' ORDER BY "createdAt" ASC;`
+2. Inspect `lastError` and `eventType` to diagnose the handler failure.
+3. Fix the root cause (handler bug, DB inconsistency, external dependency failure).
+4. Reset the event: `UPDATE "OutboxEvent" SET status = 'PENDING', attempts = 0, "availableAt" = NOW() WHERE id = '<id>';`
+5. Confirm the next cron run processes it successfully.
+
+_If `pending` is too old (SLA breach):_
+1. Check cron health: confirm `POST /api/system/outbox/process` is being called with correct `Authorization: Bearer <OUTBOX_SECRET>`.
+2. Check application logs for errors during the last cron run.
+3. If the cron is healthy but `pending` is still growing, increase the `limit` parameter: `{ "limit": 100 }`.
+4. For emergency manual processing: `npx tsx scripts/process-outbox.ts --limit=50`.
+
+_If `processing > 0` and not draining (stuck PROCESSING):_
+1. This means a worker crashed mid-run without marking events `FAILED` or `PROCESSED`.
+2. Stuck events will not be retried automatically (they are not `PENDING`).
+3. Reset stuck events: `UPDATE "OutboxEvent" SET status = 'PENDING', "availableAt" = NOW() WHERE status = 'PROCESSING' AND "updatedAt" < NOW() - INTERVAL '5 minutes';`
+4. _Note: stuck PROCESSING recovery is not yet automated — see P4-08._
+
+**Health endpoint:**
+```
+GET /api/system/outbox/process
+Authorization: Bearer <OUTBOX_SECRET>
+
+Response: { stats: { pending, processing, processed, failed, dead, oldestPendingAt } }
+```
+Use this endpoint for external monitoring probes (UptimeRobot, Grafana, etc.).
 
 ---
 

@@ -5,6 +5,7 @@ import { signCustomerSession, CUSTOMER_COOKIE_NAME, CUSTOMER_SESSION_MAX_AGE } f
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { telegramAuthSchema } from "@/lib/shared/schemas/auth.schema";
 import { logger } from "@/lib/shared/logger";
+import { resolveParty } from "@/lib/party";
 
 /** Get bot token from DB or env */
 async function getBotToken(): Promise<string | null> {
@@ -69,6 +70,8 @@ export async function POST(request: NextRequest) {
       where: { telegramId },
     });
 
+    let isNewCustomer = false;
+
     if (customer) {
       // Update info on each login
       customer = await db.customer.update({
@@ -86,10 +89,28 @@ export async function POST(request: NextRequest) {
           name,
         },
       });
+      isNewCustomer = true;
     }
 
     if (!customer.isActive) {
       return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
+    }
+
+    // P2-04: Ensure every new Customer has a Party mirror at creation time.
+    // resolveParty() is not transaction-aware (uses global db client internally);
+    // it cannot share a db.$transaction() with db.customer.create().
+    // Per roadmap: failure must not block login — log and continue (Party can be backfilled).
+    if (isNewCustomer) {
+      try {
+        await resolveParty({ customerId: customer.id });
+      } catch (partyError) {
+        logger.error(
+          "telegram-auth",
+          "Party mirror creation failed for new Customer — will be backfilled",
+          { customerId: customer.id, error: partyError }
+        );
+        // Intentionally not re-throwing: login must succeed even if Party creation fails.
+      }
     }
 
     // Create session
