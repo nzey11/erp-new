@@ -60,7 +60,7 @@ describe("buildPartyListQueryString", () => {
     });
 
     it("includes page > 1", () => {
-      const result = buildPartyListQueryString({ ...defaultParams, page: 3 });
+      const result = buildPartyListQueryString({ ...defaultParams, page: 3 }, { resetPage: false });
       expect(result).toBe("?page=3");
     });
   });

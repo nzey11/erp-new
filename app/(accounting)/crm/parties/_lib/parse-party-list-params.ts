@@ -37,9 +37,10 @@ export function parsePartyListParams(
   const rawOwner = searchParams.owner?.trim();
   const ownerId = rawOwner && rawOwner.length > 0 ? rawOwner : undefined;
 
-  // Page: parseInt with safety
-  const rawPage = parseInt(searchParams.page || "1", 10);
-  const page = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
+  // Page: parseInt with safety (must be integer >= 1)
+  const rawPageStr = searchParams.page || "1";
+  const rawPage = parseInt(rawPageStr, 10);
+  const page = Number.isInteger(rawPage) && rawPage >= 1 && String(rawPage) === rawPageStr.trim() ? rawPage : 1;
 
   return {
     search,
