@@ -310,8 +310,9 @@ END $$;
 -- PRODUCT VARIANT
 -- ────────────────────────────────────────────────────────────
 
--- NOTE: ProductVariant.tenantId was added via db push (no migration covers it)
--- It is part of the base schema and included here.
+-- ProductVariant: base table without tenantId
+-- tenantId was added to local dev via db push but has no migration
+-- and may not exist on production — excluded to keep bootstrap safe
 CREATE TABLE IF NOT EXISTS "ProductVariant" (
     "id"              TEXT NOT NULL,
     "productId"       TEXT NOT NULL,
@@ -321,14 +322,12 @@ CREATE TABLE IF NOT EXISTS "ProductVariant" (
     "priceAdjustment" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "isActive"        BOOLEAN NOT NULL DEFAULT true,
     "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "tenantId"        TEXT NOT NULL DEFAULT '',
     CONSTRAINT "ProductVariant_pkey" PRIMARY KEY ("id")
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "ProductVariant_barcode_key" ON "ProductVariant"("barcode");
 CREATE UNIQUE INDEX IF NOT EXISTS "ProductVariant_productId_optionId_key" ON "ProductVariant"("productId", "optionId");
 CREATE INDEX IF NOT EXISTS "ProductVariant_productId_idx" ON "ProductVariant"("productId");
-CREATE INDEX IF NOT EXISTS "ProductVariant_tenantId_idx" ON "ProductVariant"("tenantId");
 
 -- FK: ProductVariant → Product
 DO $$ BEGIN
@@ -1631,43 +1630,8 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- ────────────────────────────────────────────────────────────
--- PRODUCT CATALOG PROJECTION
--- ────────────────────────────────────────────────────────────
-
-CREATE TABLE IF NOT EXISTS "ProductCatalogProjection" (
-    "productId"        TEXT NOT NULL,
-    "tenantId"         TEXT NOT NULL,
-    "name"             TEXT NOT NULL,
-    "slug"             TEXT,
-    "sku"              TEXT,
-    "imageUrl"         TEXT,
-    "description"      TEXT,
-    "unitId"           TEXT,
-    "unitShortName"    TEXT,
-    "categoryId"       TEXT,
-    "categoryName"     TEXT,
-    "price"            DOUBLE PRECISION NOT NULL,
-    "discountedPrice"  DOUBLE PRECISION,
-    "discountName"     TEXT,
-    "discountType"     TEXT,
-    "discountValue"    DOUBLE PRECISION,
-    "avgRating"        DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "reviewCount"      INTEGER NOT NULL DEFAULT 0,
-    "childVariantCount" INTEGER NOT NULL DEFAULT 0,
-    "priceRangeMin"    DOUBLE PRECISION,
-    "priceRangeMax"    DOUBLE PRECISION,
-    "isActive"         BOOLEAN NOT NULL DEFAULT true,
-    "publishedToStore" BOOLEAN NOT NULL DEFAULT false,
-    "updatedAt"        TIMESTAMP(3) NOT NULL,
-    CONSTRAINT "ProductCatalogProjection_pkey" PRIMARY KEY ("productId")
-);
-
-CREATE INDEX IF NOT EXISTS "ProductCatalogProjection_tenantId_idx"
-    ON "ProductCatalogProjection"("tenantId");
-CREATE INDEX IF NOT EXISTS "ProductCatalogProjection_tenantId_isActive_publishedToStore_idx"
-    ON "ProductCatalogProjection"("tenantId", "isActive", "publishedToStore");
-CREATE INDEX IF NOT EXISTS "ProductCatalogProjection_tenantId_categoryId_idx"
-    ON "ProductCatalogProjection"("tenantId", "categoryId");
-CREATE INDEX IF NOT EXISTS "ProductCatalogProjection_tenantId_name_idx"
-    ON "ProductCatalogProjection"("tenantId", "name");
+-- ProductCatalogProjection: created via db push on local dev only.
+-- No migration exists for this table. Excluded from bootstrap to avoid
+-- column-mismatch errors on production databases that may have a different
+-- or absent version of this table.
+-- It will be created/updated when needed via a dedicated migration.
