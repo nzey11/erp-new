@@ -45,6 +45,7 @@ export async function cleanDatabase(): Promise<void> {
   await db.storePage.deleteMany();
   await db.product.deleteMany();
   await db.productCategory.deleteMany();
+  await db.payment.deleteMany(); // Must be before counterparty and tenant
   await db.counterparty.deleteMany();
   await db.warehouse.deleteMany();
   await db.tenantSettings.deleteMany();
