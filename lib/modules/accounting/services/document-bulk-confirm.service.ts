@@ -31,6 +31,7 @@ import {
 export interface BulkConfirmInput {
   ids: string[];
   actor: string | null;
+  tenantId: string;
 }
 
 export interface BulkConfirmResult {
@@ -64,7 +65,7 @@ export interface BulkConfirmResult {
 export async function bulkConfirmDocuments(
   input: BulkConfirmInput
 ): Promise<BulkConfirmResult> {
-  const { ids, actor } = input;
+  const { ids, actor, tenantId } = input;
 
   // Deduplicate ids silently
   const uniqueIds = [...new Set(ids)];
@@ -74,13 +75,13 @@ export async function bulkConfirmDocuments(
   const errors: string[] = [];
 
   for (const id of uniqueIds) {
-    // Fast-path: check document existence and type
-    const doc = await db.document.findUnique({
-      where: { id },
+    // R1-09: tenant-scoped fast-path check
+    const doc = await db.document.findFirst({
+      where: { id, tenantId },
       select: { id: true, type: true },
     });
 
-    // Skip non-existent documents (not an error in bulk mode)
+    // Skip non-existent or foreign-tenant documents (not an error in bulk mode)
     if (!doc) {
       skipped++;
       continue;
@@ -94,7 +95,7 @@ export async function bulkConfirmDocuments(
 
     // Delegate to domain service
     try {
-      await confirmDocumentTransactional(id, actor);
+      await confirmDocumentTransactional(id, actor, tenantId);
       confirmed++;
     } catch (error) {
       if (error instanceof DocumentConfirmError) {

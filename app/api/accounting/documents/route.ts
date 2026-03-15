@@ -7,12 +7,12 @@ import { queryDocumentsSchema, createDocumentSchema } from "@/lib/modules/accoun
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("documents:read");
+    const session = await requirePermission("documents:read");
 
     const query = parseQuery(request, queryDocumentsSchema);
     const { type, types, status, warehouseId, counterpartyId, dateFrom, dateTo, search, page = 1, limit = 50 } = query;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { tenantId: session.tenantId };
     if (types) {
       where.type = { in: types.split(",") };
     } else if (type) {

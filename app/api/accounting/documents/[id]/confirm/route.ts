@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
-import { getAuthSession } from "@/lib/shared/auth";
 import {
   confirmDocumentTransactional,
   DocumentConfirmError,
@@ -11,13 +10,12 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function POST(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("documents:confirm");
+    const session = await requirePermission("documents:confirm");
     const { id } = await params;
-    const session = await getAuthSession();
 
     // Confirm document + write outbox event atomically
     // Worker will process the event and call handlers (balance, journal, payment)
-    const document = await confirmDocumentTransactional(id, session?.username ?? null);
+    const document = await confirmDocumentTransactional(id, session.username ?? null, session.tenantId);
 
     return NextResponse.json(document);
   } catch (error) {

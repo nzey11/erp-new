@@ -51,8 +51,10 @@ beforeEach(async () => {
   const accountIds = await seedReportAccounts();
   await seedCompanySettings(accountIds);
   adminUser = await createUser({ role: "admin" });
-  warehouse = await createWarehouse();
-  product = await createProduct({ name: "Test Product" });
+  // tenantId matches the tenant created by createUser factory: "tenant-<userId>"
+  const tenantId = `tenant-${adminUser.id}`;
+  warehouse = await createWarehouse({ tenantId });
+  product = await createProduct({ name: "Test Product", tenantId });
   mockAuthNone();
 });
 
@@ -60,7 +62,7 @@ beforeEach(async () => {
 
 /** Confirm a document via route + flush fire-and-forget effects */
 async function confirmDoc(docId: string) {
-  mockAuthUser(adminUser);
+  mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
   const req = createTestRequest(
     `/api/accounting/documents/${docId}/confirm`,
     { method: "POST" }

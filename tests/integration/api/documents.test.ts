@@ -146,8 +146,8 @@ describe("API: Documents CRUD", () => {
 
     it("should filter by status", async () => {
       mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
-      await createDocument({ type: "stock_receipt", status: "draft" });
-      await createDocument({ type: "stock_receipt", status: "confirmed", confirmedAt: new Date() });
+      await createDocument({ type: "stock_receipt", status: "draft", tenantId });
+      await createDocument({ type: "stock_receipt", status: "confirmed", confirmedAt: new Date(), tenantId });
 
       const req = createTestRequest("/api/accounting/documents", {
         query: { status: "draft" },
@@ -241,6 +241,7 @@ describe("API: Documents CRUD", () => {
         type: "stock_receipt",
         status: "confirmed",
         confirmedAt: new Date(),
+        tenantId,
       });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}`, {
@@ -260,7 +261,7 @@ describe("API: Documents CRUD", () => {
   describe("DELETE /api/accounting/documents/[id]", () => {
     it("should delete a draft document", async () => {
       mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
-      const doc = await createDocument({ type: "stock_receipt" });
+      const doc = await createDocument({ type: "stock_receipt", tenantId });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}`, {
         method: "DELETE",
@@ -280,6 +281,7 @@ describe("API: Documents CRUD", () => {
         type: "stock_receipt",
         status: "confirmed",
         confirmedAt: new Date(),
+        tenantId,
       });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}`, {
@@ -319,6 +321,7 @@ describe("API: Documents CRUD", () => {
         type: "stock_receipt",
         status: "confirmed",
         confirmedAt: new Date(),
+        tenantId,
       });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}/confirm`, {
@@ -395,7 +398,7 @@ describe("API: Documents CRUD", () => {
 
     it("should reject cancelling a draft document", async () => {
       mockAuthUser({ ...adminUser, tenantId: getTenantId(adminUser.id) });
-      const doc = await createDocument({ type: "stock_receipt", status: "draft" });
+      const doc = await createDocument({ type: "stock_receipt", status: "draft", tenantId });
 
       const req = createTestRequest(`/api/accounting/documents/${doc.id}/cancel`, {
         method: "POST",

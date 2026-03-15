@@ -6,7 +6,7 @@ import { createProductSchema, queryProductsSchema } from "@/lib/modules/accounti
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("products:read");
+    const session = await requirePermission("products:read");
 
     const query = parseQuery(request, queryProductsSchema);
     const { search, categoryId, active, published, hasDiscount, variantStatus, sortBy } = query;
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const page = query.page || 1;
     const limit = query.limit || 50;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { tenantId: session.tenantId };
     if (search) {
       where.OR = [
         { name: { contains: search } },

@@ -20,9 +20,11 @@ describe("API: inventory_count flow", () => {
 
   beforeEach(async () => {
     adminUser = await createUser({ role: "admin" });
-    warehouse = await createWarehouse({ name: "Склад инвентаризации" });
-    product = await createProduct({ name: "Товар А" });
-    product2 = await createProduct({ name: "Товар Б" });
+    // tenantId matches the tenant created by createUser factory: "tenant-<userId>"
+    const tenantId = `tenant-${adminUser.id}`;
+    warehouse = await createWarehouse({ name: "Склад инвентаризации", tenantId });
+    product = await createProduct({ name: "Товар А", tenantId });
+    product2 = await createProduct({ name: "Товар Б", tenantId });
     mockAuthNone();
   });
 
@@ -49,7 +51,7 @@ describe("API: inventory_count flow", () => {
   }
 
   async function confirmDoc(docId: string) {
-    mockAuthUser(adminUser);
+    mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
     const req = createTestRequest(`/api/accounting/documents/${docId}/confirm`, {
       method: "POST",
     });
@@ -177,7 +179,7 @@ describe("API: inventory_count flow", () => {
     it("rejects if warehouseId is null", async () => {
       // Cannot use createDocument factory (it always assigns a warehouse),
       // so create directly via db and then clear warehouseId
-      const docBase = await createDocument({ type: "inventory_count" });
+      const docBase = await createDocument({ type: "inventory_count", tenantId: `tenant-${adminUser.id}` });
       const db = getTestDb();
       const doc = await db.document.update({
         where: { id: docBase.id },
@@ -279,7 +281,7 @@ describe("API: inventory_count flow", () => {
 
   describe("cancel confirmed inventory_count", () => {
     it("cancel sets status = 'cancelled'", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
       const doc = await createDocument({
         type: "inventory_count",
         status: "confirmed",
@@ -299,7 +301,7 @@ describe("API: inventory_count flow", () => {
     });
 
     it("cancel does NOT create reversing StockMovements (affectsStock = false for inventory_count)", async () => {
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
       const doc = await createDocument({
         type: "inventory_count",
         status: "confirmed",
@@ -326,7 +328,7 @@ describe("API: inventory_count flow", () => {
       ]);
       await confirmDoc(doc.id); // creates linked write_off
 
-      mockAuthUser(adminUser);
+      mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
       const cancelReq = createTestRequest(`/api/accounting/documents/${doc.id}/cancel`, {
         method: "POST",
       });

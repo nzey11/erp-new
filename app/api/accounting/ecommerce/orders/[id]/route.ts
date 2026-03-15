@@ -21,7 +21,7 @@ export async function PUT(
     const data = await parseBody(request, updateOrderStatusSchema);
 
     // Load document to validate the transition before applying
-    const doc = await db.document.findUnique({ where: { id }, select: { type: true, status: true } });
+    const doc = await db.document.findUnique({ where: { id }, select: { type: true, status: true, tenantId: true } });
     if (!doc) {
       return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
     }
@@ -95,7 +95,8 @@ export async function PUT(
     } else if (data.status === "confirmed") {
       // Use proper confirm flow: stock movements, outbox, handlers
       const session = await getAuthSession();
-      await confirmDocumentTransactional(id, session?.username ?? null);
+      // R1-09: extract tenantId from the pre-loaded document
+      await confirmDocumentTransactional(id, session?.username ?? null, doc.tenantId);
     } else {
       // Unknown or unsupported status
       // Note: 'draft' is not reachable via state machine from any status

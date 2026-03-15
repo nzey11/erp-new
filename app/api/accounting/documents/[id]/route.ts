@@ -9,11 +9,11 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("documents:read");
+    const session = await requirePermission("documents:read");
     const { id } = await params;
 
-    const document = await db.document.findUnique({
-      where: { id },
+    const document = await db.document.findFirst({
+      where: { id, tenantId: session.tenantId },
       include: {
         items: {
           include: {
@@ -56,12 +56,12 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("documents:write");
+    const session = await requirePermission("documents:write");
     const { id } = await params;
     const data = await parseBody(request, updateDocumentSchema);
 
-    // Only draft documents can be edited
-    const existing = await db.document.findUnique({ where: { id } });
+    // Only draft documents can be edited; findFirst enforces tenant ownership
+    const existing = await db.document.findFirst({ where: { id, tenantId: session.tenantId } });
     if (!existing) {
       return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
     }
@@ -140,10 +140,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("documents:write");
+    const session = await requirePermission("documents:write");
     const { id } = await params;
 
-    const doc = await db.document.findUnique({ where: { id } });
+    const doc = await db.document.findFirst({ where: { id, tenantId: session.tenantId } });
     if (!doc) {
       return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
     }

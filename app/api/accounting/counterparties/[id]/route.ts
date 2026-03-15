@@ -9,11 +9,11 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("counterparties:read");
+    const session = await requirePermission("counterparties:read");
     const { id } = await params;
 
-    const counterparty = await db.counterparty.findUnique({
-      where: { id },
+    const counterparty = await db.counterparty.findFirst({
+      where: { id, tenantId: session.tenantId },
       include: {
         balance: true,
         interactions: { orderBy: { createdAt: "desc" }, take: 20 },
@@ -34,9 +34,14 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("counterparties:write");
+    const session = await requirePermission("counterparties:write");
     const { id } = await params;
     const data = await parseBody(request, updateCounterpartySchema);
+
+    const owned = await db.counterparty.findFirst({ where: { id, tenantId: session.tenantId } });
+    if (!owned) {
+      return NextResponse.json({ error: "Контрагент не найден" }, { status: 404 });
+    }
 
     const updateData: Record<string, unknown> = {};
     if (data.type !== undefined) updateData.type = data.type;
@@ -69,8 +74,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("counterparties:write");
+    const session = await requirePermission("counterparties:write");
     const { id } = await params;
+
+    const owned = await db.counterparty.findFirst({ where: { id, tenantId: session.tenantId } });
+    if (!owned) {
+      return NextResponse.json({ error: "Контрагент не найден" }, { status: 404 });
+    }
 
     await db.counterparty.update({
       where: { id },

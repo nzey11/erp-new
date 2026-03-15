@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
-import { getAuthSession } from "@/lib/shared/auth";
 import { bulkConfirmDocuments } from "@/lib/modules/accounting/services/document-bulk-confirm.service";
 
 /**
@@ -32,9 +31,9 @@ import { bulkConfirmDocuments } from "@/lib/modules/accounting/services/document
 export async function POST(request: NextRequest) {
   try {
     // Auth & permission
-    await requirePermission("documents:confirm");
-    const session = await getAuthSession();
-    const actor = session?.username ?? null;
+    const session = await requirePermission("documents:confirm");
+    const actor = session.username ?? null;
+    const tenantId = session.tenantId;
 
     // Parse & validate input
     const body = (await request.json()) as { ids?: unknown };
@@ -48,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Delegate to application service
-    const result = await bulkConfirmDocuments({ ids, actor });
+    const result = await bulkConfirmDocuments({ ids, actor, tenantId });
 
     return NextResponse.json(result);
   } catch (error) {
