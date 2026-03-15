@@ -14,22 +14,22 @@ ALTER TABLE "Document" DROP CONSTRAINT "Document_tenantId_fkey";
 ALTER TABLE "Product" DROP CONSTRAINT "Product_tenantId_fkey";
 
 -- DropIndex
-DROP INDEX "Document_one_stock_receipt_per_inventory_idx";
+DROP INDEX IF EXISTS "Document_one_stock_receipt_per_inventory_idx";
 
 -- DropIndex
-DROP INDEX "Document_one_write_off_per_inventory_idx";
+DROP INDEX IF EXISTS "Document_one_write_off_per_inventory_idx";
 
 -- DropIndex
-DROP INDEX "Product_tenantId_sku_key";
+DROP INDEX IF EXISTS "Product_tenantId_sku_key";
 
 -- DropIndex
-DROP INDEX "ProductVariant_tenantId_sku_key";
+DROP INDEX IF EXISTS "ProductVariant_tenantId_sku_key";
 
 -- DropIndex
-DROP INDEX "StockMovement_unique_no_variant_idx";
+DROP INDEX IF EXISTS "StockMovement_unique_no_variant_idx";
 
 -- DropIndex
-DROP INDEX "StockMovement_unique_with_variant_idx";
+DROP INDEX IF EXISTS "StockMovement_unique_with_variant_idx";
 
 -- AlterTable
 ALTER TABLE "Document" ALTER COLUMN "tenantId" SET NOT NULL;
