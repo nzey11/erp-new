@@ -9,11 +9,11 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("products:read");
+    const session = await requirePermission("products:read");
     const { id } = await params;
 
     const product = await db.product.findUnique({
-      where: { id },
+      where: { id, tenantId: session.tenantId },
       include: {
         unit: true,
         category: true,
@@ -45,7 +45,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("products:write");
+    const session = await requirePermission("products:write");
     const { id } = await params;
     const data = await parseBody(request, updateProductSchema);
     const {
@@ -54,6 +54,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
       seoTitle, seoDescription, seoKeywords, slug,
       publishedToStore,
     } = data;
+
+    // Tenant gate: ensure product belongs to the authenticated tenant
+    const existing = await db.product.findUnique({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+    if (!existing) {
+      return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+    }
 
     // P2-01: product.update + outbox event are atomic — both inside one transaction.
     // purchasePrice and salePrice updates remain outside (their own events: P2-02).
@@ -127,8 +133,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
-    await requirePermission("products:write");
+    const session = await requirePermission("products:write");
     const { id } = await params;
+
+    // Tenant gate: ensure product belongs to the authenticated tenant
+    const existing = await db.product.findUnique({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+    if (!existing) {
+      return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
+    }
 
     await db.product.update({
       where: { id },

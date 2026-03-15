@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
 import {
@@ -12,6 +13,12 @@ export async function POST(_request: NextRequest, { params }: Params) {
   try {
     const session = await requirePermission("documents:confirm");
     const { id } = await params;
+
+    // Tenant gate: ensure document belongs to the authenticated tenant
+    const doc = await db.document.findUnique({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+    if (!doc) {
+      return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
+    }
 
     // Confirm document + write outbox event atomically
     // Worker will process the event and call handlers (balance, journal, payment)
