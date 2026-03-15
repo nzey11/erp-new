@@ -65,8 +65,8 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Push schema to test database
-        run: npx prisma db push
+      - name: Apply migrations to test database
+        run: npx prisma migrate deploy
 
       # R3-05: Run tenant isolation verification gates on every PR.
       # Each script exits 1 on failure, which blocks the CI job and therefore blocks merge.
