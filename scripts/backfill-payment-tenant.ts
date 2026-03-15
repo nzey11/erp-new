@@ -22,22 +22,40 @@ async function backfillPaymentTenant() {
   // Since tenantId is NOT NULL, we can only verify FK integrity
   console.log("\nVerifying FK integrity...");
 
-  const paymentsWithInvalidTenant = await db.payment.findMany({
-    where: {
-      tenant: null,
-    },
-    select: {
-      id: true,
-      tenantId: true,
-    },
+  // Get all distinct tenantIds from Payment
+  const paymentTenantIds = await db.payment.findMany({
+    distinct: ["tenantId"],
+    select: { tenantId: true },
   });
 
-  if (paymentsWithInvalidTenant.length > 0) {
-    console.error(`ERROR: Found ${paymentsWithInvalidTenant.length} payments with invalid tenantId references:`);
-    for (const p of paymentsWithInvalidTenant.slice(0, 10)) {
-      console.error(`  - Payment ${p.id}: tenantId=${p.tenantId}`);
+  const distinctTenantIds = paymentTenantIds
+    .map((p) => p.tenantId)
+    .filter((id): id is string => id !== null && id !== undefined && id !== "");
+
+  console.log(`  Found ${distinctTenantIds.length} distinct tenantId values in Payment`);
+
+  if (distinctTenantIds.length > 0) {
+    // Check each tenantId exists in Tenant table
+    const invalidTenantIds: string[] = [];
+
+    for (const tenantId of distinctTenantIds) {
+      const tenant = await db.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true },
+      });
+
+      if (!tenant) {
+        invalidTenantIds.push(tenantId);
+      }
     }
-    process.exit(1);
+
+    if (invalidTenantIds.length > 0) {
+      console.error(`ERROR: Found ${invalidTenantIds.length} payments with invalid tenantId references:`);
+      for (const id of invalidTenantIds.slice(0, 10)) {
+        console.error(`  - tenantId=${id}`);
+      }
+      process.exit(1);
+    }
   }
 
   console.log("✅ All Payment rows have valid tenantId (schema-enforced NOT NULL)");
