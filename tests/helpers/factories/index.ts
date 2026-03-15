@@ -26,7 +26,7 @@ export {
   createDocumentWithItems,
   createPriceList,
   seedTestAccounts,
-  seedCompanySettings,
+  seedTenantSettings,
   seedReportAccounts,
 } from "./accounting";
 

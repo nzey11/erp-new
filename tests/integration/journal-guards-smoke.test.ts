@@ -25,15 +25,20 @@ import {
   createProduct,
   createWarehouse,
   seedTestAccounts,
-  seedCompanySettings,
+  seedTenantSettings,
+  createTenant,
 } from "../helpers/factories";
 
 let accountIds: Record<string, string>;
 
 describe("Block 3 Safety Patch — Smoke Tests", () => {
+  let testTenantId: string;
+
   beforeAll(async () => {
     accountIds = await seedTestAccounts();
-    await seedCompanySettings(accountIds);
+    const tenant = await createTenant({ id: "test-guards-smoke-tenant" });
+    testTenantId = tenant.id;
+    await seedTenantSettings(testTenantId, accountIds);
   });
 
   describe("Critical Guard Behaviors", () => {

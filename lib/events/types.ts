@@ -24,6 +24,7 @@ export interface DocumentConfirmedEvent {
     readonly totalAmount: number;
     readonly confirmedAt: Date;
     readonly confirmedBy: string | null;
+    readonly tenantId: string;
   };
 }
 

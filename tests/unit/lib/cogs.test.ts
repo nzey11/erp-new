@@ -23,7 +23,8 @@ import {
   createWarehouse,
   createStockRecord,
   seedTestAccounts,
-  seedCompanySettings,
+  seedTenantSettings,
+  createTenant,
 } from "../../helpers/factories";
 import { cleanDatabase } from "../../helpers/test-db";
 
@@ -157,11 +158,14 @@ describe("calculateCogsForShipment", () => {
 
 describe("getCogsFromLedger", () => {
   let accountIds: Record<string, string>;
+  let testTenantId: string;
 
   beforeEach(async () => {
     await cleanDatabase();
     accountIds = await seedTestAccounts();
-    await seedCompanySettings(accountIds);
+    const tenant = await createTenant({ id: "test-cogs-ledger-tenant" });
+    testTenantId = tenant.id;
+    await seedTenantSettings(testTenantId, accountIds);
   });
 
   it("returns 0 when no entries exist in period", async () => {

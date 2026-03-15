@@ -4,12 +4,14 @@ import { requireAuth, requirePermission, handleAuthError } from "@/lib/shared/au
 
 export async function GET() {
   try {
-    await requireAuth();
+    const session = await requireAuth();
 
-    let settings = await db.companySettings.findFirst();
+    let settings = await db.tenantSettings.findUnique({
+      where: { tenantId: session.tenantId },
+    });
     if (!settings) {
-      settings = await db.companySettings.create({
-        data: { name: "Моя компания" },
+      settings = await db.tenantSettings.create({
+        data: { tenantId: session.tenantId, name: "Моя компания" },
       });
     }
 
@@ -21,7 +23,7 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    await requirePermission("settings:write");
+    const session = await requirePermission("settings:write");
 
     const body = await request.json() as {
       name?: string;
@@ -33,11 +35,13 @@ export async function PUT(request: NextRequest) {
       fiscalYearStartMonth?: number;
     };
 
-    let settings = await db.companySettings.findFirst();
+    let settings = await db.tenantSettings.findUnique({
+      where: { tenantId: session.tenantId },
+    });
 
     if (settings) {
-      settings = await db.companySettings.update({
-        where: { id: settings.id },
+      settings = await db.tenantSettings.update({
+        where: { tenantId: session.tenantId },
         data: {
           name: body.name ?? settings.name,
           inn: body.inn ?? settings.inn,
@@ -47,8 +51,8 @@ export async function PUT(request: NextRequest) {
         },
       });
     } else {
-      settings = await db.companySettings.create({
-        data: { name: body.name ?? "Моя компания", inn: body.inn, kpp: body.kpp, ogrn: body.ogrn },
+      settings = await db.tenantSettings.create({
+        data: { tenantId: session.tenantId, name: body.name ?? "Моя компания", inn: body.inn, kpp: body.kpp, ogrn: body.ogrn },
       });
     }
 

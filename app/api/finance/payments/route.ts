@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
-import { requireAuth } from "@/lib/shared/authorization";
+import { requireAuth, requirePermission } from "@/lib/shared/authorization";
 import { z } from "zod";
 import { autoPostPayment } from "@/lib/modules/accounting/finance/journal";
+import { handleAuthError } from "@/lib/shared/authorization";
 
 const createPaymentSchema = z.object({
   type: z.enum(["income", "expense"]),
@@ -25,7 +26,7 @@ async function getNextPaymentNumber(): Promise<string> {
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth();
+    const session = await requirePermission("payments:read");
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const categoryId = searchParams.get("categoryId");
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "50");
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { tenantId: session.tenantId };
     if (type) where.type = type;
     if (categoryId) where.categoryId = categoryId;
     if (counterpartyId) where.counterpartyId = counterpartyId;
@@ -67,14 +68,14 @@ export async function GET(request: NextRequest) {
     const expenseTotal = expenseAgg._sum.amount ?? 0;
 
     return NextResponse.json({ payments, total, page, limit, incomeTotal, expenseTotal, netCashFlow: incomeTotal - expenseTotal });
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return handleAuthError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth();
+    const session = await requirePermission("payments:write");
     const body = await request.json();
     const data = createPaymentSchema.parse(body);
 
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
         paymentMethod: data.paymentMethod,
         date: data.date ? new Date(data.date) : new Date(),
         description: data.description ?? null,
+        tenantId: session.tenantId,
       },
       include: {
         category: { select: { id: true, name: true, type: true } },
@@ -107,6 +109,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid data", details: error.flatten() }, { status: 400 });
     }
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return handleAuthError(error);
   }
 }

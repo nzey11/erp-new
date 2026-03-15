@@ -332,6 +332,7 @@ export async function confirmDocumentTransactional(
           totalAmount: updated.totalAmount,
           confirmedAt,
           confirmedBy: actor,
+          tenantId: updated.tenantId,
         },
       },
       "Document",
@@ -437,30 +438,59 @@ export async function cancelDocumentTransactional(
     } as CancelledDocumentResult;
   }
 
-  // Update document status to cancelled
-  const cancelled = await db.document.update({
-    where: { id: documentId },
-    data: {
-      status: "cancelled",
-      cancelledAt: new Date(),
-    },
-    include: {
-      items: { include: { product: { select: { id: true, name: true, sku: true } } } },
-      warehouse: { select: { id: true, name: true } },
-      targetWarehouse: { select: { id: true, name: true } },
-      counterparty: { select: { id: true, name: true } },
-    },
+  // Atomic transaction: document status update + reversing stock movements
+  const cancelled = await db.$transaction(async (tx) => {
+    // Update document status to cancelled
+    const updated = await tx.document.update({
+      where: { id: documentId },
+      data: {
+        status: "cancelled",
+        cancelledAt: new Date(),
+      },
+      include: {
+        items: { include: { product: { select: { id: true, name: true, sku: true } } } },
+        warehouse: { select: { id: true, name: true } },
+        targetWarehouse: { select: { id: true, name: true } },
+        counterparty: { select: { id: true, name: true } },
+      },
+    });
+
+    // Create reversing stock movements (idempotent)
+    if (affectsStock(doc.type)) {
+      const alreadyReversed = await tx.stockMovement.count({
+        where: { reversesDocumentId: documentId },
+      }) > 0;
+
+      if (!alreadyReversed) {
+        const originalMovements = await tx.stockMovement.findMany({
+          where: { documentId, isReversing: false },
+        });
+
+        if (originalMovements.length > 0) {
+          const reversingMovements = originalMovements.map((m) => ({
+            documentId,
+            productId: m.productId,
+            warehouseId: m.warehouseId,
+            variantId: m.variantId,
+            quantity: -m.quantity,
+            cost: m.cost,
+            totalCost: -m.totalCost,
+            type: m.type,
+            isReversing: true,
+            reversesDocumentId: documentId,
+          }));
+
+          await tx.stockMovement.createMany({
+            data: reversingMovements,
+          });
+        }
+      }
+    }
+
+    return updated;
   });
 
-  // Create reversing stock movements (idempotent)
-  if (affectsStock(doc.type)) {
-    const alreadyReversed = await hasReversingMovements(documentId);
-    if (!alreadyReversed) {
-      await createReversingMovements(documentId);
-    }
-  }
-
-  // Recalculate counterparty balance
+  // Recalculate counterparty balance (outside transaction per requirements)
   if (affectsBalance(doc.type) && doc.counterpartyId) {
     await recalculateBalance(doc.counterpartyId);
   }

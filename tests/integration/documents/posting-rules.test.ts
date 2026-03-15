@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   seedTestAccounts,
-  seedCompanySettings,
+  seedTenantSettings,
   createDocument,
   createDocumentItem,
   createCounterparty,
   createWarehouse,
   createProduct,
+  createTenant,
 } from "../../helpers/factories";
 import { getTestDb } from "../../helpers/test-db";
 import { buildPostingLines, resolvePostingAccounts } from "@/lib/modules/accounting/finance/posting-rules";
@@ -15,29 +16,13 @@ import { buildPostingLines, resolvePostingAccounts } from "@/lib/modules/account
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Seed chart of accounts + company settings for a given tax regime */
+/** Seed chart of accounts + tenant settings for a given tax regime */
 async function seedAccounting(taxRegime: "usn_income" | "osno" = "usn_income") {
   const accountIds = await seedTestAccounts();
-  const db = getTestDb();
-  // cleanDatabase() (setup.ts) already deleted companySettings before each test
-  const settings = await db.companySettings.create({
-    data: {
-      name: "Test Company",
-      taxRegime,
-      vatRate: 20,
-      usnRate: 6,
-      initialCapital: 0,
-      fiscalYearStartMonth: 1,
-      cashAccountId: accountIds["50"],
-      bankAccountId: accountIds["51"],
-      inventoryAccountId: accountIds["41.1"],
-      supplierAccountId: accountIds["60"],
-      customerAccountId: accountIds["62"],
-      salesAccountId: accountIds["90.1"],
-      cogsAccountId: accountIds["90.2"],
-    },
-  });
-  return { accountIds, settings };
+  // Create a test tenant and seed TenantSettings with the requested tax regime
+  const tenant = await createTenant({ id: `test-tax-${taxRegime}` });
+  const settings = await seedTenantSettings(tenant.id, accountIds, { taxRegime });
+  return { accountIds, settings, tenantId: tenant.id };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,12 +30,14 @@ async function seedAccounting(taxRegime: "usn_income" | "osno" = "usn_income") {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("buildPostingLines — USN (no VAT)", () => {
+  let taxCtx: Awaited<ReturnType<typeof seedAccounting>>;
+
   beforeEach(async () => {
-    await seedAccounting("usn_income");
+    taxCtx = await seedAccounting("usn_income");
   });
 
   it("incoming_shipment → single line Дт 41.1 Кт 60 (full amount, no VAT split)", async () => {
-    const doc = await createDocument({ type: "incoming_shipment", totalAmount: 1200 });
+    const doc = await createDocument({ type: "incoming_shipment", totalAmount: 1200, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -62,8 +49,8 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("outgoing_shipment → Дт 62 Кт 90.1 (revenue) + Дт 90.2 Кт 41.1 (COGS = 0 when no avg cost)", async () => {
-    const doc = await createDocument({ type: "outgoing_shipment", totalAmount: 5000 });
-    const product = await createProduct();
+    const doc = await createDocument({ type: "outgoing_shipment", totalAmount: 5000, tenantId: taxCtx.tenantId });
+    const product = await createProduct({ tenantId: taxCtx.tenantId });
     await createDocumentItem(doc.id, product.id, { quantity: 5, price: 1000 });
 
     const lines = await buildPostingLines(doc.id);
@@ -79,7 +66,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("incoming_payment → Дт 51 Кт 62", async () => {
-    const doc = await createDocument({ type: "incoming_payment", totalAmount: 3000 });
+    const doc = await createDocument({ type: "incoming_payment", totalAmount: 3000, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -90,7 +77,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("outgoing_payment → Дт 60 Кт 51", async () => {
-    const doc = await createDocument({ type: "outgoing_payment", totalAmount: 2500 });
+    const doc = await createDocument({ type: "outgoing_payment", totalAmount: 2500, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -101,7 +88,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("customer_return → Дт 41.1 Кт 62", async () => {
-    const doc = await createDocument({ type: "customer_return", totalAmount: 800 });
+    const doc = await createDocument({ type: "customer_return", totalAmount: 800, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -112,7 +99,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("supplier_return → Дт 60 Кт 41.1", async () => {
-    const doc = await createDocument({ type: "supplier_return", totalAmount: 600 });
+    const doc = await createDocument({ type: "supplier_return", totalAmount: 600, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -122,7 +109,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("stock_receipt → Дт 41.1 Кт 91.1 (surplus posting)", async () => {
-    const doc = await createDocument({ type: "stock_receipt", totalAmount: 400 });
+    const doc = await createDocument({ type: "stock_receipt", totalAmount: 400, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -133,7 +120,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("write_off → Дт 94 Кт 41.1 (shortage posting)", async () => {
-    const doc = await createDocument({ type: "write_off", totalAmount: 300 });
+    const doc = await createDocument({ type: "write_off", totalAmount: 300, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -144,7 +131,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("inventory_count → returns null (no posting at confirm stage)", async () => {
-    const doc = await createDocument({ type: "inventory_count", totalAmount: 0 });
+    const doc = await createDocument({ type: "inventory_count", totalAmount: 0, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -152,7 +139,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("purchase_order → returns null (no posting at draft stage)", async () => {
-    const doc = await createDocument({ type: "purchase_order", totalAmount: 0 });
+    const doc = await createDocument({ type: "purchase_order", totalAmount: 0, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -160,7 +147,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
   });
 
   it("sales_order → returns null", async () => {
-    const doc = await createDocument({ type: "sales_order", totalAmount: 0 });
+    const doc = await createDocument({ type: "sales_order", totalAmount: 0, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -169,7 +156,7 @@ describe("buildPostingLines — USN (no VAT)", () => {
 
   it("zero-amount lines are filtered out", async () => {
     // A doc with totalAmount = 0 → amount = 0 → filtered
-    const doc = await createDocument({ type: "write_off", totalAmount: 0 });
+    const doc = await createDocument({ type: "write_off", totalAmount: 0, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -188,13 +175,15 @@ describe("buildPostingLines — USN (no VAT)", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("buildPostingLines — ОСНО (with VAT 20%)", () => {
+  let taxCtx: Awaited<ReturnType<typeof seedAccounting>>;
+
   beforeEach(async () => {
-    await seedAccounting("osno");
+    taxCtx = await seedAccounting("osno");
   });
 
   it("incoming_shipment → splits into Дт 41.1 Кт 60 (ex-VAT) + Дт 19 Кт 60 (VAT)", async () => {
     // totalAmount = 1200 includes 20% VAT: net = 1000, VAT = 200
-    const doc = await createDocument({ type: "incoming_shipment", totalAmount: 1200 });
+    const doc = await createDocument({ type: "incoming_shipment", totalAmount: 1200, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -212,8 +201,8 @@ describe("buildPostingLines — ОСНО (with VAT 20%)", () => {
   });
 
   it("outgoing_shipment → revenue + COGS + VAT line Дт 90.3 Кт 68.02", async () => {
-    const doc = await createDocument({ type: "outgoing_shipment", totalAmount: 1200 });
-    const product = await createProduct();
+    const doc = await createDocument({ type: "outgoing_shipment", totalAmount: 1200, tenantId: taxCtx.tenantId });
+    const product = await createProduct({ tenantId: taxCtx.tenantId });
     await createDocumentItem(doc.id, product.id, { quantity: 1, price: 1200 });
 
     const lines = await buildPostingLines(doc.id);
@@ -230,7 +219,7 @@ describe("buildPostingLines — ОСНО (with VAT 20%)", () => {
   });
 
   it("incoming_payment — no VAT line even on ОСНО (payments don't split)", async () => {
-    const doc = await createDocument({ type: "incoming_payment", totalAmount: 5000 });
+    const doc = await createDocument({ type: "incoming_payment", totalAmount: 5000, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
@@ -245,8 +234,10 @@ describe("buildPostingLines — ОСНО (with VAT 20%)", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("resolvePostingAccounts", () => {
+  let taxCtx: Awaited<ReturnType<typeof seedAccounting>>;
+
   beforeEach(async () => {
-    await seedAccounting("usn_income");
+    taxCtx = await seedAccounting("usn_income");
   });
 
   it("resolves account codes to DB IDs", async () => {

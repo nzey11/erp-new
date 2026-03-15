@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/shared/db";
-import { requireAuth } from "@/lib/shared/authorization";
+import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { reverseEntry } from "@/lib/modules/accounting/finance/journal";
 import { z } from "zod";
 
@@ -18,12 +18,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAuth();
+    const session = await requirePermission("payments:write");
     const { id } = await params;
     const body = await request.json();
     const data = updatePaymentSchema.parse(body);
 
-    const existing = await db.payment.findUnique({ where: { id } });
+    const existing = await db.payment.findFirst({ where: { id, tenantId: session.tenantId } });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -95,7 +95,7 @@ export async function PATCH(
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid data", details: error.flatten() }, { status: 400 });
     }
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return handleAuthError(error);
   }
 }
 
@@ -104,10 +104,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAuth();
+    const session = await requirePermission("payments:write");
     const { id } = await params;
 
-    const existing = await db.payment.findUnique({ where: { id } });
+    const existing = await db.payment.findFirst({ where: { id, tenantId: session.tenantId } });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -122,7 +122,7 @@ export async function DELETE(
 
     await db.payment.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (error) {
+    return handleAuthError(error);
   }
 }

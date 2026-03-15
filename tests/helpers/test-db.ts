@@ -16,7 +16,7 @@ export async function cleanDatabase(): Promise<void> {
   // Journal entries before stock/document tables
   // Note: onDelete: Cascade on LedgerLine.entryId → cascade-deletes LedgerLine rows
   await db.journalEntry.deleteMany();
-  await db.companySettings.deleteMany();
+  // Note: CompanySettings is deprecated; TenantSettings is cleaned below with Tenant cascade
   await db.stockMovement.deleteMany(); // Stock movements before document items
   await db.documentItem.deleteMany();
   await db.document.deleteMany();

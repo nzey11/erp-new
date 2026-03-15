@@ -22,7 +22,7 @@ import {
   createDocument,
   createDocumentItem,
   seedReportAccounts,
-  seedCompanySettings,
+  seedTenantSettings,
 } from "../helpers/factories";
 import {
   createTestRequest,
@@ -49,10 +49,10 @@ let product: Awaited<ReturnType<typeof createProduct>>;
 beforeEach(async () => {
   await cleanDatabase();
   const accountIds = await seedReportAccounts();
-  await seedCompanySettings(accountIds);
   adminUser = await createUser({ role: "admin" });
   // tenantId matches the tenant created by createUser factory: "tenant-<userId>"
   const tenantId = `tenant-${adminUser.id}`;
+  await seedTenantSettings(tenantId, accountIds);
   warehouse = await createWarehouse({ tenantId });
   product = await createProduct({ name: "Test Product", tenantId });
   mockAuthNone();

@@ -33,18 +33,26 @@ export async function getOrCreateCounterparty(
     return customer.counterpartyId;
   }
 
-  const { counterparty } = await createCounterpartyWithParty({
-    tenantId,
-    type: "customer",
-    name: customer.name || `Клиент Telegram`,
-    phone: customer.phone,
-    email: customer.email,
-    notes: `Telegram: @${customer.telegramUsername || customer.telegramId}`,
-  });
+  // Atomic transaction: Counterparty creation + Customer link
+  const { counterparty } = await db.$transaction(async (tx) => {
+    const result = await createCounterpartyWithParty(
+      {
+        tenantId,
+        type: "customer",
+        name: customer.name || `Клиент Telegram`,
+        phone: customer.phone,
+        email: customer.email,
+        notes: `Telegram: @${customer.telegramUsername || customer.telegramId}`,
+      },
+      tx
+    );
 
-  await db.customer.update({
-    where: { id: customerId },
-    data: { counterpartyId: counterparty.id },
+    await tx.customer.update({
+      where: { id: customerId },
+      data: { counterpartyId: result.counterparty.id },
+    });
+
+    return result;
   });
 
   return counterparty.id;

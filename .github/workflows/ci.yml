@@ -78,6 +78,7 @@ jobs:
           npx tsx scripts/verify-product-tenant-gate.ts
           npx tsx scripts/verify-document-tenant-gate.ts
           npx tsx scripts/verify-counterparty-tenant-gate.ts
+          npx tsx scripts/verify-payment-tenant-gate.ts
 
       # R3-05: SKU distribution audit (informational but fails on blocking issues).
       # Exits 1 if within-tenant SKU duplicates exist (would break tenant-scoped uniqueness).

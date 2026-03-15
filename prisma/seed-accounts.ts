@@ -151,13 +151,23 @@ async function seedAccounts() {
   console.log("Chart of accounts seeded successfully!");
 }
 
-async function createDefaultCompanySettings() {
-  console.log("Creating default company settings...");
+async function createDefaultTenantSettings() {
+  console.log("Creating default tenant settings...");
 
-  // Check if settings already exist
-  const existing = await db.companySettings.findFirst();
+  // Ensure default tenant exists
+  const defaultTenantId = "default-tenant";
+  const tenant = await db.tenant.upsert({
+    where: { id: defaultTenantId },
+    create: { id: defaultTenantId, name: "Default Tenant", slug: defaultTenantId },
+    update: {},
+  });
+
+  // Check if settings already exist for this tenant
+  const existing = await db.tenantSettings.findUnique({
+    where: { tenantId: tenant.id },
+  });
   if (existing) {
-    console.log("Company settings already exist, skipping...");
+    console.log("Tenant settings already exist, skipping...");
     return existing;
   }
 
@@ -174,8 +184,9 @@ async function createDefaultCompanySettings() {
   const profitAccount = await db.account.findUnique({ where: { code: "99" } });
   const retainedEarningsAccount = await db.account.findUnique({ where: { code: "84" } });
 
-  const settings = await db.companySettings.create({
+  const settings = await db.tenantSettings.create({
     data: {
+      tenantId: tenant.id,
       name: "Моя организация",
       taxRegime: "usn_income",
       vatRate: 20,
@@ -196,13 +207,13 @@ async function createDefaultCompanySettings() {
     },
   });
 
-  console.log("Default company settings created!");
+  console.log("Default tenant settings created!");
   return settings;
 }
 
 async function main() {
   await seedAccounts();
-  await createDefaultCompanySettings();
+  await createDefaultTenantSettings();
 }
 
 main()

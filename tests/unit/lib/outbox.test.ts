@@ -49,6 +49,7 @@ const sampleEvent = {
     totalAmount: 5000,
     confirmedAt: new Date("2026-03-13T10:00:00Z"),
     confirmedBy: "user-1",
+    tenantId: "tenant-1",
   },
 };
 

@@ -28,6 +28,7 @@ function makeConfirmedEvent(documentId = "doc-1"): DocumentConfirmedEvent {
       totalAmount: 5000,
       confirmedAt: new Date("2026-01-01T00:00:00Z"),
       confirmedBy: "user-1",
+      tenantId: "tenant-1",
     },
   };
 }

@@ -50,9 +50,9 @@ async function resolveAccount(code: string): Promise<string> {
   return acc.id;
 }
 
-/** Get company settings (cached per-request is fine for now) */
-async function getSettings() {
-  return db.companySettings.findFirst();
+/** Get tenant settings for posting rules (by tenantId) */
+async function getSettings(tenantId: string) {
+  return db.tenantSettings.findUnique({ where: { tenantId } });
 }
 
 /**
@@ -69,7 +69,7 @@ export async function buildPostingLines(
 
   if (!doc) throw new Error(`Document ${documentId} not found`);
 
-  const settings = await getSettings();
+  const settings = await getSettings(doc.tenantId);
   const isOsno = settings?.taxRegime === "osno";
   const vatRate = settings?.vatRate ?? 20;
 

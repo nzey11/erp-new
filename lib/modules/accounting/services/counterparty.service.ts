@@ -17,6 +17,9 @@ import { db } from "@/lib/shared/db";
 import { resolveParty } from "@/lib/party";
 import type { Counterparty } from "@/lib/generated/prisma/client";
 
+// Type for Prisma transaction client
+export type PrismaTransactionClient = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
 // ---------------------------------------------------------------------------
 // Input types
 // ---------------------------------------------------------------------------
@@ -59,11 +62,16 @@ export interface CreateCounterpartyResult {
  * (guardrail AP-09).
  *
  * @param input - Counterparty fields
+ * @param tx - Optional Prisma transaction client (for composing into larger transactions)
  * @returns The created Counterparty and its resolved Party ID
  */
 export async function createCounterpartyWithParty(
-  input: CreateCounterpartyInput
+  input: CreateCounterpartyInput,
+  tx?: PrismaTransactionClient
 ): Promise<CreateCounterpartyResult> {
+  // Use provided transaction client or global db
+  const prisma = tx ?? db;
+
   // Step 1: Create the Counterparty
   // Note: resolveParty() is not Prisma-transaction-aware (it uses the global db client).
   // We create the Counterparty first, then immediately resolve the Party within
@@ -74,7 +82,7 @@ export async function createCounterpartyWithParty(
   // Future improvement (roadmap P3): make resolveParty() accept a Prisma
   // transaction client so both writes can be in a true atomic transaction.
 
-  const counterparty = await db.counterparty.create({
+  const counterparty = await prisma.counterparty.create({
     data: {
       tenantId: input.tenantId,
       type: input.type,

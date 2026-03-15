@@ -15,7 +15,7 @@ import type { PaymentType } from "@/lib/generated/prisma/client";
 export async function onDocumentConfirmedPayment(
   event: DocumentConfirmedEvent
 ): Promise<void> {
-  const { documentType, documentId, documentNumber, counterpartyId, totalAmount } =
+  const { documentType, documentId, documentNumber, counterpartyId, totalAmount, tenantId } =
     event.payload;
 
   if (documentType !== "incoming_shipment" && documentType !== "outgoing_shipment") {
@@ -61,6 +61,7 @@ export async function onDocumentConfirmedPayment(
       paymentMethod: (doc?.paymentType ?? "bank_transfer") as PaymentType,
       date: new Date(),
       description: `Авто: по документу ${documentNumber}`,
+      tenantId,
     },
   });
 }

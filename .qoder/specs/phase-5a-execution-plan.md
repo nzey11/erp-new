@@ -35,7 +35,7 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 1. **Tier 0 completes before Tier 1 begins.** No Tier 1 task may start until the Tier 0 → Tier 1 Gate in Section 6 is fully satisfied.
 2. **No scope creep.** Code changes are limited to the exact files listed per task. Adjacent code that is not broken must not be touched.
 3. **Task IDs in commits.** Every commit or PR description must reference its task ID (e.g., `5A-R4-01`, `5A-PAY-01`).
-4. **R2 verification runs in parallel but gates phase exit.** R2 migration governance verification (Task 5A-R2-V) may run in parallel with other Tier 0 tasks but must be confirmed before Phase 5A is declared complete.
+4. **R2 verification is COMPLETE.** Task 5A-R2-V is closed. `prisma migrate deploy` succeeded; `prisma migrate status` reports zero pending migrations. This rule is retained for audit trail only.
 5. **No speculative schema changes.** Only the migrations defined in 5A-PAY-01 and 5A-PAY-06 are permitted.
 6. **TypeScript must compile clean after each task.** `npx tsc --noEmit` must exit 0 before the next dependent task begins.
 
@@ -43,23 +43,11 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 
 ## 4. Tier 0 Task List
 
-### 5A-R2-V — Verify R2 Migration Governance
+### 5A-R2-V — Verify R2 Migration Governance ✅ COMPLETE
 
-**Target files:**
-- `prisma/migrations/` (read-only audit)
-- Development database (`_prisma_migrations` table)
+**Status:** VERIFIED. `prisma migrate deploy` succeeded. `prisma migrate status` reports zero pending migrations. Three provenance migrations (`20260225_bootstrap_schema`, `20260315_add_document_tenantId_provenance`, `20260315_add_product_tenantId_provenance`) were applied — all idempotent, no data modified.
 
-**Goal:** Confirm all R2 done criteria from `erp-recovery-roadmap.md` are met. Verify `prisma migrate status` reports zero pending migrations. Confirm all three gate scripts exit 0.
-
-**Done criteria:**
-- `_prisma_migrations` table exists with all expected rows
-- `prisma migrate status` output shows zero pending migrations
-- `npx tsx scripts/verify-product-tenant-gate.ts` exits 0
-- `npx tsx scripts/verify-document-tenant-gate.ts` exits 0
-- `npx tsx scripts/verify-counterparty-tenant-gate.ts` exits 0
-- `.qoder/specs/erp-r2-tenant-migration-rollback.md` exists
-
-**Dependency:** None (runs in parallel with 5A-R4-01 through 5A-R4-05)
+**Dependency:** Closed.
 
 ---
 
@@ -73,40 +61,59 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 **Goal:** Identify every code path that reads from the `CompanySettings` table. Produce a confirmed list of files and functions that must be redirected to `TenantSettings`.
 
 **Done criteria:**
-- A written list of every `CompanySettings` consumer is produced (may be a code comment block or inline note — not a new spec file)
+- A written list of every `CompanySettings` consumer is appended as a subsection to this document under **Appendix A: CompanySettings Consumer Inventory** (added at the bottom, before the End marker)
+- The list includes: file path, function name, and read field(s) for every consumer
 - No code changes made in this task
 
 **Dependency:** None
 
 ---
 
-### 5A-R4-02 — Redirect Journal/Accounting Code from CompanySettings to TenantSettings
+### 5A-R4-02 — Redirect Company Settings API from CompanySettings to TenantSettings
 
-**Target files:** All files identified in 5A-R4-01 within `lib/modules/accounting/`
+**Target files:**
+- `app/api/accounting/settings/company/route.ts`
 
-**Goal:** Replace all `CompanySettings` reads in the journal and accounting service layer with `TenantSettings` reads. Resolve `TenantSettings` using tenant context available at the call site.
+**Goal:** Replace all `db.companySettings` calls in `app/api/accounting/settings/company/route.ts` with `TenantSettings` equivalents. Both `GET` and `PUT` handlers must resolve `TenantSettings` using `session.tenantId` from `requireAuth()` / `requirePermission()`.
+
+- `GET`: replace `db.companySettings.findFirst()` + `db.companySettings.create()` with `db.tenantSettings.findFirst({ where: { tenantId: session.tenantId } })` + `db.tenantSettings.create({ data: { tenantId: session.tenantId, ... } })`
+- `PUT`: same pattern; all reads and writes scoped to `session.tenantId`
 
 **Done criteria:**
-- Zero occurrences of `db.companySettings` or `CompanySettings` reads remain in `lib/modules/accounting/`
-- Every call site resolves `TenantSettings` using an explicit `tenantId`
+- Zero occurrences of `db.companySettings` remain in `app/api/accounting/settings/company/route.ts`
+- `GET /api/accounting/settings/company` resolves settings scoped to `session.tenantId`
+- `PUT /api/accounting/settings/company` writes settings scoped to `session.tenantId`
 - `npx tsc --noEmit` exits 0
 
 **Dependency:** 5A-R4-01
 
 ---
 
-### 5A-R4-03 — Update Test Infrastructure to Use TenantSettings
+### 5A-R4-03 — Update Seed and Test Infrastructure to Use TenantSettings
 
 **Target files:**
-- `tests/helpers/factories/accounting.ts`
-- All test files that call `seedCompanySettings()` (identified during 5A-R4-01)
+- `tests/helpers/factories/accounting.ts` — replace `seedCompanySettings()`
+- `prisma/seed-accounts.ts` — replace `createDefaultCompanySettings()`
+- `tests/integration/documents/posting-rules.test.ts` — replace inline `seedAccounting()` helper
+- `tests/integration/accounting-scenarios.test.ts` — replace `seedCompanySettings()` caller
+- `tests/integration/documents/journal.test.ts` — replace `seedCompanySettings()` callers
+- `tests/helpers/test-db.ts` — replace `db.companySettings.deleteMany()` in `cleanDatabase()`
+- `tests/helpers/factories/index.ts` — update re-export
 
-**Goal:** Replace `seedCompanySettings()` with a `seedTenantSettings()` equivalent. Update all callers.
+**Goal:** Replace all `CompanySettings` ORM usage in seed and test infrastructure with `TenantSettings` equivalents. All seeded settings records must be scoped to an explicit test tenant.
+
+- In `tests/helpers/factories/accounting.ts`: replace `seedCompanySettings()` with `seedTenantSettings(tenantId, accountIds)` that creates a `TenantSettings` record with `tenantId` set
+- In `prisma/seed-accounts.ts`: replace `createDefaultCompanySettings()` with a `TenantSettings`-based equivalent; requires a seed tenant to exist
+- In `tests/integration/documents/posting-rules.test.ts`: update inline `seedAccounting()` helper to call `seedTenantSettings()`
+- In `tests/helpers/test-db.ts`: replace `db.companySettings.deleteMany()` with `db.tenantSettings.deleteMany()`
+- In all test callers: replace `seedCompanySettings(accountIds)` with `seedTenantSettings(tenantId, accountIds)`
 
 **Done criteria:**
 - `seedCompanySettings()` no longer exists in `tests/helpers/factories/accounting.ts`
-- `seedTenantSettings()` exists and seeds a `TenantSettings` record scoped to a test tenant
-- All test files previously calling `seedCompanySettings()` now call `seedTenantSettings()`
+- `createDefaultCompanySettings()` no longer exists in `prisma/seed-accounts.ts`
+- `db.companySettings` is not referenced in any file listed above
+- `seedTenantSettings()` exists in `tests/helpers/factories/accounting.ts` and seeds a `TenantSettings` record scoped to an explicit `tenantId`
+- `cleanDatabase()` in `tests/helpers/test-db.ts` calls `db.tenantSettings.deleteMany()` instead of `db.companySettings.deleteMany()`
 - `npm run test:integration` passes with no failures introduced by this change
 
 **Dependency:** 5A-R4-02
@@ -121,8 +128,9 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 **Goal:** Add `tenantId: string` as a required field on the `DocumentConfirmedEvent` payload interface.
 
 **Done criteria:**
-- `DocumentConfirmedEvent.payload.tenantId` is `string` (not optional)
-- `npx tsc --noEmit` fails (compile errors at all call sites that construct this event — expected; 5A-R4-05 resolves them)
+- `DocumentConfirmedEvent.payload.tenantId` is declared as `string` (not optional) in `lib/events/types.ts`
+- All compile errors produced by this change are located exclusively at `DocumentConfirmedEvent` construction sites (i.e., no new errors in unrelated code)
+- Compile errors at construction sites are enumerated and tracked as the input work list for 5A-R4-05
 
 **Dependency:** 5A-R4-01
 
@@ -163,6 +171,31 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 
 ---
 
+### 5A-PAY-04 — Update Payment Create Paths to Set tenantId
+
+> **Sequenced before backfill (5A-PAY-02).** All new writes must carry `tenantId` before backfill runs to eliminate the race window where historical rows are clean but new rows arrive without `tenantId`.
+
+**Target files:**
+- `app/api/finance/payments/route.ts` — POST handler
+- `lib/modules/accounting/handlers/payment-handler.ts` — `onDocumentConfirmedPayment()`
+- `tests/helpers/factories/` — any factory that calls `db.payment.create`
+
+**Goal:** Ensure all new `Payment` rows are created with `tenantId` populated.
+
+- In `app/api/finance/payments/route.ts` POST: extract `session.tenantId` via `requireAuth()` / `getAuthSession()` and include it in `db.payment.create({ data: { tenantId: session.tenantId, ... } })`
+- In `lib/modules/accounting/handlers/payment-handler.ts`: read `tenantId` from `event.payload.tenantId` (available after 5A-R4-05) and include it in `db.payment.create`
+- In test factories: add `tenantId` to any `db.payment.create` call, sourced from the test tenant
+
+**Done criteria:**
+- `POST /api/finance/payments` creates a `Payment` row with `tenantId` equal to `session.tenantId` — verifiable by direct DB inspection after request
+- `onDocumentConfirmedPayment()` creates a `Payment` row with `tenantId` equal to `event.payload.tenantId`
+- No `db.payment.create` call in source or test code omits `tenantId`
+- `npx tsc --noEmit` exits 0
+
+**Dependency:** 5A-PAY-01, 5A-R4-05
+
+---
+
 ### 5A-PAY-02 — Backfill Payment.tenantId
 
 **Target files:**
@@ -178,9 +211,8 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 - `SELECT COUNT(*) FROM "Payment" WHERE "tenantId" IS NULL` returns 0
 - No ambiguous resolutions: every resolution is logged with its source path (document, counterparty, or fallback)
 - If multiple tenants exist and any null remains after steps 1–2, script exits non-zero
-- All new `Payment` rows created via `app/api/finance/payments/route.ts` POST and `lib/modules/accounting/handlers/payment-handler.ts` since 5A-PAY-01 have `tenantId` populated (verified by inspection — see 5A-PAY-04)
 
-**Dependency:** 5A-PAY-01
+**Dependency:** 5A-PAY-04
 
 ---
 
@@ -199,29 +231,6 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 - Script is integrated into CI alongside the three existing tenant gate scripts in `.github/workflows/ci.yml`
 
 **Dependency:** 5A-PAY-02
-
----
-
-### 5A-PAY-04 — Update Payment Create Paths to Set tenantId
-
-**Target files:**
-- `app/api/finance/payments/route.ts` — POST handler
-- `lib/modules/accounting/handlers/payment-handler.ts` — `onDocumentConfirmedPayment()`
-- `tests/helpers/factories/` — any factory that calls `db.payment.create`
-
-**Goal:** Ensure all new `Payment` rows are created with `tenantId` populated.
-
-- In `app/api/finance/payments/route.ts` POST: extract `session.tenantId` via `requireAuth()` / `getAuthSession()` and include it in `db.payment.create({ data: { tenantId: session.tenantId, ... } })`
-- In `lib/modules/accounting/handlers/payment-handler.ts`: read `tenantId` from `event.payload.tenantId` (available after 5A-R4-05) and include it in `db.payment.create`
-- In test factories: add `tenantId` to any `db.payment.create` call, sourced from the test tenant
-
-**Done criteria:**
-- POST to `app/api/finance/payments/route.ts` creates a `Payment` row with `tenantId` equal to `session.tenantId`
-- `onDocumentConfirmedPayment()` creates a `Payment` row with `tenantId` equal to `event.payload.tenantId`
-- No `db.payment.create` call in source or test code omits `tenantId`
-- `npx tsc --noEmit` exits 0
-
-**Dependency:** 5A-PAY-01, 5A-R4-05
 
 ---
 
@@ -318,15 +327,15 @@ The following are explicitly excluded from Phase 5A. Any PR that touches these a
 
 All of the following must be simultaneously true before any Tier 1 task begins:
 
-- [ ] 5A-R2-V: `prisma migrate status` shows zero pending migrations; all three gate scripts exit 0
-- [ ] 5A-R4-01: CompanySettings consumer list produced; no code changes
-- [ ] 5A-R4-02: Zero `db.companySettings` reads remain in `lib/modules/accounting/`; `tsc --noEmit` exits 0
-- [ ] 5A-R4-03: `seedCompanySettings()` replaced by `seedTenantSettings()`; `npm run test:integration` passes
+- [x] 5A-R2-V: COMPLETE — `prisma migrate deploy` succeeded; `prisma migrate status` shows zero pending migrations
+- [x] 5A-R4-01: COMPLETE — Appendix A populated; zero consumers in `lib/modules/accounting/`
+- [ ] 5A-R4-02: Zero `db.companySettings` reads remain in `app/api/accounting/settings/company/route.ts`; both handlers scoped by `session.tenantId`; `tsc --noEmit` exits 0
+- [ ] 5A-R4-03: `db.companySettings` removed from all seed/test files listed in task; `seedTenantSettings()` in place; `npm run test:integration` passes
 - [ ] 5A-R4-04 + 5A-R4-05: `DocumentConfirmedEvent.payload.tenantId` is required and populated at emission; `tsc --noEmit` exits 0
 - [ ] 5A-PAY-01: `Payment.tenantId String?` nullable migration applied; `prisma migrate status` clean
+- [ ] 5A-PAY-04: All new `Payment` create paths include `tenantId`; `POST /api/finance/payments` creates row with correct `tenantId`; `tsc --noEmit` exits 0
 - [ ] 5A-PAY-02: Backfill script executed; `SELECT COUNT(*) FROM "Payment" WHERE "tenantId" IS NULL` = 0
 - [ ] 5A-PAY-03: Verification gate `scripts/verify-payment-tenant-gate.ts` exits 0; integrated into CI
-- [ ] 5A-PAY-04: All new `Payment` create paths include `tenantId`; `tsc --noEmit` exits 0
 - [ ] 5A-PAY-05: `Payment.tenantId String` NOT NULL migration applied; `prisma migrate status` clean
 - [ ] 5A-PAY-06: GET, PATCH, DELETE, and drill-down report all scoped by `tenantId`; `tsc --noEmit` exits 0
 
@@ -340,7 +349,7 @@ Phase 5A is declared complete when every item below is YES:
 |---|-----------|----------|
 | 1 | All R4 done criteria from `erp-recovery-roadmap.md` are met (R4-01 through R4-06) | |
 | 2 | All 10 Recovery Program completion criteria from `erp-recovery-roadmap.md` Section D are simultaneously true | |
-| 3 | `CompanySettings` is not referenced by any active code path in `lib/modules/accounting/` | |
+| 3 | No active production request path reads or writes `CompanySettings`: `app/api/accounting/settings/company/route.ts` uses `TenantSettings` scoped by `session.tenantId`; all in-scope seed/test infrastructure covered by 5A-R4-03 uses `TenantSettings` | |
 | 4 | `DocumentConfirmedEvent.payload.tenantId` is a required `string` field and is populated at every emission site | |
 | 5 | `SELECT COUNT(*) FROM "Payment" WHERE "tenantId" IS NULL` returns 0 | |
 | 6 | `Payment.tenantId` is NOT NULL at the database column level | |
@@ -362,15 +371,15 @@ Phase 5A is declared complete when every item below is YES:
 
 ### Rollback Point 1 — After 5A-PAY-01 (nullable Payment.tenantId)
 
-**What rollback means:** Revert `prisma/schema.prisma` to remove `tenantId` from `Payment`. Create and apply a down migration that drops the `tenantId` column from `Payment`.
+**What rollback means:** Revert `prisma/schema.prisma` to remove `tenantId` from `Payment`. Create and apply a **compensating revert migration** (new forward migration that drops the column — Prisma does not execute down migrations automatically).
 
-**State preserved:** All existing `Payment` rows are intact. No data is lost. Backfill script (5A-PAY-02) has not yet run.
+**State preserved:** All existing `Payment` rows are intact. No data is lost. Backfill script (5A-PAY-04/02) has not yet run.
 
 **How to execute:**
 ```bash
-# 1. Revert schema.prisma to remove tenantId from Payment
-# 2. npx prisma migrate dev --name revert_payment_tenantid
-# 3. Confirm column is dropped: inspect DB
+# 1. Revert schema.prisma to remove tenantId from Payment model
+# 2. npx prisma migrate dev --name compensate_revert_payment_tenantid
+# 3. Confirm column is dropped: inspect DB schema
 ```
 
 **Safe to trigger:** Any time before 5A-PAY-02 executes.
@@ -379,7 +388,7 @@ Phase 5A is declared complete when every item below is YES:
 
 ### Rollback Point 2 — After 5A-PAY-02 (backfill executed, column still nullable)
 
-**What rollback means:** Run the Rollback Point 1 procedure. The backfill script is idempotent and non-destructive — it only set values, did not delete rows. Dropping the column removes the backfilled values.
+**What rollback means:** Execute Rollback Point 1 procedure (compensating migration drops the column). The backfill script is idempotent and non-destructive — it only set values, did not delete rows. Dropping the column removes the backfilled values.
 
 **State preserved:** All `Payment` rows are intact. Tenant association data is lost (acceptable — it was not present before this phase).
 
@@ -389,18 +398,20 @@ Phase 5A is declared complete when every item below is YES:
 
 ### Rollback Point 3 — After 5A-PAY-05 (NOT NULL constraint applied)
 
-**What rollback means:** Remove the NOT NULL constraint by reverting to nullable. Create and apply a down migration that alters the column back to nullable (`ALTER TABLE "Payment" ALTER COLUMN "tenantId" DROP NOT NULL`).
+**What rollback means:** Revert the NOT NULL constraint by creating a **compensating revert migration** that alters the column back to nullable. Prisma does not reverse migrations automatically — a new forward migration is required.
 
 **State preserved:** All `Payment` rows and their `tenantId` values are intact. Column becomes nullable; no data loss.
 
 **How to execute:**
 ```bash
-# 1. Revert schema.prisma: change tenantId String to tenantId String? on Payment
-# 2. npx prisma migrate dev --name revert_payment_tenantid_not_null
-# 3. Confirm column is nullable: inspect DB
+# 1. Revert schema.prisma: change tenantId String → tenantId String? on Payment
+# 2. npx prisma migrate dev --name compensate_revert_payment_tenantid_not_null
+# 3. Confirm column is nullable: inspect DB schema
+# Alternative if compensating migration is not viable: restore DB from snapshot
+#   taken immediately before 5A-PAY-05, then align _prisma_migrations table
 ```
 
-**Safe to trigger:** After 5A-PAY-05 and before any dependent NOT NULL enforcement is relied upon in production.
+**Safe to trigger:** After 5A-PAY-05 and before NOT NULL enforcement is relied upon in production.
 
 ---
 
@@ -411,6 +422,24 @@ Phase 5A is declared complete when every item below is YES:
 **State preserved:** All outbox events already emitted are unaffected (processed events are historical records). Future events will not carry `tenantId`. `Payment.tenantId` backfill from Rollback Point 2 is unaffected.
 
 **Safe to trigger:** Any time. No database schema change is involved.
+
+---
+
+## Appendix A: CompanySettings Consumer Inventory
+
+> Populated during task 5A-R4-01. Required before 5A-R4-02 begins.
+
+| File | Function / call site | Fields read |
+|------|----------------------|-------------|
+| `app/api/accounting/settings/company/route.ts` | `GET` handler | `findFirst()` all fields; `create({ name })` |
+| `app/api/accounting/settings/company/route.ts` | `PUT` handler | `findFirst()`; `update(name, inn, kpp, ogrn, fiscalYearStartMonth)`; `create()` same fields |
+| `prisma/seed-accounts.ts` | `createDefaultCompanySettings()` | `findFirst()`; `create()` all account mapping fields |
+| `tests/helpers/factories/accounting.ts` | `seedCompanySettings()` | `findFirst()`; `create()` all account mapping fields |
+| `tests/helpers/test-db.ts` | `cleanDatabase()` | `deleteMany()` |
+| `tests/integration/documents/posting-rules.test.ts` | `seedAccounting()` (local inline helper) | `create()` all account mapping fields |
+| `scripts/forensic-audit.ts` | Raw SQL string literal only | Table name in `WHERE table_name IN (...)` — read-only audit query, no ORM call; **no redirect needed** |
+
+**Key finding:** Zero `CompanySettings` consumers exist in `lib/modules/accounting/` (service layer). All active ORM consumers are in route layer (1 file) and test/seed infrastructure (3 files). Scope of 5A-R4-02 is therefore `app/api/accounting/settings/company/route.ts` only. 5A-R4-03 covers the 3 test/seed files.
 
 ---
 

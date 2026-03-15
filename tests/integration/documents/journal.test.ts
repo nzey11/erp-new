@@ -10,7 +10,7 @@
  * Infrastructure:
  *   - tests/setup.ts runs cleanDatabase() (which now includes journalEntry)
  *     before every test automatically.
- *   - seedTestAccounts() / seedCompanySettings() seed static system data
+ *   - seedTestAccounts() / seedTenantSettings() seed static system data
  *     once per suite in beforeAll — Account rows survive cleanDatabase().
  *
  * Requires: DATABASE_URL → listopt_erp_test (see .env.test)
@@ -32,7 +32,8 @@ import {
   createProduct,
   createWarehouse,
   seedTestAccounts,
-  seedCompanySettings,
+  seedTenantSettings,
+  createTenant,
 } from "../../helpers/factories";
 
 // Account IDs shared across suites (seeded in beforeAll, survive cleanDatabase)
@@ -43,9 +44,13 @@ let accountIds: Record<string, string>;
 // =============================================
 
 describe("Journal — createJournalEntry", () => {
+  let testTenantId: string;
+
   beforeAll(async () => {
     accountIds = await seedTestAccounts();
-    await seedCompanySettings(accountIds);
+    const tenant = await createTenant({ id: "test-journal-tenant" });
+    testTenantId = tenant.id;
+    await seedTenantSettings(testTenantId, accountIds);
   });
 
   // cleanDatabase() runs before each test via tests/setup.ts
@@ -159,11 +164,14 @@ describe("Journal — createJournalEntry", () => {
 describe("Journal — autoPostDocument", () => {
   let warehouse: Awaited<ReturnType<typeof createWarehouse>>;
   let product: Awaited<ReturnType<typeof createProduct>>;
+  let testTenantId: string;
 
   beforeAll(async () => {
-    // Seed system data once — Account and CompanySettings survive cleanDatabase()
+    // Seed system data once — Account and TenantSettings survive cleanDatabase()
     accountIds = await seedTestAccounts();
-    await seedCompanySettings(accountIds);
+    const tenant = await createTenant({ id: "test-autopost-tenant" });
+    testTenantId = tenant.id;
+    await seedTenantSettings(testTenantId, accountIds);
   });
 
   beforeEach(async () => {
@@ -235,9 +243,13 @@ describe("Journal — autoPostDocument", () => {
 // =============================================
 
 describe("Journal — reverseEntry", () => {
+  let testTenantId: string;
+
   beforeAll(async () => {
     accountIds = await seedTestAccounts();
-    await seedCompanySettings(accountIds);
+    const tenant = await createTenant({ id: "test-reverse-tenant" });
+    testTenantId = tenant.id;
+    await seedTenantSettings(testTenantId, accountIds);
   });
 
   it("creates reversal with swapped debit/credit", async () => {
@@ -318,9 +330,13 @@ describe("Journal — reverseEntry", () => {
 // =============================================
 
 describe("Journal — autoPostPayment", () => {
-  beforeAll(async () => {
+  let testTenantId: string;
+
+  beforeEach(async () => {
     accountIds = await seedTestAccounts();
-    await seedCompanySettings(accountIds);
+    const tenant = await createTenant({ id: `test-payment-tenant-${Date.now()}` });
+    testTenantId = tenant.id;
+    await seedTenantSettings(testTenantId, accountIds);
   });
 
   /** Helper: create FinanceCategory + Payment inline */
@@ -348,6 +364,7 @@ describe("Journal — autoPostPayment", () => {
         amount:        opts.amount,
         paymentMethod: opts.paymentMethod,
         date:          new Date(),
+        tenantId:      testTenantId,
       },
     });
 
@@ -435,9 +452,13 @@ describe("Journal — autoPostPayment", () => {
 // =============================================
 
 describe("Journal — Guards", () => {
+  let testTenantId: string;
+
   beforeAll(async () => {
     accountIds = await seedTestAccounts();
-    await seedCompanySettings(accountIds);
+    const tenant = await createTenant({ id: "test-guards-tenant" });
+    testTenantId = tenant.id;
+    await seedTenantSettings(testTenantId, accountIds);
   });
 
   // ---------------------------------------------

@@ -23,7 +23,7 @@ const CATEGORY_DOCUMENT_TYPES: Record<string, DocumentType[]> = {
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("reports:read");
+    const session = await requirePermission("reports:read");
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
       where: {
         type: { in: docTypes },
         status: "confirmed",
+        tenantId: session.tenantId,
         ...dateFilter,
       },
       include: {
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
       const paymentResults = await db.payment.findMany({
         where: {
           type: paymentType,
+          tenantId: session.tenantId,
           ...paymentDateFilter,
         },
         include: {

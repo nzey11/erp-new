@@ -395,20 +395,22 @@ export async function seedTestAccounts(): Promise<Record<string, string>> {
 }
 
 /**
- * Seed CompanySettings for accounting/journal tests.
- * Requires account IDs from seedTestAccounts().
- * Safe to call multiple times — returns existing record if already created.
+ * Seed TenantSettings for accounting/journal tests.
+ * Requires a tenantId (must correspond to an existing Tenant row) and
+ * account IDs from seedTestAccounts().
+ * Safe to call multiple times — upserts TenantSettings by tenantId.
  */
-export async function seedCompanySettings(
-  accountIds: Record<string, string>
+export async function seedTenantSettings(
+  tenantId: string,
+  accountIds: Record<string, string>,
+  opts?: { taxRegime?: "usn_income" | "osno" }
 ) {
-  const existing = await db.companySettings.findFirst();
-  if (existing) return existing;
-
-  return db.companySettings.create({
-    data: {
+  const settings = await db.tenantSettings.upsert({
+    where: { tenantId },
+    create: {
+      tenantId,
       name:                 "Test Company",
-      taxRegime:            TaxRegime.usn_income,
+      taxRegime:            opts?.taxRegime ?? TaxRegime.usn_income,
       vatRate:              20,
       usnRate:              6,
       initialCapital:       0,
@@ -421,7 +423,10 @@ export async function seedCompanySettings(
       salesAccountId:       accountIds["90.1"],
       cogsAccountId:        accountIds["90.2"],
     },
+    update: {},
   });
+
+  return settings;
 }
 
 // =============================================
