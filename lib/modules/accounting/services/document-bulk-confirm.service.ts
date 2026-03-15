@@ -95,7 +95,7 @@ export async function bulkConfirmDocuments(
 
     // Delegate to domain service
     try {
-      await confirmDocumentTransactional(id, actor, tenantId);
+      await confirmDocumentTransactional(id, actor);
       confirmed++;
     } catch (error) {
       if (error instanceof DocumentConfirmError) {

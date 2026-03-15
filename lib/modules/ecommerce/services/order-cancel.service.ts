@@ -49,8 +49,7 @@ export async function cancelOrder(documentId: string, customerId: string): Promi
   }
 
   // Proper cancel flow: reversing movements, balance recalc
-  // R1-10: pass tenantId extracted from the loaded document
-  await cancelDocumentTransactional(documentId, null, document.tenantId); // Customer-initiated, no actor
+  await cancelDocumentTransactional(documentId, null); // Customer-initiated, no actor
 }
 
 /**
@@ -105,8 +104,7 @@ export async function cancelEcommerceOrder(params: {
   }
 
   // Step 2: Proper cancel flow (reversing movements, balance recalc)
-  // R1-10: pass tenantId extracted from the loaded document
-  const result = await cancelDocumentTransactional(documentId, actor, document.tenantId);
+  const result = await cancelDocumentTransactional(documentId, actor);
 
   return result;
 }

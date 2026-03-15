@@ -15,7 +15,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
 
     // Confirm document + write outbox event atomically
     // Worker will process the event and call handlers (balance, journal, payment)
-    const document = await confirmDocumentTransactional(id, session.username ?? null, session.tenantId);
+    const document = await confirmDocumentTransactional(id, session.username ?? null);
 
     return NextResponse.json(document);
   } catch (error) {

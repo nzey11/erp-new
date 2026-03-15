@@ -9,11 +9,11 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
-    const session = await requirePermission("products:read");
+    await requirePermission("products:read");
     const { id } = await params;
 
-    const product = await db.product.findFirst({
-      where: { id, tenantId: session.tenantId },
+    const product = await db.product.findUnique({
+      where: { id },
       include: {
         unit: true,
         category: true,
@@ -45,15 +45,8 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
-    const session = await requirePermission("products:write");
+    await requirePermission("products:write");
     const { id } = await params;
-
-    // R1-03: ownership check — returns 404 for cross-tenant or nonexistent product
-    const owned = await db.product.findFirst({ where: { id, tenantId: session.tenantId } });
-    if (!owned) {
-      return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
-    }
-
     const data = await parseBody(request, updateProductSchema);
     const {
       name, sku, barcode, description, unitId, categoryId, imageUrl, isActive,
@@ -134,14 +127,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
-    const session = await requirePermission("products:write");
+    await requirePermission("products:write");
     const { id } = await params;
-
-    // R1-04: ownership check — returns 404 for cross-tenant or nonexistent product
-    const owned = await db.product.findFirst({ where: { id, tenantId: session.tenantId } });
-    if (!owned) {
-      return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
-    }
 
     await db.product.update({
       where: { id },

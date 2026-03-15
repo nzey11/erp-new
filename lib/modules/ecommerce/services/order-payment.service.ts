@@ -84,8 +84,7 @@ export async function confirmEcommerceOrderPayment(params: {
 
   // Step 2: Proper confirm flow (stock movements, outbox, handlers)
   const confirmedActor = actor ?? "system:webhook";
-  // R1-09: pass tenantId extracted from the loaded document
-  const result = await confirmDocumentTransactional(documentId, confirmedActor, document.tenantId);
+  const result = await confirmDocumentTransactional(documentId, confirmedActor);
 
   // Step 3: Record party activity for CRM timeline
   if (document.counterpartyId) {

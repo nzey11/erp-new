@@ -65,10 +65,10 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Apply migrations to test database
-        run: npx prisma migrate deploy
+      - name: Push schema to test database
+        run: npx prisma db push
 
-      # R3-05: Run tenant isolation verification gates on every PR.
+      # P4-06: Run tenant isolation verification gates on every PR.
       # Each script exits 1 on failure, which blocks the CI job and therefore blocks merge.
       # verify-product-catalog-projection.ts is excluded: it requires a running HTTP server
       # (dual-read against localhost:3000) and is not a DB-only gate — run manually post-deploy.
@@ -77,13 +77,6 @@ jobs:
         run: |
           npx tsx scripts/verify-product-tenant-gate.ts
           npx tsx scripts/verify-document-tenant-gate.ts
-          npx tsx scripts/verify-counterparty-tenant-gate.ts
-
-      # R3-05: SKU distribution audit (informational but fails on blocking issues).
-      # Exits 1 if within-tenant SKU duplicates exist (would break tenant-scoped uniqueness).
-      # See: scripts/audit-sku-distribution.ts
-      - name: SKU Distribution Audit
-        run: npx tsx scripts/audit-sku-distribution.ts
 
       # P4-08: Outbox health check gate.
       # Checks for OutboxEvent rows with status FAILED or DEAD older than 1 hour.

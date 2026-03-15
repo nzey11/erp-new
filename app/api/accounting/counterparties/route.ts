@@ -10,12 +10,12 @@ import { createCounterpartyWithParty } from "@/lib/modules/accounting/services/c
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requirePermission("counterparties:read");
+    await requirePermission("counterparties:read");
 
     const query = parseQuery(request, queryCounterpartiesSchema);
     const { search, type, active, page = 1, limit = 50 } = query;
 
-    const where: Record<string, unknown> = { tenantId: session.tenantId };
+    const where: Record<string, unknown> = {};
     if (search) {
       where.OR = [
         { name: { contains: search } },

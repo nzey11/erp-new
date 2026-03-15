@@ -226,7 +226,7 @@ export interface ConfirmedDocumentResult {
  * Confirm a document with strict operation ordering.
  *
  * Critical sequence (status update is intentionally LAST):
- *   1. Load document + items (tenant-scoped)
+ *   1. Load document + items
  *   2. Validate (guards, stock availability)
  *   3. Create immutable stock movements  (idempotent)
  *   4. Update StockRecord projections    (idempotent full-recalc)
@@ -242,12 +242,11 @@ export interface ConfirmedDocumentResult {
  */
 export async function confirmDocumentTransactional(
   documentId: string,
-  actor: string | null,
-  tenantId: string
+  actor: string | null
 ): Promise<ConfirmedDocumentResult> {
-  // R1-09: tenant-scoped load — returns null for nonexistent or foreign-tenant documents
-  const doc = await db.document.findFirst({
-    where: { id: documentId, tenantId },
+  // Load document for validation
+  const doc = await db.document.findUnique({
+    where: { id: documentId },
     include: { items: true },
   });
 
@@ -404,12 +403,10 @@ export interface CancelledDocumentResult {
  */
 export async function cancelDocumentTransactional(
   documentId: string,
-  actor: string | null,
-  tenantId: string
+  actor: string | null
 ): Promise<CancelledDocumentResult> {
-  // R1-10: tenant-scoped load — returns null for nonexistent or foreign-tenant documents
-  const doc = await db.document.findFirst({
-    where: { id: documentId, tenantId },
+  const doc = await db.document.findUnique({
+    where: { id: documentId },
     include: { items: true },
   });
 
