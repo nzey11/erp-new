@@ -1,4 +1,4 @@
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { generateProfitLoss as _generateProfitLoss } from "./reports/profit-loss";
 import { generateBalanceSheet as _generateBalanceSheet } from "./reports/balance-sheet";
 import { generateCashFlow as _generateCashFlow } from "./reports/cash-flow";
@@ -32,5 +32,5 @@ export async function getBalance(counterpartyId: string) {
   const record = await db.counterpartyBalance.findUnique({
     where: { counterpartyId },
   });
-  return record?.balanceRub ?? 0;
+  return toNumber(record?.balanceRub ?? 0);
 }

@@ -54,9 +54,10 @@ export async function getStockBalances(
   const skip = (page - 1) * pageSize;
 
   // Build StockRecord where clause
+  // NOTE: intentionally no quantity > 0 filter — we show zero-balance records too
+  // (products that had movements but are now empty should still appear in the stock view)
   const where: Record<string, unknown> = {
     warehouse: { tenantId },
-    quantity: { not: 0 },
   };
 
   if (filters.warehouseId) {

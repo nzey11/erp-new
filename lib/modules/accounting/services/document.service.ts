@@ -27,6 +27,8 @@ export interface CreateDocumentData {
   description?: string | null
   notes?: string | null
   linkedDocumentId?: string | null
+  /** Pre-set total for payment documents that carry no line items. */
+  totalAmount?: number
   items?: Array<{
     productId: string
     quantity?: number
@@ -132,6 +134,7 @@ export const DocumentService = {
       notes,
       items,
       linkedDocumentId,
+      totalAmount: presetTotal,
     } = data
 
     // Validate tenant consistency with warehouse
@@ -162,7 +165,9 @@ export const DocumentService = {
       }
     }
 
-    // Calculate total from items
+    // Calculate total from items.
+    // For payment-type documents (incoming_payment / outgoing_payment) that have no items,
+    // fall back to presetTotal supplied by the caller (e.g. copied from parent document).
     let totalAmount = 0
     const itemsData = (items || []).map((item) => {
       const total = (item.quantity || 0) * (item.price || 0)
@@ -180,6 +185,10 @@ export const DocumentService = {
             : null,
       }
     })
+    // Use presetTotal when no items contributed to the total
+    if (totalAmount === 0 && presetTotal != null && presetTotal > 0) {
+      totalAmount = presetTotal
+    }
 
     const document = await db.document.create({
       data: {

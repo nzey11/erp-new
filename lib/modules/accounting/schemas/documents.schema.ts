@@ -25,6 +25,9 @@ export const createDocumentSchema = z.object({
   notes: z.string().nullable().optional(),
   items: z.array(documentItemSchema).optional().default([]),
   linkedDocumentId: z.string().nullable().optional(),
+  // Optional pre-set total for payment documents (incoming_payment / outgoing_payment)
+  // that carry no line items. When provided and items is empty, totalAmount is used as-is.
+  totalAmount: z.coerce.number().nonnegative().optional(),
 });
 
 // PUT /api/accounting/documents/[id]

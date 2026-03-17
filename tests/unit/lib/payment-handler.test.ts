@@ -45,7 +45,7 @@ const { onDocumentConfirmedPayment } = await import(
 
 function makeShipmentEvent(
   documentId = "doc-shipment-1",
-  documentType: "incoming_shipment" | "outgoing_shipment" = "incoming_shipment"
+  documentType: "incoming_payment" | "outgoing_payment" | "incoming_shipment" | "outgoing_shipment" = "incoming_payment"
 ): DocumentConfirmedEvent {
   return {
     type: "DocumentConfirmed",
@@ -101,7 +101,7 @@ describe("onDocumentConfirmedPayment — idempotency", () => {
     expect(mockDb.payment.create).not.toHaveBeenCalled();
   });
 
-  it("does NOT create a payment for non-shipment document types", async () => {
+  it("does NOT create a payment for non-payment document types (e.g. stock_receipt)", async () => {
     const nonShipmentEvent: DocumentConfirmedEvent = {
       ...makeShipmentEvent("doc-2"),
       payload: {

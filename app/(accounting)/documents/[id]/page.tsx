@@ -337,6 +337,9 @@ export default function DocumentDetailPage() {
           quantity: item.quantity,
           price: item.price,
         })),
+        // For payment documents carry the parent's total so the new doc
+        // reflects the correct amount to pay/receive (BUG-2 fix)
+        ...(isPayment && { totalAmount: doc.totalAmount }),
       };
 
       const res = await csrfFetch("/api/accounting/documents", {

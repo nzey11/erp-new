@@ -23,7 +23,7 @@ export const StockService = {
     const warehouseId = params.warehouseId
     const productId = params.productId
     const search = params.search || ''
-    const nonZero = params.nonZero !== 'false'
+    const nonZero = params.nonZero === 'true' // default false — show all records including zero-balance
     const enhanced = params.enhanced === 'true'
 
     const where: Record<string, unknown> = {
@@ -31,6 +31,7 @@ export const StockService = {
     }
     if (warehouseId) where.warehouseId = warehouseId
     if (productId) where.productId = productId
+    // Only apply quantity filter when nonZero is explicitly requested
     if (nonZero) where.quantity = { not: 0 }
     if (search) {
       where.product = {

@@ -102,6 +102,11 @@ export async function createCounterpartyWithParty(
     },
   });
 
+  // Create initial balance record (required by foreign key + balance display logic)
+  await prisma.counterpartyBalance.create({
+    data: { counterpartyId: counterparty.id, balanceRub: 0 },
+  });
+
   // Step 2: Create (or find existing) Party mirror — compensate on failure
   let partyId: string;
   let partyIsNew: boolean;
@@ -111,7 +116,7 @@ export async function createCounterpartyWithParty(
     partyId = resolved.partyId;
     partyIsNew = resolved.isNew;
   } catch (partyError) {
-    // Compensating action: remove the orphaned Counterparty
+    // Compensating action: remove the orphaned Counterparty (balance cascades via FK)
     await db.counterparty.delete({ where: { id: counterparty.id } }).catch(() => {
       // If cleanup also fails, log but rethrow the original error
     });
