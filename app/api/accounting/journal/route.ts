@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
 import { getJournalEntries } from "@/lib/modules/accounting/finance/journal";
+import { toNumber } from "@/lib/shared/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +35,21 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-    return NextResponse.json(result);
+    // Serialize Decimal fields to plain numbers to avoid Client Component errors
+    const serialized = {
+      ...result,
+      entries: result.entries.map((entry) => ({
+        ...entry,
+        lines: entry.lines.map((line) => ({
+          ...line,
+          debit: toNumber(line.debit),
+          credit: toNumber(line.credit),
+          amountRub: toNumber(line.amountRub),
+        })),
+      })),
+    };
+
+    return NextResponse.json(serialized);
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;

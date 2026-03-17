@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
+import { toNumber } from "@/lib/modules/accounting";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, parseQuery, validationError } from "@/lib/shared/validation";
 import { createProductSchema, queryProductsSchema } from "@/lib/modules/accounting/schemas/products.schema";
+import { createOutboxEvent } from "@/lib/events/outbox";
+import { ProductService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,94 +16,10 @@ export async function GET(request: NextRequest) {
     const page = query.page || 1;
     const limit = query.limit || 50;
 
-    const where: Record<string, unknown> = { tenantId: session.tenantId };
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { sku: { contains: search } },
-        { barcode: { contains: search } },
-      ];
-    }
-    if (categoryId) where.categoryId = categoryId;
-    if (active) where.isActive = active === "true";
-    if (published) where.publishedToStore = published === "true";
-    if (hasDiscount === "true") {
-      where.discounts = {
-        some: {
-          isActive: true,
-          OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-        },
-      };
-    }
-    // Variant status filter
-    if (variantStatus === "masters") {
-      // Products that have child variants but are not variants themselves
-      where.masterProductId = null;
-      where.childVariants = { some: { isActive: true } };
-    } else if (variantStatus === "variants") {
-      // Products that are variants of another product
-      where.masterProductId = { not: null };
-    } else if (variantStatus === "unlinked") {
-      // Products with no variant relationships at all
-      where.masterProductId = null;
-      where.childVariants = { none: {} };
-    }
-
-    // Build orderBy based on sortBy field
-    let orderBy: Record<string, string> | Record<string, Record<string, string>> = { name: sortOrder };
-    if (sortBy === "sku") {
-      orderBy = { sku: sortOrder };
-    } else if (sortBy === "createdAt") {
-      orderBy = { createdAt: sortOrder };
-    }
-    // Note: purchasePrice and salePrice sorting requires post-processing since they come from relations
-
-    const [products, total] = await Promise.all([
-      db.product.findMany({
-        where,
-        include: {
-          unit: { select: { id: true, shortName: true } },
-          category: { select: { id: true, name: true } },
-          purchasePrices: {
-            where: { isActive: true },
-            orderBy: { validFrom: "desc" },
-            take: 1,
-            select: { price: true },
-          },
-          salePrices: {
-            where: { isActive: true, priceListId: null }, // Only default prices, not from price lists
-            orderBy: { validFrom: "desc" },
-            take: 1,
-            select: { price: true },
-          },
-          discounts: {
-            where: {
-              isActive: true,
-              OR: [
-                { validTo: null },
-                { validTo: { gte: new Date() } },
-              ],
-            },
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-          _count: {
-            select: {
-              variantLinksFrom: { where: { isActive: true } },
-              childVariants: { where: { isActive: true } },
-            },
-          },
-          // Variant hierarchy
-          masterProduct: {
-            select: { id: true, name: true },
-          },
-        },
-        orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      db.product.count({ where }),
-    ]);
+    const { products, total } = await ProductService.list(
+      { search, categoryId, active, published, hasDiscount, variantStatus, sortBy, sortOrder, page, limit },
+      session.tenantId
+    );
 
     let enriched = products.map((p) => {
       const salePrice = p.salePrices[0]?.price ? toNumber(p.salePrices[0].price) : null;
@@ -121,13 +39,12 @@ export async function GET(request: NextRequest) {
         discountValidTo: discount?.validTo ?? null,
         discountName: discount?.name ?? null,
         variantCount: p._count.variantLinksFrom,
-        // Variant hierarchy fields
         childVariantCount: p._count.childVariants,
         masterProduct: p.masterProduct,
       };
     });
 
-    // Post-process sort for price fields (cannot sort by relation in Prisma directly)
+    // Post-process sort for price fields
     if (sortBy === "purchasePrice" || sortBy === "salePrice") {
       enriched = enriched.sort((a, b) => {
         const aVal = toNumber(a[sortBy] as unknown as number | null) ?? (sortOrder === "asc" ? Infinity : -Infinity);
@@ -160,12 +77,7 @@ export async function POST(request: NextRequest) {
     let finalSku = sku || null;
     if (autoSku && !sku) {
       const prefix = (typeof autoSku === "string" && autoSku) || "SKU";
-      const counter = await db.skuCounter.upsert({
-        where: { prefix },
-        create: { prefix, lastNumber: 1 },
-        update: { lastNumber: { increment: 1 } },
-      });
-      finalSku = `${prefix}-${String(counter.lastNumber).padStart(6, "0")}`;
+      finalSku = await ProductService.generateSku(prefix);
     }
 
     // Auto-generate slug from name if not provided
@@ -183,9 +95,10 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, '')
       || null;
 
-    const product = await db.product.create({
-      data: {
-        tenantId: session.tenantId, // Tenant-scoped product
+    // P-create: product.create + outbox event are atomic — both inside one transaction.
+    const product = await ProductService.$transaction(async (tx) => {
+      const created = await ProductService.create({
+        tenantId: session.tenantId,
         name,
         sku: finalSku,
         barcode: barcode || null,
@@ -198,19 +111,18 @@ export async function POST(request: NextRequest) {
         seoKeywords: seoKeywords || null,
         slug: finalSlug,
         ...(publishedToStore !== undefined && { publishedToStore: !!publishedToStore }),
-        ...(purchasePrice != null && purchasePrice !== "" && {
-          purchasePrices: { create: { price: parseFloat(String(purchasePrice)), isActive: true } },
-        }),
-        ...(salePrice != null && salePrice !== "" && {
-          salePrices: { create: { price: parseFloat(String(salePrice)), isActive: true } },
-        }),
-      },
-      include: {
-        unit: { select: { id: true, shortName: true } },
-        category: { select: { id: true, name: true } },
-        purchasePrices: { where: { isActive: true }, orderBy: { validFrom: "desc" }, take: 1, select: { price: true } },
-        salePrices: { where: { isActive: true, priceListId: null }, orderBy: { validFrom: "desc" }, take: 1, select: { price: true } },
-      },
+        purchasePrice,
+        salePrice,
+      }, tx);
+
+      await createOutboxEvent(
+        tx,
+        { type: "product.updated", occurredAt: new Date(), payload: { productId: created.id } },
+        "Product",
+        created.id
+      );
+
+      return created;
     });
 
     return NextResponse.json({

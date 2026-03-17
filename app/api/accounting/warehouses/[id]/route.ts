@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateWarehouseSchema } from "@/lib/modules/accounting/schemas/warehouses.schema";
+import { WarehouseService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -11,21 +11,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const session = await requirePermission("warehouses:read");
     const { id } = await params;
 
-    const warehouse = await db.warehouse.findFirst({
-      where: {
-        id,
-        tenantId: session.tenantId, // Tenant scoping
-      },
-      include: {
-        stockRecords: {
-          where: { quantity: { not: 0 } },
-          include: {
-            product: { select: { id: true, name: true, sku: true } },
-          },
-          orderBy: { product: { name: "asc" } },
-        },
-      },
-    });
+    const warehouse = await WarehouseService.findById(id, session.tenantId);
 
     if (!warehouse) {
       return NextResponse.json({ error: "Склад не найден" }, { status: 404 });
@@ -44,9 +30,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const data = await parseBody(request, updateWarehouseSchema);
 
     // Verify warehouse belongs to tenant
-    const existing = await db.warehouse.findFirst({
-      where: { id, tenantId: session.tenantId },
-    });
+    const existing = await WarehouseService.getTenantGate(id, session.tenantId);
 
     if (!existing) {
       return NextResponse.json({ error: "Склад не найден" }, { status: 404 });
@@ -58,10 +42,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (data.responsibleName !== undefined) updateData.responsibleName = data.responsibleName || null;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-    const warehouse = await db.warehouse.update({
-      where: { id },
-      data: updateData,
-    });
+    const warehouse = await WarehouseService.update(id, updateData);
 
     return NextResponse.json(warehouse);
   } catch (error) {
@@ -77,18 +58,13 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     const { id } = await params;
 
     // Verify warehouse belongs to tenant
-    const existing = await db.warehouse.findFirst({
-      where: { id, tenantId: session.tenantId },
-    });
+    const existing = await WarehouseService.getTenantGate(id, session.tenantId);
 
     if (!existing) {
       return NextResponse.json({ error: "Склад не найден" }, { status: 404 });
     }
 
-    await db.warehouse.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    await WarehouseService.softDelete(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
+import { ReportService, toNumber } from "@/lib/modules/accounting";
 
 function getMonthRange(monthsAgo: number): { from: Date; to: Date } {
   const now = new Date();
@@ -16,28 +16,9 @@ export async function GET() {
     const current = getMonthRange(0);
     const prev = getMonthRange(1);
 
-    const [curSales, prevSales, curPurchases, prevPurchases] = await Promise.all([
-      db.document.aggregate({
-        where: { type: "outgoing_shipment", status: "confirmed", date: { gte: current.from, lte: current.to } },
-        _sum: { totalAmount: true },
-        _count: { id: true },
-      }),
-      db.document.aggregate({
-        where: { type: "outgoing_shipment", status: "confirmed", date: { gte: prev.from, lte: prev.to } },
-        _sum: { totalAmount: true },
-        _count: { id: true },
-      }),
-      db.document.aggregate({
-        where: { type: "incoming_shipment", status: "confirmed", date: { gte: current.from, lte: current.to } },
-        _sum: { totalAmount: true },
-        _count: { id: true },
-      }),
-      db.document.aggregate({
-        where: { type: "incoming_shipment", status: "confirmed", date: { gte: prev.from, lte: prev.to } },
-        _sum: { totalAmount: true },
-        _count: { id: true },
-      }),
-    ]);
+    const [curSales, prevSales, curPurchases, prevPurchases] = await ReportService.getDashboardTrends(
+      current.from, current.to, prev.from, prev.to
+    );
 
     const calcDelta = (cur: number, prev: number) =>
       prev > 0 ? ((cur - prev) / prev) * 100 : null;

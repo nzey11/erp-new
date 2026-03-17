@@ -252,6 +252,72 @@ export async function autoPostDocument(
 }
 
 /**
+ * Reverse (сторно) a journal entry — transactional version.
+ * Accepts a Prisma transaction client. Use this inside db.$transaction().
+ *
+ * Idempotent: if entry is already reversed, returns null (no-op).
+ * Bypasses isManual guard and restricted-account guard — for document
+ * lifecycle operations only.
+ *
+ * @internal For document cancellation only — not for manual use.
+ */
+export async function reverseEntryWithTx(
+  tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
+  entryId: string,
+  options?: {
+    date?: Date;
+    description?: string;
+    createdBy?: string;
+  }
+) {
+  const entry = await tx.journalEntry.findUnique({
+    where: { id: entryId },
+    include: { lines: true },
+  });
+
+  if (!entry) return null; // Entry deleted — skip
+  if (entry.isReversed) return null; // Already reversed — idempotent
+
+  const number = await getNextJournalNumber();
+
+  // Swap debit/credit on every ledger line
+  const reversalLines = entry.lines.map((line) => ({
+    accountId: line.accountId,
+    debit: line.credit,
+    credit: line.debit,
+    counterpartyId: line.counterpartyId ?? null,
+    warehouseId: line.warehouseId ?? null,
+    productId: line.productId ?? null,
+    currency: line.currency ?? "RUB",
+    amountRub: line.amountRub,
+  }));
+
+  const reversal = await tx.journalEntry.create({
+    data: {
+      number,
+      date: options?.date ?? new Date(),
+      description: options?.description ?? `Сторно проводки ${entry.number}`,
+      sourceType: entry.sourceType,
+      sourceId: entry.sourceId,
+      sourceNumber: entry.sourceNumber,
+      isManual: true,
+      createdBy: options?.createdBy ?? null,
+      reversedById: entryId,
+      lines: { create: reversalLines },
+    },
+    include: { lines: true },
+  });
+
+  // Mark original as reversed
+  await tx.journalEntry.update({
+    where: { id: entryId },
+    data: { isReversed: true },
+  });
+
+  return reversal;
+}
+
+/**
  * Reverse (сторно) a journal entry.
  * Creates a new entry with swapped debit/credit.
  *

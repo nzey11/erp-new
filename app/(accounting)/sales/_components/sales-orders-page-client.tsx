@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { App, Dropdown, Button } from "antd";
 import { MoreOutlined } from "@ant-design/icons";
 import { ERPTable } from "@/components/erp/erp-table";
@@ -35,9 +35,14 @@ export function SalesOrdersPageClient({
 }: SalesOrdersPageClientProps) {
   const { message } = App.useApp();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Selection state for bulk operations
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  // Mounted guard — prevents antd pagination Select hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Server data — never frozen in useState
   const data = initialData;
@@ -108,6 +113,19 @@ export function SalesOrdersPageClient({
 
   const columns = getSalesOrderColumns();
 
+  const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (sortField) {
+      params.set("sort", sortField);
+      params.set("order", sortOrder === "ascend" ? "asc" : "desc");
+    } else {
+      params.delete("sort");
+      params.delete("order");
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const rowActions = (row: SalesOrderRow) => {
     const items = getSalesOrderRowActions(row, handleRowAction);
     return (
@@ -125,16 +143,20 @@ export function SalesOrdersPageClient({
 
       <ERPToolbar selectedCount={selectedRowKeys.length} />
 
-      <ERPTable<SalesOrderRow>
-        data={data.items}
-        columns={columns}
-        pagination={pagination}
-        selection={selection}
-        rowActions={rowActions}
-        rowKey="id"
-        sticky
-        emptyText="Заказы покупателей не найдены"
-      />
+      {/* Table — rendered only after mount to avoid antd pagination Select hydration mismatch */}
+      {mounted && (
+        <ERPTable<SalesOrderRow>
+          data={data.items}
+          columns={columns}
+          pagination={pagination}
+          selection={selection}
+          rowActions={rowActions}
+          rowKey="id"
+          sticky
+          emptyText="Заказы покупателей не найдены"
+          onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+        />
+      )}
     </div>
   );
 }

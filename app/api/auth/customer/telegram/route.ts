@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { db } from "@/lib/shared/db";
 import { signCustomerSession, CUSTOMER_COOKIE_NAME, CUSTOMER_SESSION_MAX_AGE } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { telegramAuthSchema } from "@/lib/shared/schemas/auth.schema";
 import { logger } from "@/lib/shared/logger";
 import { resolveParty } from "@/lib/domain/party";
+import { CustomerService } from "@/lib/modules/ecommerce";
 
 /** Get bot token from DB or env */
 async function getBotToken(): Promise<string | null> {
-  const integration = await db.integration.findUnique({
-    where: { type: "telegram" },
-  });
+  const integration = await CustomerService.findTelegramIntegration();
   
   if (integration?.isEnabled) {
     const settings = integration.settings as Record<string, unknown>;
@@ -66,28 +64,21 @@ export async function POST(request: NextRequest) {
     const name = [first_name, last_name].filter(Boolean).join(" ") || undefined;
 
     // Find or create customer
-    let customer = await db.customer.findUnique({
-      where: { telegramId },
-    });
+    let customer = await CustomerService.findByTelegramId(telegramId);
 
     let isNewCustomer = false;
 
     if (customer) {
       // Update info on each login
-      customer = await db.customer.update({
-        where: { id: customer.id },
-        data: {
-          telegramUsername: username || undefined,
-          name: name || customer.name,
-        },
+      customer = await CustomerService.updateTelegramInfo(customer.id, {
+        telegramUsername: username || undefined,
+        name: name || customer.name || undefined,
       });
     } else {
-      customer = await db.customer.create({
-        data: {
-          telegramId,
-          telegramUsername: username || undefined,
-          name,
-        },
+      customer = await CustomerService.create({
+        telegramId,
+        telegramUsername: username || undefined,
+        name,
       });
       isNewCustomer = true;
     }

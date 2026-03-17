@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { logger } from "@/lib/shared/logger";
+import { CustomerService } from "@/lib/modules/ecommerce";
 
 /** GET /api/integrations/telegram - Get public Telegram settings (no auth required) */
 export async function GET() {
   try {
-    const integration = await db.integration.findUnique({
-      where: { type: "telegram" },
-    });
+    const integration = await CustomerService.findTelegramIntegration();
 
     if (!integration || !integration.isEnabled) {
       return NextResponse.json({ enabled: false });

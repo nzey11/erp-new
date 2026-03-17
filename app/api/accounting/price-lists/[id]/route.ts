@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updatePriceListSchema } from "@/lib/modules/accounting/schemas/prices.schema";
+import { PriceService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -11,18 +11,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     await requirePermission("pricing:read");
     const { id } = await params;
 
-    const priceList = await db.priceList.findUnique({
-      where: { id },
-      include: {
-        prices: {
-          where: { isActive: true },
-          include: {
-            product: { select: { id: true, name: true, sku: true } },
-          },
-          orderBy: { product: { name: "asc" } },
-        },
-      },
-    });
+    const priceList = await PriceService.findPriceListById(id);
 
     if (!priceList) {
       return NextResponse.json({ error: "Прайс-лист не найден" }, { status: 404 });
@@ -41,13 +30,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
     
     const data = await parseBody(request, updatePriceListSchema);
 
-    const priceList = await db.priceList.update({
-      where: { id },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.description !== undefined && { description: data.description || null }),
-        ...(data.isActive !== undefined && { isActive: data.isActive }),
-      },
+    const priceList = await PriceService.updatePriceList(id, {
+      name: data.name,
+      description: data.description,
+      isActive: data.isActive,
     });
 
     return NextResponse.json(priceList);
@@ -63,10 +49,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     await requirePermission("pricing:write");
     const { id } = await params;
 
-    await db.priceList.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    await PriceService.softDeletePriceList(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

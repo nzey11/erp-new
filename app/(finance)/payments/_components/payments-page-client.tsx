@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { App, Popconfirm, Button } from "antd";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { App, Modal, Button } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/shared/page-header";
 import type { PaymentFilters } from "@/lib/domain/payments/parse-filters";
@@ -38,7 +38,9 @@ export function PaymentsPageClient({
   initialFilters,
 }: PaymentsPageClientProps) {
   const { message } = App.useApp();
+  const [modal, modalContextHolder] = Modal.useModal();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -48,6 +50,10 @@ export function PaymentsPageClient({
 
   // Selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  // Mounted guard — prevents antd pagination Select hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Data comes directly from server props — router.refresh() triggers re-render with new initialData
   const data = initialData;
@@ -70,14 +76,23 @@ export function PaymentsPageClient({
     setDrawerOpen(true);
   };
 
-  const handleDelete = async (row: PaymentWithRelations) => {
-    try {
-      await deletePayment(row.id);
-      message.success("Платёж удалён");
-      router.refresh();
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : "Ошибка удаления");
-    }
+  const handleDelete = (row: PaymentWithRelations) => {
+    modal.confirm({
+      title: "Удалить платёж?",
+      content: `Платёж ${row.number} будет удалён безвозвратно.`,
+      okText: "Удалить",
+      okType: "danger",
+      cancelText: "Отмена",
+      onOk: async () => {
+        try {
+          await deletePayment(row.id);
+          message.success("Платёж удалён");
+          router.refresh();
+        } catch (error) {
+          message.error(error instanceof Error ? error.message : "Ошибка удаления");
+        }
+      },
+    });
   };
 
   const handleDrawerClose = () => {
@@ -118,22 +133,24 @@ export function PaymentsPageClient({
 
   const columns = getPaymentColumns();
 
+  const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (sortField) {
+      params.set("sort", sortField);
+      params.set("order", sortOrder === "ascend" ? "asc" : "desc");
+    } else {
+      params.delete("sort");
+      params.delete("order");
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const rowActions = (row: PaymentWithRelations) => (
     <PaymentRowActions
       row={row}
       onEdit={handleEdit}
-      onDelete={(r) => (
-        <Popconfirm
-          title="Удалить платёж?"
-          description={`Платёж ${r.number} будет удалён безвозвратно`}
-          onConfirm={() => handleDelete(r)}
-          okText="Удалить"
-          cancelText="Отмена"
-          okButtonProps={{ danger: true }}
-        >
-          <span />
-        </Popconfirm>
-      )}
+      onDelete={handleDelete}
     />
   );
 
@@ -161,17 +178,20 @@ export function PaymentsPageClient({
         selectedCount={selectedRowKeys.length}
       />
 
-      {/* Table */}
-      <ERPTable<PaymentWithRelations>
-        data={data.items}
-        columns={columns}
-        pagination={pagination}
-        selection={selection}
-        onRowClick={handleRowClick}
-        rowActions={rowActions}
-        rowKey="id"
-        sticky
-      />
+      {/* Table — rendered only after mount to avoid antd pagination Select hydration mismatch */}
+      {mounted && (
+        <ERPTable<PaymentWithRelations>
+          data={data.items}
+          columns={columns}
+          pagination={pagination}
+          selection={selection}
+          onRowClick={handleRowClick}
+          rowActions={rowActions}
+          rowKey="id"
+          sticky
+          onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+        />
+      )}
 
       {/* Summary */}
       <div className="flex items-center justify-end gap-6 text-sm">
@@ -207,6 +227,9 @@ export function PaymentsPageClient({
           </span>
         </span>
       </div>
+
+      {/* Modal context holder — required for modal.confirm() */}
+      {modalContextHolder}
 
       {/* Drawer */}
       <PaymentDrawer

@@ -143,7 +143,7 @@ describe("lib/stock - integration", () => {
       const product = await createProduct();
 
       // First receipt: 100 units @ 50₽
-      await updateAverageCostOnReceipt(warehouse.id, product.id, 100, 50);
+      await updateAverageCostOnReceipt(warehouse.id, product.id, 100, 50, 0);
 
       const record = await db.stockRecord.findUnique({
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
@@ -165,7 +165,7 @@ describe("lib/stock - integration", () => {
 
       // Second receipt: 50 units @ 80₽
       // Expected: (100 * 50 + 50 * 80) / 150 = (5000 + 4000) / 150 = 60
-      await updateAverageCostOnReceipt(warehouse.id, product.id, 50, 80);
+      await updateAverageCostOnReceipt(warehouse.id, product.id, 50, 80, 100);
 
       const record = await db.stockRecord.findUnique({
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
@@ -187,7 +187,7 @@ describe("lib/stock - integration", () => {
       });
 
       // Receipt: 10 units @ 100₽
-      await updateAverageCostOnReceipt(warehouse.id, product.id, 10, 100);
+      await updateAverageCostOnReceipt(warehouse.id, product.id, 10, 100, 0);
 
       const record = await db.stockRecord.findUnique({
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
@@ -201,7 +201,7 @@ describe("lib/stock - integration", () => {
       const product = await createProduct();
 
       // No stock record exists
-      await updateAverageCostOnReceipt(warehouse.id, product.id, 25, 200);
+      await updateAverageCostOnReceipt(warehouse.id, product.id, 25, 200, 0);
 
       const record = await db.stockRecord.findUnique({
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
@@ -218,7 +218,7 @@ describe("lib/stock - integration", () => {
 
       // Receipt 1: 100 units @ 50₽ → avgCost = 50
       await createStockRecord(warehouse.id, product.id, 0);
-      await updateAverageCostOnReceipt(warehouse.id, product.id, 100, 50);
+      await updateAverageCostOnReceipt(warehouse.id, product.id, 100, 50, 0);
 
       // Update quantity to match
       await db.stockRecord.update({
@@ -227,7 +227,7 @@ describe("lib/stock - integration", () => {
       });
 
       // Receipt 2: 50 units @ 80₽ → avgCost = (100*50 + 50*80) / 150 = 60
-      await updateAverageCostOnReceipt(warehouse.id, product.id, 50, 80);
+      await updateAverageCostOnReceipt(warehouse.id, product.id, 50, 80, 100);
 
       await db.stockRecord.update({
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
@@ -235,7 +235,7 @@ describe("lib/stock - integration", () => {
       });
 
       // Receipt 3: 30 units @ 90₽ → avgCost = (150*60 + 30*90) / 180 = (9000 + 2700) / 180 = 65
-      await updateAverageCostOnReceipt(warehouse.id, product.id, 30, 90);
+      await updateAverageCostOnReceipt(warehouse.id, product.id, 30, 90, 150);
 
       const record = await db.stockRecord.findUnique({
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
@@ -263,7 +263,8 @@ describe("lib/stock - integration", () => {
         sourceWarehouse.id,
         targetWarehouse.id,
         product.id,
-        30
+        30,
+        0 // target has no stock yet
       );
 
       const targetRecord = await db.stockRecord.findUnique({
@@ -299,7 +300,8 @@ describe("lib/stock - integration", () => {
         sourceWarehouse.id,
         targetWarehouse.id,
         product.id,
-        50
+        50,
+        50 // target pre-transfer qty
       );
 
       const targetRecord = await db.stockRecord.findUnique({

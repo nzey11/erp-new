@@ -6,7 +6,7 @@ import {
 } from "@/lib/shared/csrf";
 import { rateLimit, getClientIp } from "@/lib/shared/rate-limit";
 import { logger } from "@/lib/shared/logger";
-import { verifySessionToken } from "@/lib/shared/auth";
+import { verifySessionTokenEdge } from "@/lib/shared/auth-edge";
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 
@@ -23,7 +23,7 @@ function generateUUID(): string {
 }
 
 // Routes that require NO authentication at all
-const PUBLIC_ROUTES = ["/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/integrations", "/api/version"];
+const PUBLIC_ROUTES = ["/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/auth/csrf", "/api/integrations", "/api/version"];
 
 // Storefront routes accessible without any session (public pages)
 const STOREFRONT_PUBLIC = ["/store/catalog", "/store/auth", "/api/ecommerce/products", "/api/ecommerce/categories", "/api/ecommerce/promo-blocks", "/api/ecommerce/delivery"];
@@ -44,7 +44,7 @@ const ECOMMERCE_CUSTOMER_API = ["/api/ecommerce/cart", "/api/ecommerce/checkout"
 const REDIRECTS: Record<string, string> = {
   "/documents": "/purchases",
   "/products": "/catalog",
-  "/warehouses": "/references",
+  "/payments": "/finance/payments",
   "/reports": "/finance",
 };
 
@@ -121,7 +121,7 @@ export async function middleware(request: NextRequest) {
 
   // Check ERP session cookie (presence + token validity)
   const session = request.cookies.get("session")?.value;
-  const isValidSession = session ? verifySessionToken(session) !== null : false;
+  const isValidSession = session ? (await verifySessionTokenEdge(session)) !== null : false;
   if (!session || !isValidSession) {
     if (pathname.startsWith("/api/")) {
       return withRequestId(NextResponse.json({ error: "Unauthorized" }, { status: 401 }), requestId);

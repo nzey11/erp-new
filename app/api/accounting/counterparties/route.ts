@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, parseQuery, validationError } from "@/lib/shared/validation";
 import {
   createCounterpartySchema,
   queryCounterpartiesSchema,
 } from "@/lib/modules/accounting/schemas/counterparties.schema";
-import { createCounterpartyWithParty } from "@/lib/modules/accounting/services/counterparty.service";
+import { createCounterpartyWithParty, CounterpartyService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,30 +14,10 @@ export async function GET(request: NextRequest) {
     const query = parseQuery(request, queryCounterpartiesSchema);
     const { search, type, active, page = 1, limit = 50 } = query;
 
-    const where: Record<string, unknown> = { tenantId: session.tenantId };
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { legalName: { contains: search } },
-        { inn: { contains: search } },
-        { phone: { contains: search } },
-      ];
-    }
-    if (type) where.type = type;
-    if (active !== undefined && active !== "") where.isActive = active === "true";
-
-    const [counterparties, total] = await Promise.all([
-      db.counterparty.findMany({
-        where,
-        include: {
-          balance: { select: { balanceRub: true } },
-        },
-        orderBy: { name: "asc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      db.counterparty.count({ where }),
-    ]);
+    const { counterparties, total } = await CounterpartyService.list(
+      { search, type, active, page, limit },
+      session.tenantId
+    );
 
     return NextResponse.json({ data: counterparties, total, page, limit });
   } catch (error) {

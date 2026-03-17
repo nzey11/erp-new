@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { App, Popconfirm, Button } from "antd";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { App, Modal, Button } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/shared/page-header";
 import type { CounterpartyFilters } from "@/lib/domain/counterparties/parse-filters";
@@ -45,7 +45,9 @@ export function CounterpartiesPageClient({
   initialFilters,
 }: CounterpartiesPageClientProps) {
   const { message } = App.useApp();
+  const [modal, modalContextHolder] = Modal.useModal();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -53,6 +55,10 @@ export function CounterpartiesPageClient({
   const [selectedCounterparty, setSelectedCounterparty] =
     useState<CounterpartyWithBalance | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
+
+  // Mounted guard — prevents antd pagination Select hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -78,16 +84,25 @@ export function CounterpartiesPageClient({
     setDrawerOpen(true);
   };
 
-  const handleDelete = async (row: CounterpartyWithBalance) => {
-    try {
-      await deleteCounterparty(row.id);
-      message.success("Контрагент удалён");
-      router.refresh();
-    } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : "Ошибка удаления"
-      );
-    }
+  const handleDelete = (row: CounterpartyWithBalance) => {
+    modal.confirm({
+      title: "Удалить контрагента?",
+      content: `Контрагент "${row.name}" будет удалён безвозвратно.`,
+      okText: "Удалить",
+      okType: "danger",
+      cancelText: "Отмена",
+      onOk: async () => {
+        try {
+          await deleteCounterparty(row.id);
+          message.success("Контрагент удалён");
+          router.refresh();
+        } catch (error) {
+          message.error(
+            error instanceof Error ? error.message : "Ошибка удаления"
+          );
+        }
+      },
+    });
   };
 
   const handleDrawerClose = () => {
@@ -128,24 +143,26 @@ export function CounterpartiesPageClient({
     total: data.total,
   };
 
+  const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (sortField) {
+      params.set("sort", sortField);
+      params.set("order", sortOrder === "ascend" ? "asc" : "desc");
+    } else {
+      params.delete("sort");
+      params.delete("order");
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const columns = getCounterpartyColumns();
 
   const rowActions = (row: CounterpartyWithBalance) => (
     <CounterpartyRowActions
       row={row}
       onEdit={handleEdit}
-      onDelete={(r) => (
-        <Popconfirm
-          title="Удалить контрагента?"
-          description={`Контрагент "${r.name}" будет удалён безвозвратно`}
-          onConfirm={() => handleDelete(r)}
-          okText="Удалить"
-          cancelText="Отмена"
-          okButtonProps={{ danger: true }}
-        >
-          <span />
-        </Popconfirm>
-      )}
+      onDelete={handleDelete}
     />
   );
 
@@ -173,17 +190,23 @@ export function CounterpartiesPageClient({
         selectedCount={selectedRowKeys.length}
       />
 
-      {/* Table */}
-      <ERPTable<CounterpartyWithBalance>
-        data={data.items}
-        columns={columns}
-        pagination={pagination}
-        selection={selection}
-        onRowClick={handleRowClick}
-        rowActions={rowActions}
-        rowKey="id"
-        sticky
-      />
+      {/* Table — rendered only after mount to avoid antd pagination Select hydration mismatch */}
+      {mounted && (
+        <ERPTable<CounterpartyWithBalance>
+          data={data.items}
+          columns={columns}
+          pagination={pagination}
+          selection={selection}
+          onRowClick={handleRowClick}
+          rowActions={rowActions}
+          rowKey="id"
+          sticky
+          onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+        />
+      )}
+
+      {/* Modal context holder — required for modal.confirm() */}
+      {modalContextHolder}
 
       {/* Drawer */}
       <CounterpartyDrawer

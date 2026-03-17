@@ -1,12 +1,8 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import {
-  resolveActiveMembershipForUser,
-  MembershipResolutionError,
-} from "@/lib/modules/auth/resolve-membership";
 import { logger } from "@/lib/shared/logger";
-import type { ErpRole } from "@/lib/generated/prisma/client";
+import type { ErpRole } from "@/lib/generated/prisma/enums";
 
 // ─── Session Cookie Configuration ─────────────────────────────────────────────
 
@@ -137,6 +133,10 @@ export async function getAuthSession(): Promise<TenantAwareSession | null> {
       await clearSessionCookie(cookieStore);
       return null;
     }
+
+    // Lazy import to keep this module Edge-safe (no node:path via db chain)
+    const { resolveActiveMembershipForUser, MembershipResolutionError } =
+      await import("@/lib/modules/auth/resolve-membership");
 
     // Resolve tenant membership
     try {

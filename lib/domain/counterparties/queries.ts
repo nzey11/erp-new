@@ -117,7 +117,12 @@ export async function getCounterparties(
   ]);
 
   return {
-    items: counterparties as unknown as CounterpartyWithBalance[],
+    items: counterparties.map((c) => ({
+      ...c,
+      balance: c.balance
+        ? { balanceRub: Number(c.balance.balanceRub) }
+        : null,
+    })) as CounterpartyWithBalance[],
     total,
     page,
     pageSize,

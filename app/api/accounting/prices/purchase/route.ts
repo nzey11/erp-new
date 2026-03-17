@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, parseQuery, validationError } from "@/lib/shared/validation";
 import { createPurchasePriceSchema, queryPurchasePricesSchema } from "@/lib/modules/accounting/schemas/prices.schema";
+import { PriceService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,20 +10,10 @@ export async function GET(request: NextRequest) {
 
     const query = parseQuery(request, queryPurchasePricesSchema);
     
-    const activeOnly = query.active !== "false";
-
-    const where: Record<string, unknown> = {};
-    if (query.productId) where.productId = query.productId;
-    if (query.supplierId) where.supplierId = query.supplierId;
-    if (activeOnly) where.isActive = true;
-
-    const prices = await db.purchasePrice.findMany({
-      where,
-      include: {
-        product: { select: { id: true, name: true, sku: true } },
-        supplier: { select: { id: true, name: true } },
-      },
-      orderBy: { validFrom: "desc" },
+    const prices = await PriceService.listPurchasePrices({
+      productId: query.productId,
+      supplierId: query.supplierId,
+      active: query.active,
     });
 
     return NextResponse.json(prices);
@@ -40,19 +30,13 @@ export async function POST(request: NextRequest) {
 
     const data = await parseBody(request, createPurchasePriceSchema);
 
-    const purchasePrice = await db.purchasePrice.create({
-      data: {
-        productId: data.productId,
-        supplierId: data.supplierId || null,
-        price: data.price,
-        currency: data.currency,
-        validFrom: data.validFrom ? new Date(data.validFrom) : new Date(),
-        validTo: data.validTo ? new Date(data.validTo) : null,
-      },
-      include: {
-        product: { select: { id: true, name: true } },
-        supplier: { select: { id: true, name: true } },
-      },
+    const purchasePrice = await PriceService.createPurchasePrice({
+      productId: data.productId,
+      supplierId: data.supplierId || null,
+      price: data.price,
+      currency: data.currency,
+      validFrom: data.validFrom,
+      validTo: data.validTo ?? undefined,
     });
 
     return NextResponse.json(purchasePrice, { status: 201 });

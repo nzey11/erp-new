@@ -52,7 +52,7 @@ const modules = [
 // Navigation items per module
 const moduleNavigation: Record<string, Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }> }>> = {
   accounting: [
-    { name: "Панель", href: "/", icon: LayoutDashboard },
+    { name: "Панель", href: "/dashboard", icon: LayoutDashboard },
     { name: "Каталог", href: "/catalog", icon: Package },
     { name: "Склад", href: "/stock", icon: Boxes },
     { name: "Закупки", href: "/purchases", icon: ShoppingCart },
@@ -213,8 +213,8 @@ export function AppSidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2 px-2">
         {navigation.map((item) => {
-          const isActive = item.href === "/"
-            ? pathname === "/"
+          const isActive = item.href === "/dashboard"
+            ? pathname === "/dashboard" || pathname === "/"
             : pathname.startsWith(item.href);
 
           return (

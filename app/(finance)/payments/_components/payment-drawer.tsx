@@ -19,7 +19,23 @@ interface PaymentDrawerProps {
   loading?: boolean;
 }
 
+/**
+ * PaymentFormValues — plain-object shape safe for Server Action boundary.
+ * `date` is an ISO string (not Dayjs) so Next.js can serialize it.
+ */
 export interface PaymentFormValues {
+  type: "income" | "expense";
+  categoryId: string;
+  counterpartyId?: string;
+  amount: number;
+  paymentMethod: "cash" | "bank_transfer" | "card";
+  /** ISO 8601 string — converted from Dayjs before crossing Server Action boundary */
+  date: string;
+  description?: string;
+}
+
+/** Internal form shape — Dayjs is fine inside the client component */
+interface PaymentFormFields {
   type: "income" | "expense";
   categoryId: string;
   counterpartyId?: string;
@@ -52,16 +68,16 @@ export function PaymentDrawer({
   onSubmit,
   loading,
 }: PaymentDrawerProps) {
-  const [form] = Form.useForm<PaymentFormValues>();
+  const [form] = Form.useForm<PaymentFormFields>();
 
   // Pre-fill form when editing
   useEffect(() => {
     if (open && mode === "edit" && payment) {
       form.setFieldsValue({
-        type: payment.type,
+        type: payment.type as "income" | "expense",
         categoryId: payment.category?.id || "",
         counterpartyId: payment.counterparty?.id,
-        amount: payment.amount,
+        amount: Number(payment.amount),
         paymentMethod: payment.paymentMethod as "cash" | "bank_transfer" | "card",
         date: dayjs(payment.date),
         description: payment.description || undefined,
@@ -77,7 +93,13 @@ export function PaymentDrawer({
   }, [open, mode, payment, form]);
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
+    const fields = await form.validateFields();
+    // Convert Dayjs → ISO string before crossing the Server Action boundary.
+    // Dayjs objects have a toJSON method and cannot be serialized by Next.js RSC.
+    const values: PaymentFormValues = {
+      ...fields,
+      date: fields.date?.toISOString() ?? new Date().toISOString(),
+    };
     await onSubmit(values);
   };
 
@@ -93,7 +115,7 @@ export function PaymentDrawer({
       title={title}
       open={open}
       onClose={handleClose}
-      width={480}
+      size="middle"
       footer={
         <Space className="flex justify-end">
           <Button onClick={handleClose}>Отмена</Button>

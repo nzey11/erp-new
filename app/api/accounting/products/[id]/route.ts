@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateProductSchema } from "@/lib/modules/accounting/schemas/products.schema";
 import { createOutboxEvent } from "@/lib/events/outbox";
+import { ProductService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,22 +12,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const session = await requirePermission("products:read");
     const { id } = await params;
 
-    const product = await db.product.findUnique({
-      where: { id, tenantId: session.tenantId },
-      include: {
-        unit: true,
-        category: true,
-        stockRecords: { include: { warehouse: { select: { id: true, name: true } } } },
-        purchasePrices: { where: { isActive: true }, orderBy: { validFrom: "desc" }, take: 1 },
-        salePrices: { where: { isActive: true, priceListId: null }, orderBy: { validFrom: "desc" }, take: 1 },
-        customFields: { include: { definition: true } },
-        variants: {
-          where: { isActive: true },
-          include: { option: { include: { variantType: { select: { id: true, name: true } } } } },
-        },
-        discounts: { where: { isActive: true }, orderBy: { createdAt: "desc" } },
-      },
-    });
+    const product = await ProductService.findById(id, session.tenantId);
 
     if (!product) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
@@ -56,36 +41,30 @@ export async function PUT(request: NextRequest, { params }: Params) {
     } = data;
 
     // Tenant gate: ensure product belongs to the authenticated tenant
-    const existing = await db.product.findUnique({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+    const existing = await ProductService.getTenantGate(id, session.tenantId);
     if (!existing) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
     }
 
     // P2-01: product.update + outbox event are atomic — both inside one transaction.
     // purchasePrice and salePrice updates remain outside (their own events: P2-02).
-    const product = await db.$transaction(async (tx) => {
-      const updated = await tx.product.update({
-        where: { id },
-        data: {
-          ...(name !== undefined && { name }),
-          ...(sku !== undefined && { sku: sku || null }),
-          ...(barcode !== undefined && { barcode: barcode || null }),
-          ...(description !== undefined && { description }),
-          ...(unitId !== undefined && { unitId }),
-          ...(categoryId !== undefined && { categoryId: categoryId || null }),
-          ...(imageUrl !== undefined && { imageUrl }),
-          ...(isActive !== undefined && { isActive }),
-          ...(seoTitle !== undefined && { seoTitle: seoTitle || null }),
-          ...(seoDescription !== undefined && { seoDescription: seoDescription || null }),
-          ...(seoKeywords !== undefined && { seoKeywords: seoKeywords || null }),
-          ...(slug !== undefined && { slug: slug || null }),
-          ...(publishedToStore !== undefined && { publishedToStore: !!publishedToStore }),
-        },
-        include: {
-          unit: { select: { id: true, shortName: true } },
-          category: { select: { id: true, name: true } },
-        },
-      });
+    const product = await ProductService.$transaction(async (tx) => {
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (sku !== undefined) updateData.sku = sku || null;
+      if (barcode !== undefined) updateData.barcode = barcode || null;
+      if (description !== undefined) updateData.description = description;
+      if (unitId !== undefined) updateData.unitId = unitId;
+      if (categoryId !== undefined) updateData.categoryId = categoryId || null;
+      if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      if (seoTitle !== undefined) updateData.seoTitle = seoTitle || null;
+      if (seoDescription !== undefined) updateData.seoDescription = seoDescription || null;
+      if (seoKeywords !== undefined) updateData.seoKeywords = seoKeywords || null;
+      if (slug !== undefined) updateData.slug = slug || null;
+      if (publishedToStore !== undefined) updateData.publishedToStore = !!publishedToStore;
+
+      const updated = await ProductService.update(id, updateData, tx);
 
       await createOutboxEvent(
         tx,
@@ -97,23 +76,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
       return updated;
     });
 
-    // Update purchase price if provided (no projection event — purchasePrice is not displayed in storefront)
+    // Update purchase price if provided
     if (purchasePrice !== undefined) {
-      await db.purchasePrice.updateMany({ where: { productId: id, isActive: true }, data: { isActive: false } });
-      if (purchasePrice != null && purchasePrice !== "") {
-        await db.purchasePrice.create({ data: { productId: id, price: parseFloat(String(purchasePrice)), isActive: true } });
-      }
+      await ProductService.updatePurchasePrice(id, purchasePrice);
     }
 
     // P2-02 (inline): salePrice mutation via this route also emits sale_price.updated.
-    // There is no dedicated /api/accounting/prices/sale route — salePrice lives here.
-    // Both the SalePrice write and the outbox event are inside the same transaction.
     if (salePrice !== undefined) {
-      await db.$transaction(async (tx) => {
-        await tx.salePrice.updateMany({ where: { productId: id, isActive: true }, data: { isActive: false } });
-        if (salePrice != null && salePrice !== "") {
-          await tx.salePrice.create({ data: { productId: id, price: parseFloat(String(salePrice)), isActive: true } });
-        }
+      await ProductService.$transaction(async (tx) => {
+        await ProductService.updateSalePrice(id, salePrice, tx);
         await createOutboxEvent(
           tx,
           { type: "sale_price.updated", occurredAt: new Date(), payload: { productId: id } },
@@ -137,14 +108,21 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     const { id } = await params;
 
     // Tenant gate: ensure product belongs to the authenticated tenant
-    const existing = await db.product.findUnique({ where: { id, tenantId: session.tenantId }, select: { id: true } });
+    const existing = await ProductService.getTenantGate(id, session.tenantId);
     if (!existing) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
     }
 
-    await db.product.update({
-      where: { id },
-      data: { isActive: false },
+    // P-delete: soft-delete + outbox event are atomic.
+    await ProductService.$transaction(async (tx) => {
+      await ProductService.softDelete(id, tx);
+
+      await createOutboxEvent(
+        tx,
+        { type: "product.updated", occurredAt: new Date(), payload: { productId: id } },
+        "Product",
+        id
+      );
     });
 
     return NextResponse.json({ success: true });

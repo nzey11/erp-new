@@ -20,6 +20,7 @@ import { csrfFetch } from "@/lib/client/csrf";
 import { PriceListsPanel } from "@/components/domain/accounting/catalog/PriceListsPanel";
 import { PriceListDetail } from "@/components/domain/accounting/catalog/PriceListDetail";
 import { VariantGroupsPanel } from "@/components/domain/accounting/catalog/VariantGroupsPanel";
+import { ProductsTable } from "@/components/domain/accounting/catalog/ProductsTable";
 
 interface Category {
   id: string;
@@ -354,8 +355,11 @@ export default function CatalogPage() {
               <div className="mb-4">
                 <h2 className="text-lg font-semibold">{selectedCategoryName}</h2>
               </div>
-              {/* TODO: Replace with ERPTable - ProductsTable was removed */}
-              <div className="p-4 text-muted-foreground">Products table temporarily unavailable</div>
+              <ProductsTable
+                categoryId={selectedCategoryId}
+                flatCategories={flatCategories}
+                onProductCreated={loadCategories}
+              />
             </div>
           </div>
         </TabsContent>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { App, Button, Dropdown, Popconfirm, Space } from "antd";
 import { DownloadOutlined, MoreOutlined, PlusOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/shared/page-header";
@@ -52,10 +52,15 @@ export function ProductsPageClient({
 }: ProductsPageClientProps) {
   const { message } = App.useApp();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Mounted guard — prevents antd pagination Select hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Row action handler
   const handleRowAction = useCallback(
@@ -168,6 +173,19 @@ export function ProductsPageClient({
 
   const columns = getProductColumns(handleRowAction);
 
+  const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (sortField) {
+      params.set("sort", sortField);
+      params.set("order", sortOrder === "ascend" ? "asc" : "desc");
+    } else {
+      params.delete("sort");
+      params.delete("order");
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const rowActions = (row: ProductWithRelations) => (
     <Dropdown
       menu={{ items: getProductRowActions(row, handleRowAction) }}
@@ -237,16 +255,19 @@ export function ProductsPageClient({
         }
       />
 
-      {/* Table */}
-      <ERPTable<ProductWithRelations>
-        data={initialData.items}
-        columns={columns}
-        pagination={pagination}
-        selection={selection}
-        rowActions={rowActions}
-        rowKey="id"
-        sticky
-      />
+      {/* Table — rendered only after mount to avoid antd pagination Select hydration mismatch */}
+      {mounted && (
+        <ERPTable<ProductWithRelations>
+          data={initialData.items}
+          columns={columns}
+          pagination={pagination}
+          selection={selection}
+          rowActions={rowActions}
+          rowKey="id"
+          sticky
+          onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+        />
+      )}
     </div>
   );
 }

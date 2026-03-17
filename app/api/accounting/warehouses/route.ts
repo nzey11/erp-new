@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createWarehouseSchema } from "@/lib/modules/accounting/schemas/warehouses.schema";
+import { WarehouseService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,15 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const active = searchParams.get("active");
 
-    const where: Record<string, unknown> = {
-      tenantId: session.tenantId, // Tenant scoping
-    };
-    if (active !== null && active !== "") where.isActive = active === "true";
-
-    const warehouses = await db.warehouse.findMany({
-      where,
-      orderBy: { name: "asc" },
-    });
+    const warehouses = await WarehouseService.list(session.tenantId, active);
 
     return NextResponse.json(warehouses);
   } catch (error) {
@@ -33,13 +25,11 @@ export async function POST(request: NextRequest) {
 
     const data = await parseBody(request, createWarehouseSchema);
 
-    const warehouse = await db.warehouse.create({
-      data: {
-        tenantId: session.tenantId, // Tenant scoping
-        name: data.name,
-        address: data.address || null,
-        responsibleName: data.responsibleName || null,
-      },
+    const warehouse = await WarehouseService.create({
+      tenantId: session.tenantId,
+      name: data.name,
+      address: data.address || null,
+      responsibleName: data.responsibleName || null,
     });
 
     return NextResponse.json(warehouse, { status: 201 });

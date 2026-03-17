@@ -1,29 +1,12 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { validationError } from "@/lib/shared/validation";
+import { StorefrontCategoryService } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 /** GET /api/ecommerce/categories — Public category tree */
 export async function GET() {
   try {
-    const categories = await db.productCategory.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-      include: {
-        children: {
-          where: { isActive: true },
-          orderBy: { order: "asc" },
-          select: { id: true, name: true, parentId: true, order: true },
-        },
-        _count: {
-          select: {
-            products: {
-              where: { isActive: true, publishedToStore: true },
-            },
-          },
-        },
-      },
-    });
+    const categories = await StorefrontCategoryService.listPublished();
 
     // Return only root categories (parentId is null) with children
     const rootCategories = categories

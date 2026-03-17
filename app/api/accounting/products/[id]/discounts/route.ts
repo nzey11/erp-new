@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createDiscountSchema } from "@/lib/modules/accounting/schemas/products.schema";
 import { createOutboxEvent } from "@/lib/events/outbox";
+import { ProductService, toNumber } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,10 +12,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     await requirePermission("products:read");
     const { id: productId } = await params;
 
-    const discounts = await db.productDiscount.findMany({
-      where: { productId, isActive: true },
-      orderBy: { createdAt: "desc" },
-    });
+    const discounts = await ProductService.listDiscounts(productId);
 
     return NextResponse.json(discounts);
   } catch (error) {
@@ -35,21 +32,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     // Get product with current purchase price (cost) to validate
-    const product = await db.product.findUnique({
-      where: { id: productId },
-      include: {
-        purchasePrices: {
-          where: { isActive: true },
-          orderBy: { validFrom: "desc" },
-          take: 1,
-        },
-        salePrices: {
-          where: { isActive: true },
-          orderBy: { validFrom: "desc" },
-          take: 1,
-        },
-      },
-    });
+    const product = await ProductService.getProductForDiscount(productId);
 
     if (!product) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
@@ -78,17 +61,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     // P2-03: discount.create + outbox event are atomic — both inside one transaction.
-    const discount = await db.$transaction(async (tx) => {
-      const created = await tx.productDiscount.create({
-        data: {
-          productId,
-          name,
-          type,
-          value,
-          validFrom: validFrom ? new Date(validFrom) : new Date(),
-          validTo: validTo ? new Date(validTo) : null,
-        },
-      });
+    const discount = await ProductService.$transaction(async (tx) => {
+      const created = await ProductService.createDiscount(productId, { name, type, value, validFrom: validFrom ?? undefined, validTo: validTo ?? undefined }, tx);
 
       await createOutboxEvent(
         tx,
@@ -121,11 +95,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     }
 
     // P2-03: discount.update (deactivate) + outbox event are atomic — both inside one transaction.
-    await db.$transaction(async (tx) => {
-      await tx.productDiscount.update({
-        where: { id: discountId },
-        data: { isActive: false },
-      });
+    await ProductService.$transaction(async (tx) => {
+      await ProductService.deactivateDiscount(discountId, tx);
 
       await createOutboxEvent(
         tx,

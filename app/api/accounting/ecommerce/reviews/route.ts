@@ -1,32 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateReviewSchema } from "@/lib/modules/accounting/schemas/ecommerce-admin.schema";
+import { EcommerceAdminService } from "@/lib/modules/accounting";
 
 export async function GET() {
   try {
     await requirePermission("products:read");
-
-    const reviews = await db.review.findMany({
-      include: {
-        product: {
-          select: {
-            name: true,
-            sku: true,
-          },
-        },
-        customer: {
-          select: {
-            name: true,
-            phone: true,
-            telegramUsername: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
+    const reviews = await EcommerceAdminService.listReviews();
     return NextResponse.json(reviews);
   } catch (error) {
     const vErr = validationError(error);
@@ -50,27 +31,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await parseBody(request, updateReviewSchema);
-
-    const review = await db.review.update({
-      where: { id },
-      data: { isPublished: data.isPublished },
-      include: {
-        product: {
-          select: {
-            name: true,
-            sku: true,
-          },
-        },
-        customer: {
-          select: {
-            name: true,
-            phone: true,
-            telegramUsername: true,
-          },
-        },
-      },
-    });
-
+    const review = await EcommerceAdminService.updateReview(id, data.isPublished);
     return NextResponse.json(review);
   } catch (error) {
     const vErr = validationError(error);
@@ -93,10 +54,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.review.delete({
-      where: { id },
-    });
-
+    await EcommerceAdminService.deleteReview(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     const vErr = validationError(error);

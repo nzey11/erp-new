@@ -59,7 +59,7 @@ interface BalanceSheet {
     total: number;
   };
   equity: { shareCapital: number; retainedEarnings: number; total: number };
-  balanceCheck: boolean;
+  balanced: boolean;
 }
 
 export default function ReportsPage() {
@@ -283,7 +283,7 @@ export default function ReportsPage() {
               <Label>На дату</Label>
               <Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} className="w-40" />
             </div>
-            {balanceSheet && !balanceSheet.balanceCheck && (
+            {balanceSheet && !balanceSheet.balanced && (
               <span className="text-red-500 text-sm">Ошибка баланса!</span>
             )}
           </div>

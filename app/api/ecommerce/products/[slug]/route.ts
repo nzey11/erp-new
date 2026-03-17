@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { validationError } from "@/lib/shared/validation";
+import { StorefrontProductService, toNumber } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 /** GET /api/ecommerce/products/[slug] — Product detail by slug */
@@ -11,93 +11,7 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const product = await db.product.findFirst({
-      where: { slug, isActive: true, publishedToStore: true },
-      include: {
-        unit: { select: { id: true, name: true, shortName: true } },
-        category: { select: { id: true, name: true } },
-        salePrices: {
-          where: { isActive: true, priceListId: null },
-          orderBy: { validFrom: "desc" },
-          take: 1,
-        },
-        purchasePrices: {
-          where: { isActive: true },
-          orderBy: { validFrom: "desc" },
-          take: 1,
-          select: { price: true },
-        },
-        discounts: {
-          where: {
-            isActive: true,
-            validFrom: { lte: new Date() },
-            OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-          },
-        },
-        customFields: {
-          include: { definition: true },
-        },
-        variants: {
-          where: { isActive: true },
-          include: { option: { include: { variantType: true } } },
-          orderBy: { createdAt: "asc" },
-        },
-        variantLinksFrom: {
-          where: { isActive: true },
-          include: {
-            linkedProduct: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                imageUrl: true,
-                publishedToStore: true,
-                isActive: true,
-              },
-            },
-          },
-          orderBy: { sortOrder: "asc" },
-        },
-        reviews: {
-          where: { isPublished: true },
-          include: {
-            customer: { select: { name: true, telegramUsername: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 20,
-        },
-        stockRecords: {
-          select: { quantity: true },
-        },
-        // Variant hierarchy: include master product if this is a variant
-        masterProduct: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            imageUrl: true,
-          },
-        },
-        // Variant hierarchy: include child variants if this is a master
-        childVariants: {
-          where: { isActive: true, publishedToStore: true },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            imageUrl: true,
-            salePrices: {
-              where: { isActive: true, priceListId: null },
-              orderBy: { validFrom: "desc" },
-              take: 1,
-            },
-            stockRecords: {
-              select: { quantity: true },
-            },
-          },
-        },
-      },
-    });
+    const product = await StorefrontProductService.findBySlug(slug);
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });

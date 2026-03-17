@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
-import { reverseEntry } from "@/lib/modules/accounting/finance/journal";
 import { z } from "zod";
+import { PaymentService } from "@/lib/modules/finance";
+import { revalidatePath } from "next/cache";
 
 const updatePaymentSchema = z.object({
   categoryId: z.string().min(1).optional(),
@@ -23,72 +23,10 @@ export async function PATCH(
     const body = await request.json();
     const data = updatePaymentSchema.parse(body);
 
-    const existing = await db.payment.findFirst({ where: { id, tenantId: session.tenantId } });
-    if (!existing) {
+    const updated = await PaymentService.updatePayment(id, session.tenantId, data);
+    if (!updated) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-
-    const updated = await db.payment.update({
-      where: { id },
-      data: {
-        ...data,
-        ...(data.date ? { date: new Date(data.date) } : {}),
-      },
-      include: {
-        category: { select: { id: true, name: true, type: true } },
-        counterparty: { select: { id: true, name: true } },
-        document: { select: { id: true, number: true, type: true } },
-      },
-    });
-
-    // Reverse the old journal entry and re-post with updated data
-    try {
-      const oldEntry = await db.journalEntry.findFirst({
-        where: { sourceId: id, sourceType: "finance_payment", isReversed: false },
-      });
-      if (oldEntry) {
-        await reverseEntry(oldEntry.id, { bypassAutoCheck: true });
-      }
-      // Re-post: build new journal entry directly (bypass idempotency check)
-      const cashAccountCode = updated.paymentMethod === "cash" ? "50" : "51";
-      const catData = updated.category as unknown as { defaultAccountCode?: string | null };
-      const categoryAccountCode = catData.defaultAccountCode ?? (updated.type === "income" ? "91.1" : "91.2");
-      const [cashAccount, categoryAccount] = await Promise.all([
-        db.account.findUnique({ where: { code: cashAccountCode } }),
-        db.account.findUnique({ where: { code: categoryAccountCode } }),
-      ]);
-      if (cashAccount && categoryAccount) {
-        const counter = await db.journalCounter.upsert({
-          where: { prefix: "JE" },
-          update: { lastNumber: { increment: 1 } },
-          create: { prefix: "JE", lastNumber: 1 },
-        });
-        const jeNumber = `JE-${String(counter.lastNumber).padStart(6, "0")}`;
-        const debitAccountId  = updated.type === "income" ? cashAccount.id : categoryAccount.id;
-        const creditAccountId = updated.type === "income" ? categoryAccount.id : cashAccount.id;
-        const description = updated.description
-          ? `${updated.category.name}: ${updated.description}`
-          : updated.category.name;
-        await db.journalEntry.create({
-          data: {
-            number: jeNumber,
-            date: updated.date,
-            description,
-            sourceType: "finance_payment",
-            sourceId: id,
-            sourceNumber: updated.number,
-            isManual: false,
-            createdBy: null,
-            lines: {
-              create: [
-                { accountId: debitAccountId,  debit: updated.amount, credit: 0, counterpartyId: updated.counterpartyId ?? null, currency: "RUB", amountRub: updated.amount },
-                { accountId: creditAccountId, debit: 0, credit: updated.amount, counterpartyId: updated.counterpartyId ?? null, currency: "RUB", amountRub: updated.amount },
-              ],
-            },
-          },
-        });
-      }
-    } catch { /* journal update is non-critical */ }
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -107,20 +45,24 @@ export async function DELETE(
     const session = await requirePermission("payments:write");
     const { id } = await params;
 
-    const existing = await db.payment.findFirst({ where: { id, tenantId: session.tenantId } });
-    if (!existing) {
+    const result = await PaymentService.deletePayment(id, session.tenantId);
+    if (!result) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Reverse journal entry before deleting the payment
-    try {
-      const entry = await db.journalEntry.findFirst({
-        where: { sourceId: id, sourceType: "finance_payment", isReversed: false },
-      });
-      if (entry) await reverseEntry(entry.id, { bypassAutoCheck: true });
-    } catch { /* non-critical */ }
+    // Invalidate all finance report pages so they show updated data
+    revalidatePath("/finance", "layout");
+    revalidatePath("/reports");
+    revalidatePath("/balances");
+    revalidatePath("/payments");
+    revalidatePath("/finance/journal");
+    revalidatePath("/finance/cash-flow");
+    revalidatePath("/finance/profit-loss");
+    revalidatePath("/finance/balance-sheet");
+    if (result.counterpartyId) {
+      revalidatePath("/counterparties");
+    }
 
-    await db.payment.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return handleAuthError(error);

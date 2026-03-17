@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { getBalance } from "@/lib/modules/finance/reports";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateCounterpartySchema } from "@/lib/modules/accounting/schemas/counterparties.schema";
+import { CounterpartyService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,13 +12,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const session = await requirePermission("counterparties:read");
     const { id } = await params;
 
-    const counterparty = await db.counterparty.findFirst({
-      where: { id, tenantId: session.tenantId },
-      include: {
-        balance: true,
-        interactions: { orderBy: { createdAt: "desc" }, take: 20 },
-      },
-    });
+    const counterparty = await CounterpartyService.findById(id, session.tenantId);
 
     if (!counterparty) {
       return NextResponse.json({ error: "Контрагент не найден" }, { status: 404 });
@@ -38,7 +32,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const { id } = await params;
     const data = await parseBody(request, updateCounterpartySchema);
 
-    const owned = await db.counterparty.findFirst({ where: { id, tenantId: session.tenantId } });
+    const owned = await CounterpartyService.getTenantGate(id, session.tenantId);
     if (!owned) {
       return NextResponse.json({ error: "Контрагент не найден" }, { status: 404 });
     }
@@ -59,10 +53,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (data.notes !== undefined) updateData.notes = data.notes;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-    const counterparty = await db.counterparty.update({
-      where: { id },
-      data: updateData,
-    });
+    const counterparty = await CounterpartyService.update(id, updateData);
 
     return NextResponse.json(counterparty);
   } catch (error) {
@@ -77,15 +68,12 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     const session = await requirePermission("counterparties:write");
     const { id } = await params;
 
-    const owned = await db.counterparty.findFirst({ where: { id, tenantId: session.tenantId } });
+    const owned = await CounterpartyService.getTenantGate(id, session.tenantId);
     if (!owned) {
       return NextResponse.json({ error: "Контрагент не найден" }, { status: 404 });
     }
 
-    await db.counterparty.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    await CounterpartyService.softDelete(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

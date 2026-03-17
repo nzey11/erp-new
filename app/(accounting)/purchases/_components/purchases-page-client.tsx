@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { App, Button, Dropdown } from "antd";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -136,6 +136,7 @@ export function PurchasesPageClient({
 }: PurchasesPageClientProps) {
   const { message } = App.useApp();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Tab state: "all" | "purchase_order" | "incoming_shipment" | "supplier_return" | "analytics"
   const [tab, setTab] = useState<string>(() => {
@@ -168,6 +169,19 @@ export function PurchasesPageClient({
 
   // Columns for ERPTable
   const columns = useMemo(() => getPurchaseColumns(), []);
+
+  const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (sortField) {
+      params.set("sort", sortField);
+      params.set("order", sortOrder === "ascend" ? "asc" : "desc");
+    } else {
+      params.delete("sort");
+      params.delete("order");
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   // Pagination for ERPTable
   const pagination: ERPPagination = {
@@ -407,6 +421,7 @@ export function PurchasesPageClient({
             rowKey="id"
             emptyText="Нет документов"
             sticky
+            onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
           />
         </div>
       )}

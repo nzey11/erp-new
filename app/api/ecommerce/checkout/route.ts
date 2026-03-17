@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { checkoutSchema } from "@/lib/modules/accounting";
-import { createSalesOrderFromCart } from "@/lib/modules/ecommerce";
+import { createSalesOrderFromCart, CartService, toNumber } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 /** POST /api/ecommerce/checkout — Create order from cart */
@@ -13,29 +12,7 @@ export async function POST(request: NextRequest) {
     const { deliveryType, addressId, notes } = await parseBody(request, checkoutSchema);
 
     // Get cart items with price calculation
-    const cartItems = await db.cartItem.findMany({
-      where: { customerId: customer.id },
-      include: {
-        product: {
-          include: {
-            salePrices: {
-              where: { isActive: true, priceListId: null },
-              orderBy: { validFrom: "desc" },
-              take: 1,
-            },
-            discounts: {
-              where: {
-                isActive: true,
-                validFrom: { lte: new Date() },
-                OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-              },
-              take: 1,
-            },
-          },
-        },
-        variant: true,
-      },
-    });
+    const cartItems = await CartService.getCartItemsForCheckout(customer.id);
 
     if (cartItems.length === 0) {
       return NextResponse.json({ error: "Корзина пуста" }, { status: 400 });
@@ -82,9 +59,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Clear cart
-    await db.cartItem.deleteMany({
-      where: { customerId: customer.id },
-    });
+    await CartService.clearCart(customer.id);
 
     return NextResponse.json({
       orderId: result.documentId,

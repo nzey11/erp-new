@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button, Space } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { toast } from "sonner";
@@ -47,6 +47,10 @@ export function StockBalancesClient({
   // Selection state (rows can be selected for potential future bulk ops)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
+  // Mounted guard: antd Table's pagination Select generates non-deterministic IDs
+  // that differ between SSR and client hydration — suppress it until mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const columns = getStockBalanceColumns();
 
@@ -172,16 +176,18 @@ export function StockBalancesClient({
         extraActions={exportButton}
       />
 
-      {/* Table */}
-      <ERPTable<StockBalanceRow>
-        data={initialData.items}
-        columns={columns}
-        pagination={pagination}
-        selection={selection}
-        rowKey="id"
-        emptyText="Нет остатков"
-        sticky
-      />
+      {/* Table — rendered only after mount to avoid antd pagination Select hydration mismatch */}
+      {mounted && (
+        <ERPTable<StockBalanceRow>
+          data={initialData.items}
+          columns={columns}
+          pagination={pagination}
+          selection={selection}
+          rowKey="id"
+          emptyText="Нет остатков"
+          sticky
+        />
+      )}
 
       {/* Totals footer */}
       {summaryFooter}

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, parseQuery, validationError } from "@/lib/shared/validation";
 import { createSalePriceSchema, querySalePricesSchema } from "@/lib/modules/accounting/schemas/prices.schema";
+import { createOutboxEvent } from "@/lib/events/outbox";
+import { PriceService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,20 +11,10 @@ export async function GET(request: NextRequest) {
 
     const query = parseQuery(request, querySalePricesSchema);
     
-    const activeOnly = query.active !== "false";
-
-    const where: Record<string, unknown> = {};
-    if (query.productId) where.productId = query.productId;
-    if (query.priceListId) where.priceListId = query.priceListId;
-    if (activeOnly) where.isActive = true;
-
-    const prices = await db.salePrice.findMany({
-      where,
-      include: {
-        product: { select: { id: true, name: true, sku: true } },
-        priceList: { select: { id: true, name: true } },
-      },
-      orderBy: { validFrom: "desc" },
+    const prices = await PriceService.listSalePrices({
+      productId: query.productId,
+      priceListId: query.priceListId,
+      active: query.active,
     });
 
     return NextResponse.json(prices);
@@ -40,19 +31,28 @@ export async function POST(request: NextRequest) {
 
     const data = await parseBody(request, createSalePriceSchema);
 
-    const salePrice = await db.salePrice.create({
-      data: {
-        productId: data.productId,
-        priceListId: data.priceListId || null,
-        price: data.price,
-        currency: data.currency,
-        validFrom: data.validFrom ? new Date(data.validFrom) : new Date(),
-        validTo: data.validTo ? new Date(data.validTo) : null,
-      },
-      include: {
-        product: { select: { id: true, name: true } },
-        priceList: { select: { id: true, name: true } },
-      },
+    // P-price: salePrice.create + outbox event are atomic — both inside one transaction.
+    const salePrice = await PriceService.$transaction(async (tx) => {
+      const created = await PriceService.createSalePrice(
+        {
+          productId: data.productId,
+          priceListId: data.priceListId || null,
+          price: data.price,
+          currency: data.currency,
+          validFrom: data.validFrom,
+          validTo: data.validTo ?? undefined,
+        },
+        tx
+      );
+
+      await createOutboxEvent(
+        tx,
+        { type: "sale_price.updated", occurredAt: new Date(), payload: { productId: data.productId } },
+        "SalePrice",
+        data.productId
+      );
+
+      return created;
     });
 
     return NextResponse.json(salePrice, { status: 201 });

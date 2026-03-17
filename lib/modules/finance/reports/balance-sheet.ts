@@ -26,8 +26,12 @@ export async function generateBalanceSheet(asOfDate: Date) {
   const totalNonCurrentAssets = fixedAssets + intangibleAssets;
 
   // II. Current assets (Оборотные активы)
-  // 1210 — Запасы (счет 41)
-  const inventory = Math.max(0, (await getAccountBalance("41", asOfDate)).balance);
+  // 1210 — Запасы (счёт 41 + субсчета 41.1, 41.2, 41.3)
+  // Posting rules write to sub-accounts (41.1 etc.) — must sum all of them
+  const inventory = Math.max(
+    0,
+    await sumAccountBalances(["41", "41.1", "41.2", "41.3"], asOfDate)
+  );
 
   // 1230 — Дебиторская задолженность (счет 62, только положительное сальдо)
   const { debit: debit62, credit: credit62 } = await getAccountBalance("62", asOfDate);

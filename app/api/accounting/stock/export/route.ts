@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
+import { toNumber } from "@/lib/modules/accounting";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
+import { StockService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,35 +11,10 @@ export async function GET(request: NextRequest) {
     const warehouseId = searchParams.get("warehouseId") || "";
     const search = searchParams.get("search") || "";
 
-    const where: Record<string, unknown> = {
-      quantity: { not: 0 },
-      warehouse: { tenantId: session.tenantId }, // Tenant scoping
-    };
-    if (warehouseId) where.warehouseId = warehouseId;
-    if (search) {
-      where.product = {
-        OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { sku: { contains: search, mode: "insensitive" } },
-        ],
-      };
-    }
-
-    const records = await db.stockRecord.findMany({
-      where,
-      include: {
-        warehouse: { select: { name: true } },
-        product: {
-          select: {
-            name: true,
-            sku: true,
-            unit: { select: { shortName: true } },
-            category: { select: { name: true } },
-          },
-        },
-      },
-      orderBy: { product: { name: "asc" } },
-    });
+    const records = await StockService.exportStockRecords(
+      { warehouseId, search },
+      session.tenantId
+    );
 
     const header = ["Товар", "Артикул", "Категория", "Склад", "Ед.", "Кол-во", "Средн. себест.", "Стоимость"].join(",");
 

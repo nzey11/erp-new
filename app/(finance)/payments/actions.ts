@@ -26,13 +26,13 @@ export async function createPayment(values: PaymentFormValues) {
       counterpartyId: values.counterpartyId || null,
       amount: values.amount,
       paymentMethod: values.paymentMethod,
-      date: values.date.toDate(),
+      date: new Date(values.date),
       description: values.description || null,
       tenantId: session.tenantId,
     },
   });
 
-  revalidatePath("/payments");
+  revalidatePath("/finance/payments");
 
   return { success: true, payment };
 }
@@ -60,12 +60,12 @@ export async function updatePayment(paymentId: string, values: PaymentFormValues
       counterpartyId: values.counterpartyId || null,
       amount: values.amount,
       paymentMethod: values.paymentMethod,
-      date: values.date.toDate(),
+      date: new Date(values.date),
       description: values.description || null,
     },
   });
 
-  revalidatePath("/payments");
+  revalidatePath("/finance/payments");
 
   return { success: true, payment };
 }
@@ -89,7 +89,7 @@ export async function deletePayment(paymentId: string) {
     where: { id: paymentId },
   });
 
-  revalidatePath("/payments");
+  revalidatePath("/finance/payments");
 
   return { success: true };
 }

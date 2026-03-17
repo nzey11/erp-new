@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
 import { getAllBalances } from "@/lib/modules/finance/reports";
-import { toNumber } from "@/lib/shared/db";
+import { toNumber } from "@/lib/modules/accounting";
 
 export async function GET() {
   try {

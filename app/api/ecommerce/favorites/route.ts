@@ -1,48 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { addFavoriteSchema } from "@/lib/modules/ecommerce/schemas/favorites.schema";
+import { FavoriteService, toNumber } from "@/lib/modules/ecommerce";
 
 /** GET /api/ecommerce/favorites — Get customer favorites */
 export async function GET() {
   try {
     const customer = await requireCustomer();
 
-    const favorites = await db.favorite.findMany({
-      where: { customerId: customer.id },
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            imageUrl: true,
-            isActive: true,
-            publishedToStore: true,
-            unit: { select: { shortName: true } },
-            salePrices: {
-              where: { isActive: true, priceListId: null },
-              orderBy: { validFrom: "desc" },
-              take: 1,
-            },
-            discounts: {
-              where: {
-                isActive: true,
-                validFrom: { lte: new Date() },
-                OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-              },
-              take: 1,
-            },
-            reviews: {
-              where: { isPublished: true },
-              select: { rating: true },
-            },
-          },
-        },
-      },
-      orderBy: { addedAt: "desc" },
-    });
+    const favorites = await FavoriteService.list(customer.id);
 
     const items = favorites
       .filter((f) => f.product.isActive && f.product.publishedToStore)
@@ -96,35 +63,20 @@ export async function POST(request: NextRequest) {
     const { productId } = await parseBody(request, addFavoriteSchema);
 
     // Verify product exists
-    const product = await db.product.findUnique({
-      where: { id: productId },
-      select: { id: true, isActive: true, publishedToStore: true },
-    });
+    const product = await FavoriteService.findProduct(productId);
 
     if (!product || !product.isActive || !product.publishedToStore) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     // Check if already favorited
-    const existing = await db.favorite.findUnique({
-      where: {
-        customerId_productId: {
-          customerId: customer.id,
-          productId,
-        },
-      },
-    });
+    const existing = await FavoriteService.findExisting(customer.id, productId);
 
     if (existing) {
       return NextResponse.json({ message: "Already in favorites" });
     }
 
-    await db.favorite.create({
-      data: {
-        customerId: customer.id,
-        productId,
-      },
-    });
+    await FavoriteService.create(customer.id, productId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -145,22 +97,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Missing productId" }, { status: 400 });
     }
 
-    const favorite = await db.favorite.findUnique({
-      where: {
-        customerId_productId: {
-          customerId: customer.id,
-          productId,
-        },
-      },
-    });
+    const favorite = await FavoriteService.findExisting(customer.id, productId);
 
     if (!favorite) {
       return NextResponse.json({ error: "Favorite not found" }, { status: 404 });
     }
 
-    await db.favorite.delete({
-      where: { id: favorite.id },
-    });
+    await FavoriteService.delete(favorite.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

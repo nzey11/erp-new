@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { dateRangeSchema } from "@/lib/modules/accounting/schemas/reports.schema";
+import { ReportService, toNumber } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,27 +14,7 @@ export async function GET(request: NextRequest) {
     const to = new Date(query.dateTo);
     to.setHours(23, 59, 59, 999);
 
-    // Get confirmed outgoing shipments in date range
-    const salesDocs = await db.document.findMany({
-      where: {
-        type: "outgoing_shipment",
-        status: "confirmed",
-        date: { gte: from, lte: to },
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                sku: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const { salesDocs, stockRecords, purchasePrices } = await ReportService.getProfitabilityData(from, to);
 
     // Aggregate sales by product
     const productSales: Record<string, {
@@ -63,16 +43,6 @@ export async function GET(request: NextRequest) {
 
     const productIds = Object.keys(productSales);
 
-    // Get average cost from StockRecord (moving average cost)
-    const stockRecords = productIds.length > 0
-      ? await db.stockRecord.findMany({
-          where: {
-            productId: { in: productIds },
-          },
-          select: { productId: true, averageCost: true },
-        })
-      : [];
-
     // Build averageCost map (sum across warehouses, then average)
     const avgCostByProduct: Record<string, { totalCost: number; count: number }> = {};
     for (const sr of stockRecords) {
@@ -92,18 +62,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback to PurchasePrice for products without averageCost
-    const productsNeedingFallback = productIds.filter((id) => !avgCostMap[id] || avgCostMap[id] === 0);
-    const purchasePrices = productsNeedingFallback.length > 0
-      ? await db.purchasePrice.findMany({
-          where: {
-            productId: { in: productsNeedingFallback },
-            isActive: true,
-          },
-          orderBy: { validFrom: "desc" },
-          select: { productId: true, price: true },
-        })
-      : [];
-
     const purchasePriceMap: Record<string, number> = {};
     for (const pp of purchasePrices) {
       if (!(pp.productId in purchasePriceMap)) {
@@ -113,7 +71,6 @@ export async function GET(request: NextRequest) {
 
     // Calculate profitability per product using averageCost (with fallback to PurchasePrice)
     const byProduct = Object.values(productSales).map((ps) => {
-      // Prefer averageCost from StockRecord, fallback to PurchasePrice
       const costPrice = avgCostMap[ps.productId] || purchasePriceMap[ps.productId] || 0;
       const cost = ps.quantitySold * costPrice;
       const profit = ps.revenue - cost;
@@ -140,6 +97,9 @@ export async function GET(request: NextRequest) {
     const totalCost = byProduct.reduce((sum, r) => sum + r.cost, 0);
     const totalProfit = totalRevenue - totalCost;
     const averageMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+    // Suppress unused variable lint warning
+    void productIds;
 
     return NextResponse.json({
       period: { from: query.dateFrom, to: query.dateTo },

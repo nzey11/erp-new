@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requireAuth } from "@/lib/shared/authorization";
 import { z } from "zod";
+import { PaymentService } from "@/lib/modules/finance";
 
 const createCategorySchema = z.object({
   name: z.string().min(1).max(100),
@@ -15,13 +15,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
 
-    const categories = await db.financeCategory.findMany({
-      where: {
-        isActive: true,
-        ...(type ? { type } : {}),
-      },
-      orderBy: [{ type: "asc" }, { order: "asc" }, { name: "asc" }],
-    });
+    const categories = await PaymentService.listFinanceCategories(type);
 
     return NextResponse.json({ categories });
   } catch {
@@ -35,19 +29,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createCategorySchema.parse(body);
 
-    // Get max order for this type
-    const maxOrder = await db.financeCategory.aggregate({
-      where: { type: data.type },
-      _max: { order: true },
-    });
-
-    const category = await db.financeCategory.create({
-      data: {
-        ...data,
-        isSystem: false,
-        order: (maxOrder._max.order ?? 0) + 1,
-      },
-    });
+    const category = await PaymentService.createFinanceCategory(data);
 
     return NextResponse.json(category);
   } catch (error) {

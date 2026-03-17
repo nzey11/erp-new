@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { bulkProductActionSchema } from "@/lib/modules/accounting/schemas/products.schema";
+import { createOutboxEvent } from "@/lib/events/outbox";
+import { ProductService } from "@/lib/modules/accounting";
+
+/**
+ * Emit a product.updated outbox event for each productId inside a transaction.
+ */
+async function emitBulkProductEvents(
+  tx: Parameters<Parameters<typeof ProductService.$transaction>[0]>[0],
+  productIds: string[]
+): Promise<void> {
+  for (const productId of productIds) {
+    await createOutboxEvent(
+      tx,
+      { type: "product.updated", occurredAt: new Date(), payload: { productId } },
+      "Product",
+      productId
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,54 +33,26 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case "archive":
-        result = await db.product.updateMany({
-          where: { id: { in: productIds } },
-          data: { isActive: false },
+        result = await ProductService.$transaction(async (tx) => {
+          const r = await ProductService.bulkUpdateMany(productIds, { isActive: false }, tx);
+          await emitBulkProductEvents(tx, productIds);
+          return r;
         });
         break;
 
       case "restore":
-        result = await db.product.updateMany({
-          where: { id: { in: productIds } },
-          data: { isActive: true },
+        result = await ProductService.$transaction(async (tx) => {
+          const r = await ProductService.bulkUpdateMany(productIds, { isActive: true }, tx);
+          await emitBulkProductEvents(tx, productIds);
+          return r;
         });
         break;
 
       case "delete":
         // Hard delete - use with caution
-        // First delete related records to avoid foreign key constraints
-        await db.$transaction(async (tx) => {
-          // Delete custom fields
-          await tx.productCustomField.deleteMany({
-            where: { productId: { in: productIds } },
-          });
-          // Delete variant links (both directions)
-          await tx.productVariantLink.deleteMany({
-            where: { OR: [{ productId: { in: productIds } }, { linkedProductId: { in: productIds } }] },
-          });
-          // Delete discounts
-          await tx.productDiscount.deleteMany({
-            where: { productId: { in: productIds } },
-          });
-          // Delete variants
-          await tx.productVariant.deleteMany({
-            where: { productId: { in: productIds } },
-          });
-          // Delete prices
-          await tx.purchasePrice.deleteMany({
-            where: { productId: { in: productIds } },
-          });
-          await tx.salePrice.deleteMany({
-            where: { productId: { in: productIds } },
-          });
-          // Delete stock records
-          await tx.stockRecord.deleteMany({
-            where: { productId: { in: productIds } },
-          });
-          // Finally delete products
-          await tx.product.deleteMany({
-            where: { id: { in: productIds } },
-          });
+        await ProductService.$transaction(async (tx) => {
+          await ProductService.bulkHardDelete(productIds, tx);
+          // No outbox events for hard delete — projection row is removed by DB cascade
         });
         result = { count: productIds.length };
         break;
@@ -71,9 +61,10 @@ export async function POST(request: NextRequest) {
         if (!categoryId) {
           return NextResponse.json({ error: "categoryId обязателен для смены категории" }, { status: 400 });
         }
-        result = await db.product.updateMany({
-          where: { id: { in: productIds } },
-          data: { categoryId },
+        result = await ProductService.$transaction(async (tx) => {
+          const r = await ProductService.bulkUpdateMany(productIds, { categoryId }, tx);
+          await emitBulkProductEvents(tx, productIds);
+          return r;
         });
         break;
 

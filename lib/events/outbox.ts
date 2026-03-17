@@ -243,6 +243,15 @@ export function registerOutboxHandler(
 }
 
 /**
+ * Clear all registered handlers.
+ * FOR TESTS ONLY — resets the registry between test suites.
+ * Production code must never call this.
+ */
+export function clearOutboxHandlers(): void {
+  handlerRegistry.clear();
+}
+
+/**
  * Process a single event by calling all registered handlers.
  */
 async function processEvent(event: OutboxEventRow): Promise<void> {
@@ -250,7 +259,13 @@ async function processEvent(event: OutboxEventRow): Promise<void> {
   const handlers = handlerRegistry.get(domainEvent.type) ?? [];
 
   if (handlers.length === 0) {
-    console.warn(`[outbox] No handlers registered for ${domainEvent.type}`);
+    // Warn but do NOT throw — the event will still be marked PROCESSED below.
+    // This prevents PROCESSING limbo (events claimed but never resolved) when
+    // a handler is temporarily absent (e.g., deployment gap, feature flag off).
+    logger.warn("outbox", `No handlers registered for event type "${domainEvent.type}" — marking as processed`, {
+      eventId: event.id,
+      eventType: domainEvent.type,
+    });
     return;
   }
 

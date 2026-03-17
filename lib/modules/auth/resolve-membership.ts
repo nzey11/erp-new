@@ -9,7 +9,7 @@
  */
 
 import { db } from "@/lib/shared/db";
-import type { ErpRole } from "@/lib/generated/prisma/client";
+import type { ErpRole } from "@/lib/generated/prisma/enums";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

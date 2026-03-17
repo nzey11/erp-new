@@ -153,6 +153,19 @@ export function DocumentsPageClient({
 
   const columns = getDocumentColumns();
 
+  const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (sortField) {
+      params.set("sort", sortField);
+      params.set("order", sortOrder === "ascend" ? "asc" : "desc");
+    } else {
+      params.delete("sort");
+      params.delete("order");
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const rowActions = (row: DocumentRow) => {
     const items = getDocumentRowActions(row, handleRowAction);
     return (
@@ -242,6 +255,7 @@ export function DocumentsPageClient({
         rowKey="id"
         sticky
         emptyText="Нет документов"
+        onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
       />
     </div>
   );

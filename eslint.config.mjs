@@ -138,7 +138,7 @@ const eslintConfig = defineConfig([
     files: ["app/api/**/*.ts", "app/api/**/*.tsx"],
     rules: {
       "no-restricted-imports": [
-        "warn",
+        "error",
         {
           patterns: [
             {

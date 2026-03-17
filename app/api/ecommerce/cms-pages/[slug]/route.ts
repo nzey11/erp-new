@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { StorefrontCmsService } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 export async function GET(
@@ -9,9 +9,7 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const page = await db.storePage.findUnique({
-      where: { slug, isPublished: true },
-    });
+    const page = await StorefrontCmsService.findBySlug(slug);
 
     if (!page) {
       return NextResponse.json(

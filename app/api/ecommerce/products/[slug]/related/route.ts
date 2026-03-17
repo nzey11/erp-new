@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
+import { StorefrontProductService, toNumber } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 export async function GET(
@@ -10,14 +10,7 @@ export async function GET(
     const { slug } = await params;
 
     // Find the product by slug or id
-    const product = await db.product.findFirst({
-      where: {
-        OR: [{ slug }, { id: slug }],
-        isActive: true,
-        publishedToStore: true,
-      },
-      select: { id: true, categoryId: true },
-    });
+    const product = await StorefrontProductService.findRelatedBySlug(slug);
 
     if (!product) {
       return NextResponse.json({ data: [] });
@@ -34,36 +27,7 @@ export async function GET(
       where.categoryId = product.categoryId;
     }
 
-    const related = await db.product.findMany({
-      where,
-      take: 6,
-      orderBy: { createdAt: "desc" },
-      include: {
-        salePrices: {
-          where: {
-            isActive: true,
-            priceListId: null,
-            validFrom: { lte: new Date() },
-            OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-          },
-          take: 1,
-          orderBy: { validFrom: "desc" },
-        },
-        discounts: {
-          where: {
-            isActive: true,
-            validFrom: { lte: new Date() },
-            OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-          },
-          take: 1,
-        },
-        reviews: {
-          where: { isPublished: true },
-          select: { rating: true },
-        },
-        unit: { select: { shortName: true } },
-      },
-    });
+    const related = await StorefrontProductService.listRelated(where);
 
     const data = related.map((p) => {
       const basePrice = toNumber(p.salePrices[0]?.price) || 0;

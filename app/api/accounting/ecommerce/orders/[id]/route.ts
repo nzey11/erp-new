@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateOrderStatusSchema } from "@/lib/modules/accounting/schemas/ecommerce-admin.schema";
@@ -8,6 +7,7 @@ import { validateTransition, DocumentStateError } from "@/lib/modules/accounting
 import type { DocumentStatus } from "@/lib/generated/prisma/client";
 import { getAuthSession } from "@/lib/shared/auth";
 import { confirmDocumentTransactional } from "@/lib/modules/accounting/services/document-confirm.service";
+import { EcommerceAdminService } from "@/lib/modules/accounting";
 
 /** PUT /api/accounting/ecommerce/orders/[id] — Update ecom order status */
 export async function PUT(
@@ -21,7 +21,7 @@ export async function PUT(
     const data = await parseBody(request, updateOrderStatusSchema);
 
     // Load document to validate the transition before applying
-    const doc = await db.document.findUnique({ where: { id }, select: { type: true, status: true } });
+    const doc = await EcommerceAdminService.findDocumentStatus(id);
     if (!doc) {
       return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
     }
@@ -52,38 +52,7 @@ export async function PUT(
       });
       
       // Return the confirmed document with full relations
-      const document = await db.document.findUnique({
-        where: { id },
-        include: {
-          customer: {
-            select: {
-              name: true,
-              phone: true,
-              telegramUsername: true,
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  name: true,
-                  sku: true,
-                },
-              },
-              variant: {
-                select: {
-                  id: true,
-                  option: {
-                    select: {
-                      value: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
+      const document = await EcommerceAdminService.findDocumentWithDetails(id);
       return NextResponse.json(document);
     } else if (data.status === "cancelled") {
       // Use proper cancel flow: reversing movements, balance recalc
@@ -97,48 +66,13 @@ export async function PUT(
       const session = await getAuthSession();
       await confirmDocumentTransactional(id, session?.username ?? null);
     } else {
-      // Unknown or unsupported status
-      // Note: 'draft' is not reachable via state machine from any status
-      // State machine validation above will reject invalid transitions
       return NextResponse.json(
         { error: `Unsupported status: ${data.status}` },
         { status: 400 }
       );
     }
 
-    const document = await db.document.findUnique({
-      where: { id },
-      include: {
-        customer: {
-          select: {
-            name: true,
-            phone: true,
-            telegramUsername: true,
-          },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                name: true,
-                sku: true,
-              },
-            },
-            variant: {
-              select: {
-                id: true,
-                option: {
-                  select: {
-                    value: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
+    const document = await EcommerceAdminService.findDocumentWithDetails(id);
     return NextResponse.json(document);
   } catch (error) {
     const vErr = validationError(error);

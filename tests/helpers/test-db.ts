@@ -8,6 +8,7 @@ import { db } from "@/lib/shared/db";
 export async function cleanDatabase(): Promise<void> {
   // Delete in reverse FK dependency order
   // Note: Order/OrderItem/OrderCounter are legacy - Document is used now
+  await db.outboxEvent.deleteMany(); // No FK dependencies — safe to clean first
   await db.cartItem.deleteMany();
   await db.review.deleteMany();
   await db.favorite.deleteMany();

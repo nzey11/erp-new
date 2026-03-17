@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCustomerSession, requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
-import { db } from "@/lib/shared/db";
 import { z } from "zod";
+import { CustomerService } from "@/lib/modules/ecommerce";
 
 /** GET /api/auth/customer/me — Get current customer */
 export async function GET() {
@@ -25,12 +25,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const data = updateProfileSchema.parse(body);
 
-    const updated = await db.customer.update({
-      where: { id: customer.id },
-      data,
-      select: { id: true, telegramId: true, telegramUsername: true, name: true, phone: true, email: true, isActive: true },
-    });
-
+    const updated = await CustomerService.updateProfile(customer.id, data);
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {

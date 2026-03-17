@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { signSession } from "@/lib/shared/auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { loginSchema } from "@/lib/shared/schemas/auth.schema";
@@ -10,6 +9,7 @@ import {
   MembershipResolutionError,
 } from "@/lib/modules/auth/resolve-membership";
 import { generateCsrfToken, signCsrfToken, CSRF_COOKIE_NAME } from "@/lib/shared/csrf";
+import { UserService } from "@/lib/modules/accounting";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,10 +18,7 @@ export async function POST(request: NextRequest) {
     logger.info("auth/login", "Login attempt", { username });
 
     // 1. Validate credentials
-    const user = await db.user.findUnique({
-      where: { username },
-      select: { id: true, username: true, password: true, isActive: true },
-    });
+    const user = await UserService.findByUsername(username);
 
     if (!user || !user.isActive) {
       logger.warn("auth/login", "Login failed: user not found or inactive", { username });

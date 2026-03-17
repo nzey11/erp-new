@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { dateRangeSchema } from "@/lib/modules/accounting/schemas/reports.schema";
+import { ReportService, toNumber } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,18 +15,7 @@ export async function GET(request: NextRequest) {
     to.setHours(23, 59, 59, 999);
 
     // Get confirmed incoming shipments in date range
-    const purchaseDocs = await db.document.findMany({
-      where: {
-        type: "incoming_shipment",
-        status: "confirmed",
-        date: { gte: from, lte: to },
-      },
-      include: {
-        counterparty: { select: { id: true, name: true } },
-        items: true,
-      },
-      orderBy: { date: "asc" },
-    });
+    const purchaseDocs = await ReportService.getPurchasesAnalyticsData(from, to);
 
     // ── By Supplier ────────────────────────────────────────────────────────────
     const supplierMap: Record<string, { supplierId: string; supplierName: string; totalAmount: number; docCount: number }> = {};

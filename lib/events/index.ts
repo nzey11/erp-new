@@ -17,6 +17,7 @@ export {
   getOutboxStats,
   processOutboxEvents,
   registerOutboxHandler,
+  clearOutboxHandlers,
 } from "./outbox";
 export type { OutboxEventRow } from "./outbox";
 // Re-export EventHandler from outbox as OutboxEventHandler to avoid conflict

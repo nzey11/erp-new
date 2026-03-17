@@ -61,8 +61,15 @@ export async function getProductTotalStock(productId: string) {
 
 /**
  * Update average cost when receiving stock (incoming_shipment, stock_receipt, customer_return).
- * Formula: newAvgCost = (oldQty * oldCost + newQty * newPrice) / (oldQty + newQty)
- * 
+ * Formula: newAvgCost = (oldQty * oldCost + incomingQty * incomingPrice) / (oldQty + incomingQty)
+ *
+ * IMPORTANT: `oldQty` must reflect the stock quantity BEFORE the receipt.
+ * Since this is typically called after `reconcileStockRecord` has already updated
+ * StockRecord.quantity to include the new batch, callers must pass the pre-receipt
+ * quantity explicitly via `preReceiptQty`.
+ *
+ * @param preReceiptQty - Quantity in warehouse BEFORE this receipt (required).
+ *
  * NOTE: All monetary calculations use Decimal in DB, but we convert to number
  * for the AVCO formula. The result is stored back as Decimal.
  */
@@ -70,13 +77,14 @@ export async function updateAverageCostOnReceipt(
   warehouseId: string,
   productId: string,
   incomingQty: number,
-  incomingPrice: number
+  incomingPrice: number,
+  preReceiptQty: number
 ): Promise<void> {
   const record = await db.stockRecord.findUnique({
     where: { warehouseId_productId: { warehouseId, productId } },
   });
 
-  const oldQty = record?.quantity ?? 0;
+  const oldQty = preReceiptQty;
   const oldCost = toNumber(record?.averageCost);
   const totalQty = oldQty + incomingQty;
 
@@ -104,19 +112,22 @@ export async function updateAverageCostOnReceipt(
 /**
  * Update average cost on transfer to target warehouse.
  * Target warehouse receives stock at source warehouse's average cost.
+ *
+ * @param preTargetQty - Quantity in target warehouse BEFORE this transfer.
  */
 export async function updateAverageCostOnTransfer(
   sourceWarehouseId: string,
   targetWarehouseId: string,
   productId: string,
-  transferQty: number
+  transferQty: number,
+  preTargetQty: number
 ): Promise<void> {
   const sourceRecord = await db.stockRecord.findUnique({
     where: { warehouseId_productId: { warehouseId: sourceWarehouseId, productId } },
   });
   const sourceCost = toNumber(sourceRecord?.averageCost);
 
-  await updateAverageCostOnReceipt(targetWarehouseId, productId, transferQty, sourceCost);
+  await updateAverageCostOnReceipt(targetWarehouseId, productId, transferQty, sourceCost, preTargetQty);
 }
 
 /**

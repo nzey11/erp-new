@@ -129,11 +129,14 @@ async function main() {
   ];
 
   for (const cat of financeCategories) {
-    await prisma.financeCategory.upsert({
-      where: { id: `sys-${cat.type}-${cat.order}` },
-      update: {},
-      create: { id: `sys-${cat.type}-${cat.order}`, ...cat },
+    const existing = await prisma.financeCategory.findFirst({
+      where: { name: cat.name, type: cat.type },
     });
+    if (!existing) {
+      await prisma.financeCategory.create({
+        data: { id: `sys-${cat.type}-${cat.order}`, ...cat },
+      });
+    }
   }
   console.log(`  ✓ ${financeCategories.length} finance categories`);
 

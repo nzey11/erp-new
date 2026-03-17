@@ -25,29 +25,18 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   processOutboxEvents,
   getOutboxStats,
-  registerOutboxHandler,
-  type EventHandler,
 } from "@/lib/events/outbox";
 import { logger } from "@/lib/shared/logger";
 
 // ─── Handler Registration ─────────────────────────────────────────────────────
+//
+// Import the canonical registration module. This is a one-time side-effect:
+// registerOutboxHandlers() is idempotent (guarded by a module-level flag),
+// so repeated requests never cause double-registration.
+import { registerOutboxHandlers } from "@/lib/events/handlers/register-outbox-handlers";
 
-// Import handlers to register them
-import { onDocumentConfirmedBalance } from "@/lib/modules/accounting/handlers/balance-handler";
-import { onDocumentConfirmedJournal } from "@/lib/modules/accounting/handlers/journal-handler";
-import { onDocumentConfirmedPayment } from "@/lib/modules/accounting/handlers/payment-handler";
-import { onProductCatalogUpdated } from "@/lib/modules/ecommerce/handlers";
-
-// Register handlers on module load
-// DocumentConfirmed handlers
-registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedBalance as unknown as EventHandler);
-registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedJournal as unknown as EventHandler);
-registerOutboxHandler("DocumentConfirmed", onDocumentConfirmedPayment as unknown as EventHandler);
-
-// Product catalog projection handlers
-registerOutboxHandler("product.updated", onProductCatalogUpdated as unknown as EventHandler);
-registerOutboxHandler("sale_price.updated", onProductCatalogUpdated as unknown as EventHandler);
-registerOutboxHandler("discount.updated", onProductCatalogUpdated as unknown as EventHandler);
+// Register on module load (runs once per process in production)
+registerOutboxHandlers();
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 

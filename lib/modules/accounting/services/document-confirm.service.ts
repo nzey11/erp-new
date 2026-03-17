@@ -41,8 +41,10 @@ import {
   createMovementsForDocument,
   createReversingMovements,
   hasReversingMovements,
+  reconcileStockRecord,
 } from "@/lib/modules/accounting/inventory/stock-movements";
 import { recalculateBalance } from "./balance.service";
+import { reverseEntryWithTx } from "@/lib/modules/accounting/finance/journal";
 
 // Re-export so callers only need one import
 export { DocumentStateError } from "@/lib/modules/accounting/document-states";
@@ -60,6 +62,73 @@ export class DocumentConfirmError extends Error {
     super(message);
     this.name = "DocumentConfirmError";
   }
+}
+
+// ---------------------------------------------------------------------------
+// Race condition protection — optimistic locking for outgoing_shipment
+// ---------------------------------------------------------------------------
+
+/**
+ * Atomically reserve stock using optimistic locking (StockRecord.version).
+ * Only applied for `outgoing_shipment` and `stock_transfer` — user-initiated
+ * operations where two concurrent confirms could both pass the availability
+ * check and then both decrement stock below zero.
+ *
+ * Strategy: read version → updateMany with version condition → if count=0, retry.
+ * On success, `reconcileStockRecord` (called after movements) will recalculate
+ * the exact quantity from movement history and overwrite the decrement.
+ * The version bump is what guards the critical section.
+ *
+ * @throws Error if stock is insufficient or max retries exceeded
+ */
+async function reserveStockWithOptimisticLock(
+  productId: string,
+  warehouseId: string,
+  quantity: number,
+  tenantId: string
+): Promise<void> {
+  const MAX_RETRIES = 5;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const record = await db.stockRecord.findFirst({
+      where: { productId, warehouseId },
+    });
+
+    const available = typeof record?.quantity === "number"
+      ? record.quantity
+      : Number(record?.quantity ?? 0);
+
+    if (available < quantity) {
+      // Re-check with fresh data — another transaction may have already decremented
+      throw new DocumentConfirmError(
+        `Конфликт остатков: недостаточно товара. Доступно ${available} шт., требуется ${quantity} шт.`,
+        409
+      );
+    }
+
+    if (!record) return; // No record to lock (will be created by reconcile)
+
+    const updated = await db.stockRecord.updateMany({
+      where: {
+        warehouseId,
+        productId,
+        version: record.version,
+        quantity: { gte: quantity },
+      },
+      data: {
+        quantity: { decrement: quantity },
+        version: { increment: 1 },
+      },
+    });
+
+    if (updated.count > 0) return; // Lock acquired
+    // Conflict — retry
+  }
+
+  throw new DocumentConfirmError(
+    "Конфликт остатков: данные изменились. Попробуйте ещё раз.",
+    409
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -161,26 +230,34 @@ async function validateForConfirmation(doc: DocumentWithItems): Promise<void> {
 /**
  * Update average costs for a confirmed document.
  * Must be called after stock projection (updateStockForDocument) has run.
+ * @param preConfirmQty - Map of productId → quantity BEFORE this confirmation ran.
  */
-async function updateAverageCostForDocument(doc: DocumentWithItems): Promise<void> {
+async function updateAverageCostForDocument(
+  doc: DocumentWithItems,
+  preConfirmQty: Map<string, number>
+): Promise<void> {
   if (!doc.warehouseId) return;
 
   if (isStockIncrease(doc.type)) {
     for (const item of doc.items) {
+      const oldQty = preConfirmQty.get(item.productId) ?? 0;
       await updateAverageCostOnReceipt(
         doc.warehouseId,
         item.productId,
         item.quantity,
-        item.price
+        item.price,
+        oldQty
       );
     }
   } else if (doc.type === "stock_transfer" && doc.targetWarehouseId) {
     for (const item of doc.items) {
+      const targetPreQty = preConfirmQty.get(`target:${item.productId}`) ?? 0;
       await updateAverageCostOnTransfer(
         doc.warehouseId,
         doc.targetWarehouseId,
         item.productId,
-        item.quantity
+        item.quantity,
+        targetPreQty
       );
       await updateTotalCostValue(doc.warehouseId, item.productId);
     }
@@ -271,8 +348,44 @@ export async function confirmDocumentTransactional(
   // Step 2: Validate — throws DocumentConfirmError on any violation
   await validateForConfirmation(docWithNumbers);
 
+  // Step 2b: Optimistic lock for user-initiated outgoing ops (race condition protection)
+  // Applied AFTER availability check passes — guards the window between check and movement creation.
+  // Only for outgoing_shipment and stock_transfer (user-initiated, not inventory adjustments).
+  if (
+    (doc.type === "outgoing_shipment" || doc.type === "stock_transfer") &&
+    doc.warehouseId
+  ) {
+    for (const item of docWithNumbers.items) {
+      await reserveStockWithOptimisticLock(
+        item.productId,
+        doc.warehouseId,
+        item.quantity,
+        doc.tenantId
+      );
+    }
+  }
+
   // Steps 3–5: Critical stock effects (must all succeed before status update)
   if (affectsStock(doc.type)) {
+    // Snapshot pre-confirmation stock quantities for AVCO calculation.
+    // Must be read BEFORE createMovementsForDocument runs (which calls reconcileStockRecord).
+    const preConfirmQty = new Map<string, number>();
+    if (isStockIncrease(doc.type) && doc.warehouseId) {
+      for (const item of docWithNumbers.items) {
+        const record = await db.stockRecord.findUnique({
+          where: { warehouseId_productId: { warehouseId: doc.warehouseId!, productId: item.productId } },
+        });
+        preConfirmQty.set(item.productId, toNumber(record?.quantity ?? 0));
+      }
+    } else if (doc.type === "stock_transfer" && doc.targetWarehouseId) {
+      for (const item of docWithNumbers.items) {
+        const targetRecord = await db.stockRecord.findUnique({
+          where: { warehouseId_productId: { warehouseId: doc.targetWarehouseId!, productId: item.productId } },
+        });
+        preConfirmQty.set(`target:${item.productId}`, toNumber(targetRecord?.quantity ?? 0));
+      }
+    }
+
     // 3. Immutable movement log + reconciles StockRecord projection (idempotent)
     // Note: createMovementsForDocument already calls reconcileStockRecord internally,
     // so StockRecord is up-to-date after this call. No separate updateStockForDocument needed.
@@ -290,7 +403,7 @@ export async function confirmDocumentTransactional(
     });
 
     // 4. Average cost update (uses updated StockRecord from step 3)
-    await updateAverageCostForDocument(docWithNumbers);
+    await updateAverageCostForDocument(docWithNumbers, preConfirmQty);
   }
 
   // Step 5b: inventory_count — create linked adjustment documents (write_off / stock_receipt)
@@ -436,17 +549,7 @@ export async function cancelDocumentTransactional(
     throw new DocumentCancelError("Документ не найден", 404);
   }
 
-  // Validate transition through state machine
-  try {
-    validateTransition(doc.type, doc.status as import("@/lib/generated/prisma/client").DocumentStatus, "cancelled");
-  } catch (e) {
-    if (e instanceof DocumentStateError) {
-      throw new DocumentCancelError(e.message, 400);
-    }
-    throw e;
-  }
-
-  // Idempotency: already cancelled
+  // Idempotency: already cancelled — return early before state machine throws
   if (doc.status === "cancelled") {
     return {
       ...doc,
@@ -460,7 +563,31 @@ export async function cancelDocumentTransactional(
     } as CancelledDocumentResult;
   }
 
-  // Atomic transaction: document status update + reversing stock movements
+  // Validate transition through state machine
+  try {
+    validateTransition(doc.type, doc.status as import("@/lib/generated/prisma/client").DocumentStatus, "cancelled");
+  } catch (e) {
+    if (e instanceof DocumentStateError) {
+      throw new DocumentCancelError(e.message, 400);
+    }
+    throw e;
+  }
+
+  // ── Fix 3: Block cancellation if a confirmed Finance Payment exists ──────
+  // Finance Payments linked via documentId are authoritative proof of settlement.
+  // Must cancel the Payment first (1C/MS Dynamics behaviour).
+  const linkedPayment = await db.payment.findFirst({
+    where: { documentId, tenantId: doc.tenantId },
+    select: { id: true, number: true },
+  });
+  if (linkedPayment) {
+    throw new DocumentCancelError(
+      `Невозможно отменить документ: существует связанный платёж ${linkedPayment.number}. Сначала отмените платёж.`,
+      409
+    );
+  }
+
+  // Atomic transaction: status + reversing stock movements + journal reversals
   const cancelled = await db.$transaction(async (tx) => {
     // Update document status to cancelled
     const updated = await tx.document.update({
@@ -477,7 +604,7 @@ export async function cancelDocumentTransactional(
       },
     });
 
-    // Create reversing stock movements (idempotent)
+    // ── Reversing stock movements (idempotent) ──────────────────────────────
     if (affectsStock(doc.type)) {
       const alreadyReversed = await tx.stockMovement.count({
         where: { reversesDocumentId: documentId },
@@ -509,8 +636,44 @@ export async function cancelDocumentTransactional(
       }
     }
 
+    // ── Fix 1: Reverse all journal entries for this document ────────────────
+    // Idempotent: reverseEntryWithTx() is a no-op if entry.isReversed = true.
+    const journalEntries = await tx.journalEntry.findMany({
+      where: {
+        sourceId: documentId,
+        isReversed: false,
+      },
+      select: { id: true, number: true },
+    });
+
+    const cancellationDate = new Date();
+    for (const entry of journalEntries) {
+      await reverseEntryWithTx(tx, entry.id, {
+        date: cancellationDate,
+        description: `Отмена документа ${doc.number} — сторно проводки ${entry.number}`,
+        createdBy: actor ?? undefined,
+      });
+    }
+
     return updated;
   });
+
+  // Reconcile StockRecord projections after reversal movements (brings qty back from sum of movements)
+  if (affectsStock(doc.type) && doc.warehouseId) {
+    const affectedKeys = new Set<string>();
+    for (const item of doc.items) {
+      affectedKeys.add(`${item.productId}:${doc.warehouseId}`);
+    }
+    if (doc.targetWarehouseId) {
+      for (const item of doc.items) {
+        affectedKeys.add(`${item.productId}:${doc.targetWarehouseId}`);
+      }
+    }
+    for (const key of affectedKeys) {
+      const [productId, warehouseId] = key.split(":");
+      await reconcileStockRecord(productId, warehouseId);
+    }
+  }
 
   // Recalculate counterparty balance (outside transaction per requirements)
   if (affectsBalance(doc.type) && doc.counterpartyId) {

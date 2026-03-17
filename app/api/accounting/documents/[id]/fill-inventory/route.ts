@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
+import { DocumentService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,80 +17,13 @@ export async function POST(_request: NextRequest, { params }: Params) {
     await requirePermission("documents:write");
     const { id } = await params;
 
-    const doc = await db.document.findUnique({
-      where: { id },
-      include: { items: true },
-    });
+    const result = await DocumentService.fillInventory(id);
 
-    if (!doc) {
-      return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
-    }
-    if (doc.type !== "inventory_count") {
-      return NextResponse.json(
-        { error: "Заполнение доступно только для инвентаризации" },
-        { status: 400 }
-      );
-    }
-    if (doc.status !== "draft") {
-      return NextResponse.json(
-        { error: "Заполнение доступно только для черновиков" },
-        { status: 400 }
-      );
-    }
-    if (!doc.warehouseId) {
-      return NextResponse.json(
-        { error: "Укажите склад в документе" },
-        { status: 400 }
-      );
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    // Get all stock records for this warehouse
-    const stockRecords = await db.stockRecord.findMany({
-      where: {
-        warehouseId: doc.warehouseId,
-        quantity: { not: 0 },
-      },
-      include: {
-        product: { select: { id: true, name: true, sku: true, isActive: true } },
-      },
-    });
-
-    // Remove existing items and replace with stock data
-    await db.documentItem.deleteMany({ where: { documentId: id } });
-
-    const itemsData = stockRecords
-      .filter((sr) => sr.product.isActive)
-      .map((sr) => ({
-        documentId: id,
-        productId: sr.productId,
-        quantity: 0,
-        price: sr.averageCost,
-        total: 0,
-        expectedQty: sr.quantity,
-        actualQty: sr.quantity, // Default actual = expected; user changes it
-        difference: 0,
-      }));
-
-    if (itemsData.length > 0) {
-      await db.documentItem.createMany({ data: itemsData });
-    }
-
-    // Reload document with new items
-    const updated = await db.document.findUnique({
-      where: { id },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: { id: true, name: true, sku: true, unit: { select: { shortName: true } } },
-            },
-          },
-        },
-        warehouse: { select: { id: true, name: true } },
-      },
-    });
-
-    return NextResponse.json(updated);
+    return NextResponse.json(result.document);
   } catch (error) {
     const vErr = validationError(error);
     if (vErr) return vErr;

@@ -1,35 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { addToCartSchema } from "@/lib/modules/ecommerce/schemas/cart.schema";
+import { CartService, toNumber } from "@/lib/modules/ecommerce";
 
 /** GET /api/ecommerce/cart — Get customer cart */
 export async function GET() {
   try {
     const customer = await requireCustomer();
 
-    const cartItems = await db.cartItem.findMany({
-      where: { customerId: customer.id },
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            imageUrl: true,
-            slug: true,
-            unit: { select: { shortName: true } },
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            option: { select: { value: true } },
-          },
-        },
-      },
-      orderBy: { addedAt: "desc" },
-    });
+    const cartItems = await CartService.getCartItems(customer.id);
 
     const items = cartItems.map((item) => ({
       id: item.id,
@@ -59,28 +39,7 @@ export async function POST(request: NextRequest) {
     const { productId, variantId, quantity } = await parseBody(request, addToCartSchema);
 
     // Get product with current price
-    const product = await db.product.findUnique({
-      where: { id: productId },
-      include: {
-        salePrices: {
-          where: { isActive: true, priceListId: null },
-          orderBy: { validFrom: "desc" },
-          take: 1,
-        },
-        discounts: {
-          where: {
-            isActive: true,
-            validFrom: { lte: new Date() },
-            OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-          },
-          take: 1,
-        },
-        variants: {
-          where: { id: variantId || "none" },
-          take: 1,
-        },
-      },
-    });
+    const product = await CartService.getProductForCart(productId, variantId);
 
     if (!product || !product.isActive || !product.publishedToStore) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -109,42 +68,20 @@ export async function POST(request: NextRequest) {
 
     let existing;
     if (resolvedVariantId) {
-      existing = await db.cartItem.findUnique({
-        where: {
-          customerId_productId_variantId: {
-            customerId: customer.id,
-            productId,
-            variantId: resolvedVariantId,
-          },
-        },
-      });
+      existing = await CartService.findCartItemByVariant(customer.id, productId, resolvedVariantId);
     } else {
-      existing = await db.cartItem.findFirst({
-        where: {
-          customerId: customer.id,
-          productId,
-          variantId: null,
-        },
-      });
+      existing = await CartService.findCartItemNoVariant(customer.id, productId);
     }
 
     if (existing) {
-      await db.cartItem.update({
-        where: { id: existing.id },
-        data: {
-          quantity: existing.quantity + quantity,
-          priceSnapshot: price,
-        },
-      });
+      await CartService.updateCartItem(existing.id, existing.quantity + quantity, price);
     } else {
-      await db.cartItem.create({
-        data: {
-          customerId: customer.id,
-          productId,
-          variantId: resolvedVariantId,
-          quantity,
-          priceSnapshot: price,
-        },
+      await CartService.createCartItem({
+        customerId: customer.id,
+        productId,
+        variantId: resolvedVariantId,
+        quantity,
+        priceSnapshot: price,
       });
     }
 
@@ -168,16 +105,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify ownership
-    const item = await db.cartItem.findUnique({
-      where: { id: itemId },
-      select: { customerId: true },
-    });
+    const item = await CartService.findCartItemById(itemId);
 
     if (!item || item.customerId !== customer.id) {
       return NextResponse.json({ error: "Cart item not found" }, { status: 404 });
     }
 
-    await db.cartItem.delete({ where: { id: itemId } });
+    await CartService.deleteCartItem(itemId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

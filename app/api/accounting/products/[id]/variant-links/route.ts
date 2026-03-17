@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createVariantLinkSchema } from "@/lib/modules/accounting/schemas/products.schema";
+import { createOutboxEvent } from "@/lib/events/outbox";
+import { ProductService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -11,26 +12,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     await requirePermission("products:read");
     const { id: productId } = await params;
 
-    const links = await db.productVariantLink.findMany({
-      where: { productId, isActive: true },
-      include: {
-        linkedProduct: {
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            imageUrl: true,
-            salePrices: {
-              where: { isActive: true },
-              orderBy: { validFrom: "desc" },
-              take: 1,
-              select: { price: true },
-            },
-          },
-        },
-      },
-      orderBy: { sortOrder: "asc" },
-    });
+    const links = await ProductService.listVariantLinks(productId);
 
     const result = links.map((l) => ({
       id: l.id,
@@ -66,42 +48,29 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
-    const linkedProduct = await db.product.findUnique({
-      where: { id: linkedProductId },
-      select: {
-        id: true,
-        name: true,
-        sku: true,
-        imageUrl: true,
-        salePrices: {
-          where: { isActive: true },
-          orderBy: { validFrom: "desc" },
-          take: 1,
-          select: { price: true },
-        },
-      },
-    });
+    const linkedProduct = await ProductService.findLinkedProduct(linkedProductId);
 
     if (!linkedProduct) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
     }
 
     // Check if link already exists
-    const existingLink = await db.productVariantLink.findFirst({
-      where: { productId, linkedProductId },
-    });
+    const existingLink = await ProductService.findVariantLink(productId, linkedProductId);
 
     if (existingLink) {
       // Reactivate if soft-deleted, otherwise return existing
       if (!existingLink.isActive) {
-        await db.productVariantLink.update({
-          where: { id: existingLink.id },
-          data: { isActive: true, groupName: groupName || existingLink.groupName },
-        });
-        // Also set masterProductId on the linked product
-        await db.product.update({
-          where: { id: linkedProductId },
-          data: { masterProductId: productId },
+        await ProductService.$transaction(async (tx) => {
+          await ProductService.reactivateVariantLink(
+            existingLink.id,
+            { groupName: groupName || existingLink.groupName },
+            productId,
+            linkedProductId,
+            tx
+          );
+          // Both affected products need projection update
+          await createOutboxEvent(tx, { type: "product.updated", occurredAt: new Date(), payload: { productId } }, "Product", productId);
+          await createOutboxEvent(tx, { type: "product.updated", occurredAt: new Date(), payload: { productId: linkedProductId } }, "Product", linkedProductId);
         });
       }
       return NextResponse.json({
@@ -119,14 +88,17 @@ export async function POST(request: NextRequest, { params }: Params) {
       }, { status: 200 });
     }
 
-    const link = await db.productVariantLink.create({
-      data: { productId, linkedProductId, groupName: groupName || "Модификации" },
-    });
-
-    // Also set masterProductId on the linked product for variant hierarchy
-    await db.product.update({
-      where: { id: linkedProductId },
-      data: { masterProductId: productId },
+    const link = await ProductService.$transaction(async (tx) => {
+      const created = await ProductService.createVariantLink(
+        productId,
+        linkedProductId,
+        groupName || "Модификации",
+        tx
+      );
+      // Both master and variant need projection update
+      await createOutboxEvent(tx, { type: "product.updated", occurredAt: new Date(), payload: { productId } }, "Product", productId);
+      await createOutboxEvent(tx, { type: "product.updated", occurredAt: new Date(), payload: { productId: linkedProductId } }, "Product", linkedProductId);
+      return created;
     });
 
     return NextResponse.json({
@@ -152,7 +124,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     await requirePermission("products:write");
-    await params;
+    const { id: productId } = await params;
 
     const { searchParams } = new URL(request.url);
     const linkId = searchParams.get("linkId");
@@ -162,23 +134,17 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     }
 
     // Get the link to find the linkedProductId
-    const link = await db.productVariantLink.findUnique({
-      where: { id: linkId },
-      select: { linkedProductId: true },
-    });
+    const link = await ProductService.findVariantLinkById(linkId);
 
-    await db.productVariantLink.update({
-      where: { id: linkId },
-      data: { isActive: false },
-    });
+    await ProductService.$transaction(async (tx) => {
+      await ProductService.deactivateVariantLink(linkId, link?.linkedProductId, productId, tx);
 
-    // Clear masterProductId on the linked product
-    if (link) {
-      await db.product.update({
-        where: { id: link.linkedProductId },
-        data: { masterProductId: null },
-      });
-    }
+      // Both products affected — emit events
+      if (link) {
+        await createOutboxEvent(tx, { type: "product.updated", occurredAt: new Date(), payload: { productId } }, "Product", productId);
+        await createOutboxEvent(tx, { type: "product.updated", occurredAt: new Date(), payload: { productId: link.linkedProductId } }, "Product", link.linkedProductId);
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

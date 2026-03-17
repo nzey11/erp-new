@@ -13,6 +13,7 @@
  *   Both are created atomically — a failure rolls back both.
  */
 
+import 'server-only'
 import { db } from "@/lib/shared/db";
 import { resolveParty } from "@/lib/domain/party";
 import type { Counterparty } from "@/lib/generated/prisma/client";
@@ -118,4 +119,85 @@ export async function createCounterpartyWithParty(
   }
 
   return { counterparty, partyId, partyIsNew };
+}
+
+// ---------------------------------------------------------------------------
+// Query / CRUD helpers
+// ---------------------------------------------------------------------------
+
+export interface ListCounterpartiesParams {
+  search?: string
+  type?: string
+  active?: string
+  page?: number
+  limit?: number
+}
+
+export const CounterpartyService = {
+  async list(params: ListCounterpartiesParams, tenantId: string) {
+    const { search, type, active, page = 1, limit = 50 } = params
+    const where: Record<string, unknown> = { tenantId }
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { legalName: { contains: search } },
+        { inn: { contains: search } },
+        { phone: { contains: search } },
+      ]
+    }
+    if (type) where.type = type
+    if (active !== undefined && active !== '') where.isActive = active === 'true'
+
+    const [counterparties, total] = await Promise.all([
+      db.counterparty.findMany({
+        where,
+        include: { balance: { select: { balanceRub: true } } },
+        orderBy: { name: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.counterparty.count({ where }),
+    ])
+    return { counterparties, total, page, limit }
+  },
+
+  async findById(id: string, tenantId: string) {
+    return db.counterparty.findFirst({
+      where: { id, tenantId },
+      include: {
+        balance: true,
+        interactions: { orderBy: { createdAt: 'desc' }, take: 20 },
+      },
+    })
+  },
+
+  async getTenantGate(id: string, tenantId: string) {
+    return db.counterparty.findFirst({ where: { id, tenantId } })
+  },
+
+  async update(id: string, updateData: Record<string, unknown>) {
+    return db.counterparty.update({ where: { id }, data: updateData })
+  },
+
+  async softDelete(id: string) {
+    return db.counterparty.update({ where: { id }, data: { isActive: false } })
+  },
+
+  async listInteractions(counterpartyId: string) {
+    return db.counterpartyInteraction.findMany({
+      where: { counterpartyId },
+      orderBy: { createdAt: 'desc' },
+    })
+  },
+
+  async createInteraction(counterpartyId: string, data: { type: string; subject?: string | null; description?: string | null }) {
+    return db.counterpartyInteraction.create({
+      data: {
+        counterpartyId,
+        type: data.type,
+        subject: data.subject || null,
+        description: data.description || null,
+      },
+    })
+  },
 }

@@ -27,6 +27,61 @@ import { DocumentType, MovementType } from "@/lib/generated/prisma/client";
 import { STOCK_INCREASE_TYPES, STOCK_DECREASE_TYPES } from "./predicates";
 
 // =============================================
+// Optimistic Locking Helper
+// =============================================
+
+/**
+ * Atomically decrement stock using optimistic locking (version field).
+ * Reads current StockRecord, then does updateMany with version check.
+ * If another transaction already modified the record, count === 0 → conflict.
+ *
+ * @throws Error with Russian message if stock is insufficient or conflict detected
+ */
+async function decrementStockWithOptimisticLock(
+  productId: string,
+  warehouseId: string,
+  quantity: number
+): Promise<void> {
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const record = await db.stockRecord.findUnique({
+      where: { warehouseId_productId: { warehouseId, productId } },
+    });
+
+    const available = typeof record?.quantity === "number" ? record.quantity : Number(record?.quantity ?? 0);
+
+    if (available < quantity) {
+      throw new Error(
+        `Конфликт остатков: недостаточно товара. Доступно ${available} шт., требуется ${quantity} шт.`
+      );
+    }
+
+    const updated = await db.stockRecord.updateMany({
+      where: {
+        warehouseId,
+        productId,
+        version: record!.version,
+        quantity: { gte: quantity },
+      },
+      data: {
+        quantity: { decrement: quantity },
+        version: { increment: 1 },
+      },
+    });
+
+    if (updated.count > 0) {
+      return; // Success
+    }
+    // Conflict — another transaction modified the record; retry
+  }
+
+  throw new Error(
+    "Конфликт остатков: данные изменились. Попробуйте ещё раз."
+  );
+}
+
+// =============================================
 // Movement Type Mapping
 // =============================================
 

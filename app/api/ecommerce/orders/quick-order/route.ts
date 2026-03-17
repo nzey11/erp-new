@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { quickOrderSchema } from "@/lib/modules/ecommerce/schemas/quick-order.schema";
-import { createSalesOrderFromCart } from "@/lib/modules/ecommerce";
+import { createSalesOrderFromCart, CustomerService, toNumber } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 import { resolveParty } from "@/lib/domain/party";
 
@@ -11,33 +10,7 @@ export async function POST(request: NextRequest) {
     const data = await parseBody(request, quickOrderSchema);
 
     // Validate product exists and is published
-    const product = await db.product.findFirst({
-      where: {
-        id: data.productId,
-        isActive: true,
-        publishedToStore: true,
-      },
-      include: {
-        salePrices: {
-          where: {
-            isActive: true,
-            priceListId: null,
-            validFrom: { lte: new Date() },
-            OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-          },
-          take: 1,
-          orderBy: { validFrom: "desc" },
-        },
-        discounts: {
-          where: {
-            isActive: true,
-            validFrom: { lte: new Date() },
-            OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-          },
-          take: 1,
-        },
-      },
-    });
+    const product = await CustomerService.findPublishedProduct(data.productId);
 
     if (!product) {
       return NextResponse.json(
@@ -59,9 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Add variant adjustment
     if (data.variantId) {
-      const variant = await db.productVariant.findUnique({
-        where: { id: data.variantId },
-      });
+      const variant = await CustomerService.findProductVariant(data.variantId);
       if (variant) {
         price += toNumber(variant.priceAdjustment);
       }
@@ -71,19 +42,15 @@ export async function POST(request: NextRequest) {
     const quantity = data.quantity;
 
     // Find or create a guest customer by phone
-    let customer = await db.customer.findFirst({
-      where: { phone: data.customerPhone },
-    });
+    let customer = await CustomerService.findByPhone(data.customerPhone);
 
     const isNewCustomer = !customer;
 
     if (!customer) {
-      customer = await db.customer.create({
-        data: {
-          telegramId: `quick_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-          name: data.customerName,
-          phone: data.customerPhone,
-        },
+      customer = await CustomerService.createGuest({
+        telegramId: `quick_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        name: data.customerName,
+        phone: data.customerPhone,
       });
     }
 

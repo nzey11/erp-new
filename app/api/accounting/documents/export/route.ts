@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
-
-const GROUP_TYPES: Record<string, string[]> = {
-  purchases: ["purchase_order", "incoming_shipment", "supplier_return"],
-  sales: ["outgoing_shipment", "customer_return", "sales_order"],
-  stock: ["inventory_count", "write_off", "stock_receipt", "stock_transfer"],
-};
+import { DocumentService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,34 +12,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get("dateFrom") || "";
     const dateTo = searchParams.get("dateTo") || "";
 
-    const where: Record<string, unknown> = {};
-
-    if (type) {
-      where.type = type;
-    } else if (group && GROUP_TYPES[group]) {
-      where.type = { in: GROUP_TYPES[group] };
-    }
-
-    if (dateFrom || dateTo) {
-      const dateFilter: Record<string, Date> = {};
-      if (dateFrom) dateFilter.gte = new Date(dateFrom);
-      if (dateTo) {
-        const to = new Date(dateTo);
-        to.setHours(23, 59, 59, 999);
-        dateFilter.lte = to;
-      }
-      where.date = dateFilter;
-    }
-
-    const docs = await db.document.findMany({
-      where,
-      include: {
-        counterparty: { select: { name: true } },
-        warehouse: { select: { name: true } },
-        _count: { select: { items: true } },
-      },
-      orderBy: { date: "desc" },
-    });
+    const docs = await DocumentService.exportDocuments({ group, type, dateFrom, dateTo });
 
     const header = ["Номер", "Тип", "Дата", "Статус", "Контрагент", "Склад", "Позиций", "Сумма", "Примечание"].join(",");
 

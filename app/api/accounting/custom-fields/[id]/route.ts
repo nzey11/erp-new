@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateCustomFieldSchema } from "@/lib/modules/accounting/schemas/custom-fields.schema";
+import { CustomFieldService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -19,11 +19,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
     if (data.order !== undefined) updateData.order = data.order;
 
-    const field = await db.customFieldDefinition.update({
-      where: { id },
-      data: updateData,
-    });
-
+    const field = await CustomFieldService.update(id, updateData);
     return NextResponse.json(field);
   } catch (error) {
     const vErr = validationError(error);
@@ -36,12 +32,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
     await requirePermission("products:write");
     const { id } = await params;
-
-    await db.customFieldDefinition.update({
-      where: { id },
-      data: { isActive: false },
-    });
-
+    await CustomFieldService.softDelete(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     const vErr = validationError(error);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryStorefrontProductsSchema } from "@/lib/modules/ecommerce/schemas/products.schema";
+import { StorefrontProductService, toNumber } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 /** GET /api/ecommerce/products — Public product listing */
@@ -35,53 +35,7 @@ export async function GET(request: NextRequest) {
     if (sort === "newest") orderBy = { createdAt: "desc" };
     if (sort === "price_asc" || sort === "price_desc") orderBy = { name: "asc" }; // Sort after fetch for price
 
-    const [products, total] = await Promise.all([
-      db.product.findMany({
-        where,
-        include: {
-          unit: { select: { id: true, shortName: true } },
-          category: { select: { id: true, name: true } },
-          salePrices: {
-            where: { isActive: true, priceListId: null },
-            orderBy: { validFrom: "desc" },
-            take: 1,
-          },
-          discounts: {
-            where: {
-              isActive: true,
-              validFrom: { lte: new Date() },
-              OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-            },
-            take: 1,
-          },
-          reviews: {
-            where: { isPublished: true },
-            select: { rating: true },
-          },
-          variants: {
-            where: { isActive: true },
-            include: { option: { include: { variantType: true } } },
-          },
-          // Include child variants for master products
-          childVariants: {
-            where: { isActive: true, publishedToStore: true },
-            select: {
-              id: true,
-              name: true,
-              salePrices: {
-                where: { isActive: true, priceListId: null },
-                orderBy: { validFrom: "desc" },
-                take: 1,
-              },
-            },
-          },
-        },
-        orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      db.product.count({ where }),
-    ]);
+    const [products, total] = await StorefrontProductService.listPublished({ where, orderBy, page, limit });
 
     // Map to storefront-friendly format
     const data = products.map((p) => {

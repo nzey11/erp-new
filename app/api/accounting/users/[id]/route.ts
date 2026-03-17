@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateUserSchema } from "@/lib/modules/accounting/schemas/users.schema";
+import { UserService } from "@/lib/modules/accounting";
 import {
   assertUserCanBeDeactivated,
   assertUserCanBeDeleted,
@@ -21,18 +21,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     await requirePermission("users:manage");
     const { id } = await params;
 
-    const user = await db.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const user = await UserService.findById(id);
 
     if (!user) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
@@ -64,20 +53,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       updateData.password = await hash(data.password, 12);
     }
 
-    const user = await db.user.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
+    const user = await UserService.update(id, updateData);
     return NextResponse.json(user);
   } catch (error) {
     const vErr = validationError(error);
@@ -92,10 +68,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const { id } = await params;
 
     // Get target user info before change for audit
-    const targetUser = await db.user.findUnique({
-      where: { id },
-      select: { id: true, username: true },
-    });
+    const targetUser = await UserService.findByIdForAudit(id);
 
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -124,10 +97,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     }
 
     // Deactivate rather than delete
-    await db.user.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    await UserService.setActive(id, false);
 
     // Log successful soft delete
     logUserLifecycleChange(

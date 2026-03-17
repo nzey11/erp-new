@@ -412,6 +412,7 @@ model StockRecord {
   quantity       Float       @default(0)
   averageCost    Decimal     @db.Decimal(19,4) @default(0)
   totalCostValue Decimal     @db.Decimal(19,4) @default(0)
+  version        Int         @default(0)
   updatedAt      DateTime  @updatedAt
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   warehouse      Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
@@ -775,6 +776,7 @@ model FinanceCategory {
   defaultAccountCode String?
   payments           Payment[]
 
+  @@unique([name, type])
   @@index([type, isActive])
 }
 

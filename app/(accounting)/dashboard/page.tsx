@@ -37,7 +37,7 @@ interface DashboardData {
   balances: { totalReceivable: number; totalPayable: number };
 }
 
-export default function DashboardPage() {
+export default function AccountingDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [trends, setTrends] = useState<TrendsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +93,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Панель управления" />
+        <PageHeader title="Учёт — Панель" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Панель управления" description="Обзор состояния системы" />
+      <PageHeader title="Учёт — Панель" description="Обзор состояния системы учёта" />
 
       {/* Key metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
-import { db } from "@/lib/shared/db";
+import { FinanceReportService } from "@/lib/modules/accounting";
 import type { DocumentType } from "@/lib/generated/prisma/client";
 
 // Map categories to document types
@@ -63,19 +63,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch documents
-    const documents = await db.document.findMany({
-      where: {
-        type: { in: docTypes },
-        status: "confirmed",
-        tenantId: session.tenantId,
-        ...dateFilter,
-      },
-      include: {
-        counterparty: { select: { id: true, name: true } },
-        warehouse: { select: { id: true, name: true } },
-      },
-      orderBy: { confirmedAt: "desc" },
-      take: 500,
+    const documents = await FinanceReportService.getDrillDownDocuments({
+      docTypes: docTypes as string[],
+      tenantId: session.tenantId,
+      dateFilter,
     });
 
     const truncated = documents.length === 500;
@@ -93,19 +84,10 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      const paymentResults = await db.payment.findMany({
-        where: {
-          type: paymentType,
-          tenantId: session.tenantId,
-          ...paymentDateFilter,
-        },
-        include: {
-          counterparty: { select: { id: true, name: true } },
-          category: { select: { id: true, name: true } },
-          document: { select: { id: true, number: true, type: true } },
-        },
-        orderBy: { date: "desc" },
-        take: 500,
+      const paymentResults = await FinanceReportService.getDrillDownPayments({
+        paymentType,
+        tenantId: session.tenantId,
+        dateFilter: paymentDateFilter,
       });
       payments.push(...paymentResults);
     }
@@ -149,15 +131,7 @@ export async function GET(request: NextRequest) {
 
 async function getReceivablesDrillDown() {
   // Get counterparties with positive balance (they owe us)
-  const balances = await db.counterpartyBalance.findMany({
-    where: { balanceRub: { gt: 0 } },
-    include: { 
-      counterparty: { 
-        select: { id: true, name: true, type: true } 
-      } 
-    },
-    orderBy: { balanceRub: "desc" },
-  });
+  const balances = await FinanceReportService.getReceivablesBalances();
 
   const items = balances.map((b) => ({
     id: b.counterparty.id,

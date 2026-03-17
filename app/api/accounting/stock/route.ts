@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryStockSchema } from "@/lib/modules/accounting/schemas/reports.schema";
+import { StockService } from "@/lib/modules/accounting";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,46 +10,20 @@ export async function GET(request: NextRequest) {
 
     const query = parseQuery(request, queryStockSchema);
 
-    const warehouseId = query.warehouseId;
-    const productId = query.productId;
-    const search = query.search || "";
-    const nonZero = query.nonZero !== "false";
-    const enhanced = query.enhanced === "true";
-
-    const where: Record<string, unknown> = {
-      warehouse: { tenantId: session.tenantId }, // Tenant scoping
-    };
-    if (warehouseId) where.warehouseId = warehouseId;
-    if (productId) where.productId = productId;
-    if (nonZero) where.quantity = { not: 0 };
-    if (search) {
-      where.product = {
-        OR: [
-          { name: { contains: search, mode: "insensitive" } },
-          { sku: { contains: search, mode: "insensitive" } },
-        ],
-      };
-    }
-
-    const records = await db.stockRecord.findMany({
-      where,
-      include: {
-        warehouse: { select: { id: true, name: true } },
-        product: {
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            unit: { select: { shortName: true } },
-            category: { select: { id: true, name: true } },
-          },
-        },
+    const result = await StockService.getStock(
+      {
+        warehouseId: query.warehouseId,
+        productId: query.productId,
+        search: query.search,
+        nonZero: query.nonZero,
+        enhanced: query.enhanced,
       },
-      orderBy: { product: { name: "asc" } },
-    });
+      session.tenantId
+    );
 
-    if (!enhanced) {
+    if (!result.enhanced) {
       // Legacy response format
+      const records = result.records;
       const totals: Record<string, { productId: string; productName: string; sku: string | null; unit: string; total: number }> = {};
       for (const r of records) {
         if (!totals[r.productId]) {
@@ -66,72 +40,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ records, totals: Object.values(totals) });
     }
 
-    // Enhanced mode: calculate reserve, available, cost, sale values
-    const productIds = [...new Set(records.map((r) => r.productId))];
-
-    // Reserve: quantities in draft outgoing documents (outgoing_shipment, supplier_return, sales_order)
-    const draftOutgoingItems = productIds.length > 0
-      ? await db.documentItem.findMany({
-          where: {
-            productId: { in: productIds },
-            document: {
-              status: "draft",
-              type: { in: ["outgoing_shipment", "supplier_return", "sales_order"] },
-            },
-          },
-          select: {
-            productId: true,
-            quantity: true,
-            document: { select: { warehouseId: true } },
-          },
-        })
-      : [];
-
-    // Build reserve map: key = productId:warehouseId
-    const reserveMap: Record<string, number> = {};
-    for (const item of draftOutgoingItems) {
-      const key = `${item.productId}:${item.document.warehouseId || ""}`;
-      reserveMap[key] = (reserveMap[key] || 0) + item.quantity;
-    }
-
-    // Latest purchase prices per product
-    const purchasePrices = productIds.length > 0
-      ? await db.purchasePrice.findMany({
-          where: {
-            productId: { in: productIds },
-            isActive: true,
-          },
-          orderBy: { validFrom: "desc" },
-          select: { productId: true, price: true },
-        })
-      : [];
-
-    const purchasePriceMap: Record<string, number> = {};
-    for (const pp of purchasePrices) {
-      if (!(pp.productId in purchasePriceMap)) {
-        purchasePriceMap[pp.productId] = Number(pp.price);
-      }
-    }
-
-    // Latest sale prices per product (default price list = no priceListId)
-    const salePrices = productIds.length > 0
-      ? await db.salePrice.findMany({
-          where: {
-            productId: { in: productIds },
-            isActive: true,
-            priceListId: null, // Only default prices, not from price lists
-          },
-          orderBy: { validFrom: "desc" },
-          select: { productId: true, price: true },
-        })
-      : [];
-
-    const salePriceMap: Record<string, number> = {};
-    for (const sp of salePrices) {
-      if (!(sp.productId in salePriceMap)) {
-        salePriceMap[sp.productId] = Number(sp.price);
-      }
-    }
+    const { records, reserveMap, purchasePriceMap, salePriceMap } = result as Extract<typeof result, { enhanced: true }>;
 
     // Build enhanced records - use averageCost from StockRecord instead of PurchasePrice
     const enhancedRecords = records.map((r) => {

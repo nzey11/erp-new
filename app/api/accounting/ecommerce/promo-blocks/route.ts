@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createPromoBlockSchema, updatePromoBlockSchema } from "@/lib/modules/accounting/schemas/ecommerce-admin.schema";
+import { EcommerceAdminService } from "@/lib/modules/accounting";
 
 export async function GET() {
   try {
     await requirePermission("products:read");
-
-    const promoBlocks = await db.promoBlock.findMany({
-      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
-    });
-
+    const promoBlocks = await EcommerceAdminService.listPromoBlocks();
     return NextResponse.json(promoBlocks);
   } catch (error) {
     const vErr = validationError(error);
@@ -26,15 +22,13 @@ export async function POST(request: NextRequest) {
 
     const data = await parseBody(request, createPromoBlockSchema);
 
-    const promoBlock = await db.promoBlock.create({
-      data: {
-        title: data.title,
-        subtitle: data.subtitle || null,
-        imageUrl: data.imageUrl,
-        linkUrl: data.linkUrl || null,
-        order: data.order,
-        isActive: data.isActive,
-      },
+    const promoBlock = await EcommerceAdminService.createPromoBlock({
+      title: data.title,
+      subtitle: data.subtitle || null,
+      imageUrl: data.imageUrl,
+      linkUrl: data.linkUrl || null,
+      order: data.order,
+      isActive: data.isActive,
     });
 
     return NextResponse.json(promoBlock, { status: 201 });
@@ -61,16 +55,13 @@ export async function PUT(request: NextRequest) {
 
     const data = await parseBody(request, updatePromoBlockSchema);
 
-    const promoBlock = await db.promoBlock.update({
-      where: { id },
-      data: {
-        title: data.title,
-        subtitle: data.subtitle || null,
-        imageUrl: data.imageUrl,
-        linkUrl: data.linkUrl || null,
-        order: data.order,
-        isActive: data.isActive,
-      },
+    const promoBlock = await EcommerceAdminService.updatePromoBlock(id, {
+      title: data.title,
+      subtitle: data.subtitle || null,
+      imageUrl: data.imageUrl,
+      linkUrl: data.linkUrl || null,
+      order: data.order,
+      isActive: data.isActive,
     });
 
     return NextResponse.json(promoBlock);
@@ -95,10 +86,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.promoBlock.delete({
-      where: { id },
-    });
-
+    await EcommerceAdminService.deletePromoBlock(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     const vErr = validationError(error);

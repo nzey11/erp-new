@@ -223,6 +223,19 @@ export function SalesPageClient({
 
   const columns = getSalesColumns();
 
+  const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (sortField) {
+      params.set("sort", sortField);
+      params.set("order", sortOrder === "ascend" ? "asc" : "desc");
+    } else {
+      params.delete("sort");
+      params.delete("order");
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const rowActions = (row: DocumentRow) => {
     const items = getSalesRowActions(row, handleRowAction);
     return (
@@ -314,6 +327,7 @@ export function SalesPageClient({
             rowKey="id"
             sticky
             emptyText="Нет документов продажи"
+            onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
           />
         </>
       )}

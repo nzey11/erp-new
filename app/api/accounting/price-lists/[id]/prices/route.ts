@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { addPriceListPriceSchema } from "@/lib/modules/accounting/schemas/prices.schema";
+import { PriceService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,37 +13,12 @@ export async function GET(request: NextRequest, { params }: Params) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
 
-    const priceList = await db.priceList.findUnique({ where: { id } });
+    const priceList = await PriceService.findPriceListGate(id);
     if (!priceList) {
       return NextResponse.json({ error: "Прайс-лист не найден" }, { status: 404 });
     }
 
-    const prices = await db.salePrice.findMany({
-      where: {
-        priceListId: id,
-        isActive: true,
-        ...(search && {
-          product: {
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { sku: { contains: search, mode: "insensitive" } },
-            ],
-          },
-        }),
-      },
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            imageUrl: true,
-            unit: { select: { shortName: true } },
-          },
-        },
-      },
-      orderBy: { product: { name: "asc" } },
-    });
+    const prices = await PriceService.listPriceListPrices(id, search);
 
     return NextResponse.json({ priceList, prices });
   } catch (error) {
@@ -59,58 +34,37 @@ export async function POST(request: NextRequest, { params }: Params) {
     const data = await parseBody(request, addPriceListPriceSchema);
 
     // Check if price list exists
-    const priceList = await db.priceList.findUnique({ where: { id } });
+    const priceList = await PriceService.findPriceListGate(id);
     if (!priceList) {
       return NextResponse.json({ error: "Прайс-лист не найден" }, { status: 404 });
     }
 
     // Check if product exists
-    const product = await db.product.findUnique({ where: { id: data.productId } });
+    const product = await PriceService.findProductGate(data.productId);
     if (!product) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
     }
 
     // Check for existing active price for this product in this price list
-    const existingPrice = await db.salePrice.findFirst({
-      where: {
-        priceListId: id,
-        productId: data.productId,
-        isActive: true,
-      },
-    });
+    const existingPrice = await PriceService.findExistingPriceListPrice(id, data.productId);
 
     if (existingPrice) {
       // Update existing price
-      const updated = await db.salePrice.update({
-        where: { id: existingPrice.id },
-        data: {
-          price: data.price,
-          validFrom: data.validFrom ? new Date(data.validFrom) : undefined,
-          validTo: data.validTo ? new Date(data.validTo) : null,
-        },
-        include: {
-          product: {
-            select: { id: true, name: true, sku: true, imageUrl: true },
-          },
-        },
+      const updated = await PriceService.updatePriceListPrice(existingPrice.id, {
+        price: data.price,
+        validFrom: data.validFrom,
+        validTo: data.validTo ?? undefined,
       });
       return NextResponse.json(updated);
     }
 
     // Create new price
-    const price = await db.salePrice.create({
-      data: {
-        productId: data.productId,
-        priceListId: id,
-        price: data.price,
-        validFrom: data.validFrom ? new Date(data.validFrom) : new Date(),
-        validTo: data.validTo ? new Date(data.validTo) : null,
-      },
-      include: {
-        product: {
-          select: { id: true, name: true, sku: true, imageUrl: true },
-        },
-      },
+    const price = await PriceService.createPriceListPrice({
+      productId: data.productId,
+      priceListId: id,
+      price: data.price,
+      validFrom: data.validFrom,
+      validTo: data.validTo ?? undefined,
     });
 
     return NextResponse.json(price, { status: 201 });
@@ -132,11 +86,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "ID цены обязателен" }, { status: 400 });
     }
 
-    // Soft delete
-    await db.salePrice.update({
-      where: { id: priceId, priceListId: id },
-      data: { isActive: false },
-    });
+    await PriceService.softDeletePriceListPrice(priceId, id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

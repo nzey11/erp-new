@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createPriceListSchema } from "@/lib/modules/accounting/schemas/prices.schema";
+import { PriceService } from "@/lib/modules/accounting";
 
 export async function GET() {
   try {
     await requirePermission("pricing:read");
 
-    const priceLists = await db.priceList.findMany({
-      where: { isActive: true },
-      include: { _count: { select: { prices: true } } },
-      orderBy: { name: "asc" },
-    });
+    const priceLists = await PriceService.listPriceLists();
 
     return NextResponse.json(priceLists);
   } catch (error) {
@@ -26,8 +22,9 @@ export async function POST(request: NextRequest) {
 
     const data = await parseBody(request, createPriceListSchema);
 
-    const priceList = await db.priceList.create({
-      data: { name: data.name, description: data.description || null },
+    const priceList = await PriceService.createPriceList({
+      name: data.name,
+      description: data.description || null,
     });
 
     return NextResponse.json(priceList, { status: 201 });

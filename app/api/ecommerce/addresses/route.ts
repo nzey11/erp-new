@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createAddressSchema, updateAddressSchema } from "@/lib/modules/ecommerce/schemas/addresses.schema";
+import { AddressService } from "@/lib/modules/ecommerce";
 
 /** GET /api/ecommerce/addresses — Get customer addresses */
 export async function GET() {
   try {
     const customer = await requireCustomer();
 
-    const addresses = await db.customerAddress.findMany({
-      where: { customerId: customer.id },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-    });
+    const addresses = await AddressService.list(customer.id);
 
     return NextResponse.json({ addresses });
   } catch (error) {
@@ -40,25 +37,20 @@ export async function POST(request: NextRequest) {
 
     // If isDefault, unset other defaults
     if (isDefault) {
-      await db.customerAddress.updateMany({
-        where: { customerId: customer.id, isDefault: true },
-        data: { isDefault: false },
-      });
+      await AddressService.clearDefaults(customer.id);
     }
 
-    const address = await db.customerAddress.create({
-      data: {
-        customerId: customer.id,
-        label,
-        recipientName,
-        phone,
-        city,
-        street,
-        building,
-        apartment,
-        postalCode,
-        isDefault: isDefault || false,
-      },
+    const address = await AddressService.create({
+      customerId: customer.id,
+      label,
+      recipientName,
+      phone,
+      city,
+      street,
+      building,
+      apartment,
+      postalCode,
+      isDefault: isDefault || false,
     });
 
     return NextResponse.json({ address });
@@ -87,10 +79,7 @@ export async function PUT(request: NextRequest) {
     } = await parseBody(request, updateAddressSchema);
 
     // Verify ownership
-    const existing = await db.customerAddress.findUnique({
-      where: { id },
-      select: { customerId: true },
-    });
+    const existing = await AddressService.findById(id);
 
     if (!existing || existing.customerId !== customer.id) {
       return NextResponse.json({ error: "Address not found" }, { status: 404 });
@@ -98,25 +87,19 @@ export async function PUT(request: NextRequest) {
 
     // If isDefault, unset other defaults
     if (isDefault) {
-      await db.customerAddress.updateMany({
-        where: { customerId: customer.id, isDefault: true, id: { not: id } },
-        data: { isDefault: false },
-      });
+      await AddressService.clearDefaultsExcluding(customer.id, id);
     }
 
-    const address = await db.customerAddress.update({
-      where: { id },
-      data: {
-        label: label ?? undefined,
-        recipientName: recipientName ?? undefined,
-        phone: phone ?? undefined,
-        city: city ?? undefined,
-        street: street ?? undefined,
-        building: building ?? undefined,
-        apartment: apartment ?? undefined,
-        postalCode: postalCode ?? undefined,
-        isDefault: isDefault ?? undefined,
-      },
+    const address = await AddressService.update(id, {
+      label: label ?? undefined,
+      recipientName: recipientName ?? undefined,
+      phone: phone ?? undefined,
+      city: city ?? undefined,
+      street: street ?? undefined,
+      building: building ?? undefined,
+      apartment: apartment ?? undefined,
+      postalCode: postalCode ?? undefined,
+      isDefault: isDefault ?? undefined,
     });
 
     return NextResponse.json({ address });
@@ -139,16 +122,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify ownership
-    const address = await db.customerAddress.findUnique({
-      where: { id },
-      select: { customerId: true },
-    });
+    const address = await AddressService.findById(id);
 
     if (!address || address.customerId !== customer.id) {
       return NextResponse.json({ error: "Address not found" }, { status: 404 });
     }
 
-    await db.customerAddress.delete({ where: { id } });
+    await AddressService.delete(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

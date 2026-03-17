@@ -4,9 +4,9 @@
 // =============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
+import { UserService } from "@/lib/modules/accounting";
 import {
   logUserLifecycleChange,
   buildAuditEvent,
@@ -20,10 +20,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const { id } = await params;
 
     // Get target user info before change for audit
-    const targetUser = await db.user.findUnique({
-      where: { id },
-      select: { id: true, username: true },
-    });
+    const targetUser = await UserService.findByIdForAudit(id);
 
     if (!targetUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -32,19 +29,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     // Activation is always allowed (recovery path)
     // No protected user check needed - we want to be able to recover system users
 
-    const user = await db.user.update({
-      where: { id },
-      data: { isActive: true },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const user = await UserService.setActive(id, true);
 
     // Log successful activation
     logUserLifecycleChange(

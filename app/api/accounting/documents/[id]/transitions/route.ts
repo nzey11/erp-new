@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { getAvailableTransitions } from "@/lib/modules/accounting/document-states";
 import type { DocumentStatus, DocumentType } from "@/lib/generated/prisma/client";
+import { DocumentService } from "@/lib/modules/accounting";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -25,10 +25,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     await requirePermission("documents:read");
     const { id } = await params;
 
-    const doc = await db.document.findUnique({
-      where: { id },
-      select: { id: true, type: true, status: true },
-    });
+    const doc = await DocumentService.getDocumentTransitions(id);
 
     if (!doc) {
       return NextResponse.json({ error: "Документ не найден" }, { status: 404 });

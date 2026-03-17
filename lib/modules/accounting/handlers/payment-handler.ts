@@ -2,7 +2,10 @@
  * Accounting handler — Payment
  *
  * Reacts to DocumentConfirmed by auto-creating a Finance Payment record
- * for incoming_shipment (expense) and outgoing_shipment (income) documents.
+ * ONLY for explicit payment-type documents (incoming_payment, outgoing_payment).
+ *
+ * Shipments (incoming_shipment, outgoing_shipment) create a debt, NOT a payment.
+ * Finance Payment for shipments must be created manually by the accountant.
  *
  * Logic moved from DocumentConfirmService.autoCreatePaymentForShipment()
  * as part of Phase 1.5 domain event decoupling.
@@ -18,11 +21,15 @@ export async function onDocumentConfirmedPayment(
   const { documentType, documentId, documentNumber, counterpartyId, totalAmount, tenantId } =
     event.payload;
 
-  if (documentType !== "incoming_shipment" && documentType !== "outgoing_shipment") {
+  // Only auto-create Finance Payment for explicit payment documents.
+  // Shipments create AR/AP debt (счет 60/62), not a cash payment.
+  if (documentType !== "incoming_payment" && documentType !== "outgoing_payment") {
     return;
   }
 
-  const isPurchase = documentType === "incoming_shipment";
+  // incoming_payment = money arrives in the company (from customer) → income
+  // outgoing_payment  = money leaves the company (to supplier)   → expense
+  const isPurchase = documentType === "outgoing_payment";
   const paymentType = isPurchase ? "expense" : "income";
   const categoryName = isPurchase ? "Оплата поставщику" : "Оплата от покупателя";
 

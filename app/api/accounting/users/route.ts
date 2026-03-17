@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createUserSchema } from "@/lib/modules/accounting/schemas/users.schema";
+import { UserService } from "@/lib/modules/accounting";
 import { hash } from "bcryptjs";
 import type { ErpRole } from "@/lib/generated/prisma/client";
 
 export async function GET() {
   try {
     await requirePermission("users:manage");
-
-    const users = await db.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
+    const users = await UserService.list();
     return NextResponse.json(users);
   } catch (error) {
     const vErr = validationError(error);
@@ -37,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const data = await parseBody(request, createUserSchema);
 
-    const existing = await db.user.findUnique({ where: { username: data.username } });
+    const existing = await UserService.findByUsername(data.username);
     if (existing) {
       return NextResponse.json(
         { error: "Пользователь с таким логином уже существует" },
@@ -47,21 +34,11 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await hash(data.password, 12);
 
-    const user = await db.user.create({
-      data: {
-        username: data.username,
-        password: hashedPassword,
-        email: data.email || null,
-        role: data.role as ErpRole,
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
+    const user = await UserService.create({
+      username: data.username,
+      password: hashedPassword,
+      email: data.email || null,
+      role: data.role as ErpRole,
     });
 
     return NextResponse.json(user, { status: 201 });

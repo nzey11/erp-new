@@ -11,9 +11,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db, toNumber } from "@/lib/shared/db";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryStorefrontProductsSchema } from "@/lib/modules/ecommerce/schemas/products.schema";
+import { StorefrontProductService, toNumber } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
 
 // Fields to compare strictly in compare mode
@@ -65,29 +65,11 @@ export async function GET(request: NextRequest) {
     if (sort === "price_asc" || sort === "price_desc") orderBy = { name: "asc" }; // Sort after fetch for price
 
     // Query projection table
-    const [projections, total] = await Promise.all([
-      db.productCatalogProjection.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      db.productCatalogProjection.count({ where }),
-    ]);
+    const [projections, total] = await StorefrontProductService.listProjection({ where, orderBy, page, limit });
 
     // Batched lookup for variants (separate from projection)
     const productIds = projections.map((p) => p.productId);
-    const variants = await db.productVariant.findMany({
-      where: {
-        productId: { in: productIds },
-        isActive: true,
-      },
-      include: {
-        option: {
-          include: { variantType: { select: { id: true, name: true } } },
-        },
-      },
-    });
+    const variants = await StorefrontProductService.listVariantsByProductIds(productIds);
 
     // Group variants by productId
     const variantsByProduct = new Map<string, typeof variants>();
@@ -173,49 +155,7 @@ async function compareWithOriginal(
   limit: number
 ) {
   // Query original source (same as /api/ecommerce/products)
-  const originalProducts = await db.product.findMany({
-    where: {
-      ...where,
-      masterProductId: null,
-    },
-    include: {
-      unit: { select: { id: true, shortName: true } },
-      category: { select: { id: true, name: true } },
-      salePrices: {
-        where: { isActive: true, priceListId: null },
-        orderBy: { validFrom: "desc" },
-        take: 1,
-      },
-      discounts: {
-        where: {
-          isActive: true,
-          validFrom: { lte: new Date() },
-          OR: [{ validTo: null }, { validTo: { gte: new Date() } }],
-        },
-        take: 1,
-      },
-      reviews: { where: { isPublished: true }, select: { rating: true } },
-      variants: {
-        where: { isActive: true },
-        include: { option: { include: { variantType: { select: { name: true } } } } },
-      },
-      childVariants: {
-        where: { isActive: true, publishedToStore: true },
-        select: {
-          id: true,
-          salePrices: {
-            where: { isActive: true, priceListId: null },
-            orderBy: { validFrom: "desc" },
-            take: 1,
-            select: { price: true },
-          },
-        },
-      },
-    },
-    orderBy,
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+  const originalProducts = await StorefrontProductService.listOriginalForCompare({ where, orderBy, page, limit });
 
   // Map original to comparable format
   const originalData = originalProducts.map((p) => {

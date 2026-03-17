@@ -6,7 +6,7 @@ import {
   RestrictedAccountPermissionError,
   isRestrictedAccountCode,
 } from "@/lib/modules/accounting/finance/journal";
-import { db } from "@/lib/shared/db";
+import { JournalService } from "@/lib/modules/accounting";
 
 export async function POST(
   _request: NextRequest,
@@ -16,14 +16,7 @@ export async function POST(
     const user = await requirePermission("journal:reverse");
     const { id } = await params;
 
-    const entry = await db.journalEntry.findUnique({
-      where: { id },
-      include: {
-        lines: {
-          include: { account: true },
-        },
-      },
-    });
+    const entry = await JournalService.findEntryWithLines(id);
 
     if (!entry) {
       return NextResponse.json({ error: "Проводка не найдена" }, { status: 404 });
