@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { csrfFetch } from "@/lib/client/csrf";
 import {
@@ -48,6 +48,8 @@ interface CreateDocumentDialogProps {
   onAfterCreate?: (doc: { id: string }, type: string) => Promise<void>;
   /** If provided, UserPlus button navigates to /counterparties/new?redirect=<value> */
   counterpartyRedirect?: string;
+  /** Pre-select document type when dialog opens (e.g. from current tab context) */
+  defaultType?: string;
 }
 
 export function CreateDocumentDialog({
@@ -63,14 +65,26 @@ export function CreateDocumentDialog({
   counterpartyTypes,
   onAfterCreate,
   counterpartyRedirect,
+  defaultType,
 }: CreateDocumentDialogProps) {
   const router = useRouter();
 
-  const [createType, setCreateType] = useState("");
+  const [createType, setCreateType] = useState(defaultType ?? "");
   const [createWarehouseId, setCreateWarehouseId] = useState("");
   const [createTargetWarehouseId, setCreateTargetWarehouseId] = useState("");
   const [createCounterpartyId, setCreateCounterpartyId] = useState("");
   const [creating, setCreating] = useState(false);
+
+  // When dialog opens, reset form and pre-select defaultType
+  useEffect(() => {
+    if (open) {
+      setCreateType(defaultType ?? "");
+      setCreateWarehouseId("");
+      setCreateTargetWarehouseId("");
+      setCreateCounterpartyId("");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const allowedCounterpartyTypes = counterpartyTypes ?? DEFAULT_COUNTERPARTY_TYPES;
 
@@ -86,7 +100,7 @@ export function CreateDocumentDialog({
     !!createType && allowedCounterpartyTypes.includes(createType);
 
   const reset = () => {
-    setCreateType("");
+    setCreateType(defaultType ?? "");
     setCreateWarehouseId("");
     setCreateTargetWarehouseId("");
     setCreateCounterpartyId("");

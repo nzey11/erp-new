@@ -15,10 +15,11 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Pencil, UserPlus, Save, Building2 } from "lucide-react";
+import { Pencil, UserPlus, Save, Building2, Warehouse } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
+import Link from "next/link";
 
 interface User {
   id: string;
@@ -234,6 +235,26 @@ export default function SettingsPage() {
               {savingCompany ? "Сохранение..." : "Сохранить"}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Warehouse className="h-5 w-5" />
+            Склады
+          </CardTitle>
+          <Link href="/warehouses">
+            <Button size="sm" variant="outline">
+              Управлять складами
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Создание, редактирование и деактивация складов организации.
+            Склады используются во всех складских операциях, при создании документов и в отчётах об остатках.
+          </p>
         </CardContent>
       </Card>
 

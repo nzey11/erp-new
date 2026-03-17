@@ -35,8 +35,12 @@ interface StockPageClientProps {
   activeTab: string;
 }
 
-// Stock document tab types
-const STOCK_DOC_TABS = ["inventory", "write_off", "stock_receipt"];
+// Map tab → default document type for CreateDocumentDialog
+const TAB_TO_DOC_TYPE: Record<string, string> = {
+  inventory: "inventory_count",
+  write_off: "write_off",
+  stock_receipt: "stock_receipt",
+};
 
 /**
  * Stock page tab orchestrator — client shell.
@@ -64,7 +68,7 @@ export function StockPageClient({
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const isStockDocTab = STOCK_DOC_TABS.includes(tab);
+  const isStockDocTab = tab in TAB_TO_DOC_TYPE;
   const showCreateButton = isStockDocTab;
 
   const handleTabChange = (newTab: string) => {
@@ -137,6 +141,7 @@ export function StockPageClient({
           counterparties={[]}
           requireWarehouse
           showTargetWarehouse
+          defaultType={TAB_TO_DOC_TYPE[tab]}
           onSuccess={() => router.refresh()}
         />
       )}

@@ -288,7 +288,7 @@ export function AppSidebar() {
           onClick={() => setMobileOpen(false)}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-            pathname === "/settings"
+            pathname.startsWith("/settings") || pathname === "/warehouses"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           )}
@@ -296,6 +296,20 @@ export function AppSidebar() {
         >
           <Settings className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Настройки</span>}
+        </Link>
+        <Link
+          href="/warehouses"
+          onClick={() => setMobileOpen(false)}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+            pathname === "/warehouses"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          )}
+          title={collapsed ? "Склады" : undefined}
+        >
+          <Boxes className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Склады</span>}
         </Link>
         <button
           onClick={handleLogout}

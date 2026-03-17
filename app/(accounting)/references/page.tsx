@@ -230,9 +230,9 @@ export default function ReferencesPage() {
           <TabsTrigger value="customfields">Характеристики</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2 ml-auto">
-          <Link href="/warehouses">
+          <Link href="/settings">
             <Button variant="outline" size="sm" className="gap-1">
-              Склады
+              Настройки
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Space, Select, Input, Button } from "antd";
 import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
@@ -53,7 +53,16 @@ export function CounterpartyFilterBar({
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Update URL when filters change
+  // Stable refs — prevent stale closure without adding to useCallback deps
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => { searchParamsRef.current = searchParams; });
+  const initialFiltersRef = useRef(initialFilters);
+  useEffect(() => { initialFiltersRef.current = initialFilters; });
+
+  // Update URL when filters change.
+  // Only primitive state values (type, isActive, debouncedSearch) are deps;
+  // searchParams and initialFilters are read via refs to avoid re-creating
+  // the callback on every navigation cycle (which caused an infinite loop).
   const updateUrl = useCallback(
     (updates: Partial<CounterpartyFilters>) => {
       const current: CounterpartyFilters = {
@@ -61,15 +70,15 @@ export function CounterpartyFilterBar({
         isActive,
         search: debouncedSearch || undefined,
         page: 1, // Reset to first page on filter change
-        pageSize: initialFilters.pageSize,
-        sort: initialFilters.sort,
-        order: initialFilters.order,
+        pageSize: initialFiltersRef.current.pageSize,
+        sort: initialFiltersRef.current.sort,
+        order: initialFiltersRef.current.order,
       };
 
       const next = { ...current, ...updates };
       const params = serializeCounterpartyFilters(
         next,
-        new URLSearchParams(searchParams.toString())
+        new URLSearchParams(searchParamsRef.current.toString())
       );
 
       // Remove empty values for cleaner URL
@@ -81,14 +90,7 @@ export function CounterpartyFilterBar({
 
       router.replace(`?${params.toString()}`, { scroll: false });
     },
-    [
-      router,
-      searchParams,
-      type,
-      isActive,
-      debouncedSearch,
-      initialFilters,
-    ]
+    [router, type, isActive, debouncedSearch]
   );
 
   // Trigger URL update on debounced search change

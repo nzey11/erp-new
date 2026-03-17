@@ -57,6 +57,7 @@ function mapPagination(pagination?: ERPPagination): TableProps<unknown>["paginat
     pageSize: pagination.pageSize,
     total: pagination.total,
     showSizeChanger: true,
+    showQuickJumper: false,
     showTotal: (total, range) =>
       `${range[0]}-${range[1]} из ${total}`,
   };
@@ -121,9 +122,15 @@ export function ERPTable<T>({
     const sortField = Array.isArray(sorter) ? undefined : sorter.field?.toString();
     const sortOrder = Array.isArray(sorter) ? null : sorter.order || null;
 
+    const total = (pagination.total ?? 0);
+    const ps = pagination.pageSize || 20;
+    const maxPage = total > 0 ? Math.ceil(total / ps) : 1;
+    const rawPage = pagination.current || 1;
+    const safePage = Math.max(1, Math.min(rawPage, maxPage));
+
     onChange({
-      page: pagination.current || 1,
-      pageSize: pagination.pageSize || 20,
+      page: safePage,
+      pageSize: ps,
       sortField,
       sortOrder,
     });
