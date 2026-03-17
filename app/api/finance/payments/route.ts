@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requireAuth, requirePermission } from "@/lib/shared/authorization";
 import { z } from "zod";
 import { autoPostPayment } from "@/lib/modules/accounting/finance/journal";
@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
       db.payment.aggregate({ _sum: { amount: true }, where: { ...where, type: "expense" } }),
     ]);
 
-    const incomeTotal = incomeAgg._sum.amount ?? 0;
-    const expenseTotal = expenseAgg._sum.amount ?? 0;
+    const incomeTotal = toNumber(incomeAgg._sum.amount);
+    const expenseTotal = toNumber(expenseAgg._sum.amount);
 
     return NextResponse.json({ payments, total, page, limit, incomeTotal, expenseTotal, netCashFlow: incomeTotal - expenseTotal });
   } catch (error) {

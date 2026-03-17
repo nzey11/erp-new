@@ -11,8 +11,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
-import type { PartyProfileOwnerDto } from "@/lib/party";
-import type { AssignableOwner } from "@/lib/crm";
+import type { PartyProfileOwnerDto } from "@/lib/domain/party";
+import type { AssignableOwner } from "@/lib/domain/crm";
 import { OwnerSelectDialog } from "./owner-select-dialog";
 
 interface PartyOwnerCardProps {

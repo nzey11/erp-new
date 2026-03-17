@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";
-import { ProfileEditForm } from "@/components/ecommerce/ProfileEditForm";
+import { ProfileEditForm } from "@/components/domain/ecommerce/ProfileEditForm";
 
 type Customer = {
   id: string;

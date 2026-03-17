@@ -4,10 +4,10 @@
  * Layout shell for merge admin page.
  */
 
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/shared/page-header";
 import { MergeRequestList } from "./merge-request-list";
 import { MergeEmptyState } from "./merge-empty-state";
-import type { MergeRequest } from "@/lib/party";
+import type { MergeRequest } from "@/lib/domain/party";
 
 interface MergeAdminPageProps {
   requests: MergeRequest[];

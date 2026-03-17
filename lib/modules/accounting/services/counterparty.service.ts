@@ -14,7 +14,7 @@
  */
 
 import { db } from "@/lib/shared/db";
-import { resolveParty } from "@/lib/party";
+import { resolveParty } from "@/lib/domain/party";
 import type { Counterparty } from "@/lib/generated/prisma/client";
 
 // Type for Prisma transaction client

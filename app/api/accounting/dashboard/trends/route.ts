@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 
 function getMonthRange(monthsAgo: number): { from: Date; to: Date } {
@@ -42,10 +42,10 @@ export async function GET() {
     const calcDelta = (cur: number, prev: number) =>
       prev > 0 ? ((cur - prev) / prev) * 100 : null;
 
-    const curSalesAmount = curSales._sum.totalAmount ?? 0;
-    const prevSalesAmount = prevSales._sum.totalAmount ?? 0;
-    const curPurchasesAmount = curPurchases._sum.totalAmount ?? 0;
-    const prevPurchasesAmount = prevPurchases._sum.totalAmount ?? 0;
+    const curSalesAmount = toNumber(curSales._sum.totalAmount);
+    const prevSalesAmount = toNumber(prevSales._sum.totalAmount);
+    const curPurchasesAmount = toNumber(curPurchases._sum.totalAmount);
+    const prevPurchasesAmount = toNumber(prevPurchases._sum.totalAmount);
 
     return NextResponse.json({
       currentMonth: {

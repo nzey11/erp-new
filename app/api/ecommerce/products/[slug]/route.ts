@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { validationError } from "@/lib/shared/validation";
 import { logger } from "@/lib/shared/logger";
 
@@ -103,13 +103,13 @@ export async function GET(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const salePrice = product.salePrices[0]?.price || 0;
+    const salePrice = toNumber(product.salePrices[0]?.price) || 0;
     const discount = product.discounts[0] || null;
-    let discountedPrice = salePrice;
+    let discountedPrice: number = salePrice;
     if (discount) {
       discountedPrice = discount.type === "percentage"
-        ? salePrice * (1 - discount.value / 100)
-        : salePrice - discount.value;
+        ? salePrice * (1 - toNumber(discount.value) / 100)
+        : salePrice - toNumber(discount.value);
       discountedPrice = Math.max(0, discountedPrice);
     }
 
@@ -132,7 +132,7 @@ export async function GET(
 
     // Process child variants for master products
     const childVariants = product.childVariants.map((cv) => {
-      const cvPrice = cv.salePrices[0]?.price || 0;
+      const cvPrice = toNumber(cv.salePrices[0]?.price) || 0;
       const cvStock = cv.stockRecords.reduce((sum, r) => sum + r.quantity, 0);
       return {
         id: cv.id,
@@ -147,7 +147,7 @@ export async function GET(
     // Calculate price range from child variants
     let priceRange: { min: number; max: number } | null = null;
     if (childVariants.length > 0) {
-      const allPrices = [salePrice, ...childVariants.map((cv) => cv.price)].filter((p) => p > 0);
+      const allPrices: number[] = [salePrice, ...childVariants.map((cv) => cv.price as number)].filter((p) => p > 0);
       if (allPrices.length > 1) {
         const minPriceVal = Math.min(...allPrices);
         const maxPriceVal = Math.max(...allPrices);

@@ -10,6 +10,13 @@
  */
 
 import { db } from "@/lib/shared/db";
+import type { Decimal } from "@prisma/client/runtime/client";
+
+/** Helper to convert Decimal or number to number for calculations */
+function toNumber(value: Decimal | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  return typeof value === "number" ? value : Number(value);
+}
 
 /** Check stock availability before confirming an outgoing document */
 export async function checkStockAvailability(
@@ -55,6 +62,9 @@ export async function getProductTotalStock(productId: string) {
 /**
  * Update average cost when receiving stock (incoming_shipment, stock_receipt, customer_return).
  * Formula: newAvgCost = (oldQty * oldCost + newQty * newPrice) / (oldQty + newQty)
+ * 
+ * NOTE: All monetary calculations use Decimal in DB, but we convert to number
+ * for the AVCO formula. The result is stored back as Decimal.
  */
 export async function updateAverageCostOnReceipt(
   warehouseId: string,
@@ -67,7 +77,7 @@ export async function updateAverageCostOnReceipt(
   });
 
   const oldQty = record?.quantity ?? 0;
-  const oldCost = record?.averageCost ?? 0;
+  const oldCost = toNumber(record?.averageCost);
   const totalQty = oldQty + incomingQty;
 
   const newAverageCost =
@@ -104,7 +114,7 @@ export async function updateAverageCostOnTransfer(
   const sourceRecord = await db.stockRecord.findUnique({
     where: { warehouseId_productId: { warehouseId: sourceWarehouseId, productId } },
   });
-  const sourceCost = sourceRecord?.averageCost ?? 0;
+  const sourceCost = toNumber(sourceRecord?.averageCost);
 
   await updateAverageCostOnReceipt(targetWarehouseId, productId, transferQty, sourceCost);
 }
@@ -122,10 +132,11 @@ export async function updateTotalCostValue(
   });
 
   if (record) {
+    const averageCost = toNumber(record.averageCost);
     await db.stockRecord.update({
       where: { warehouseId_productId: { warehouseId, productId } },
       data: {
-        totalCostValue: record.quantity * record.averageCost,
+        totalCostValue: record.quantity * averageCost,
       },
     });
   }

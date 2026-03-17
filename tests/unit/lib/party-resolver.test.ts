@@ -10,7 +10,7 @@ import {
   resolveFinalParty,
   getPartyByCustomer,
   getPartyByCounterparty,
-} from "@/lib/party/services/party-resolver";
+} from "@/lib/domain/party/services/party-resolver";
 import { createCustomer, createCounterparty } from "@/tests/helpers/factories";
 
 describe("Party Resolver", () => {

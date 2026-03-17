@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     const purchasePriceMap: Record<string, number> = {};
     for (const pp of purchasePrices) {
       if (!(pp.productId in purchasePriceMap)) {
-        purchasePriceMap[pp.productId] = pp.price;
+        purchasePriceMap[pp.productId] = Number(pp.price);
       }
     }
 
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     const salePriceMap: Record<string, number> = {};
     for (const sp of salePrices) {
       if (!(sp.productId in salePriceMap)) {
-        salePriceMap[sp.productId] = sp.price;
+        salePriceMap[sp.productId] = Number(sp.price);
       }
     }
 
@@ -138,7 +138,8 @@ export async function GET(request: NextRequest) {
       const reserve = reserveMap[`${r.productId}:${r.warehouseId}`] || 0;
       const available = r.quantity - reserve;
       // Use averageCost from StockRecord (moving average) instead of PurchasePrice lookup
-      const averageCost = r.averageCost > 0 ? r.averageCost : (purchasePriceMap[r.productId] ?? null);
+      const avgCostNum = Number(r.averageCost);
+      const averageCost = avgCostNum > 0 ? avgCostNum : (purchasePriceMap[r.productId] ?? null);
       const salePrice = salePriceMap[r.productId] ?? null;
 
       return {

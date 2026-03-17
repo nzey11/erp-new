@@ -6,6 +6,13 @@
  */
 
 import { db } from "@/lib/shared/db";
+import type { Decimal } from "@prisma/client/runtime/client";
+
+/** Helper to convert Decimal or number to number for calculations */
+function toNumber(value: Decimal | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  return typeof value === "number" ? value : Number(value);
+}
 
 /**
  * Recalculate counterparty balance from confirmed documents.
@@ -20,7 +27,7 @@ import { db } from "@/lib/shared/db";
  * + supplier_return    (we returned to supplier -> reduce our debt)
  * + outgoing_payment   (we paid supplier -> reduce our debt)
  */
-export async function recalculateBalance(counterpartyId: string) {
+export async function recalculateBalance(counterpartyId: string): Promise<number> {
   const outgoingShipments = await db.document.aggregate({
     _sum: { totalAmount: true },
     where: { counterpartyId, type: "outgoing_shipment", status: "confirmed" },
@@ -52,12 +59,12 @@ export async function recalculateBalance(counterpartyId: string) {
   });
 
   const balanceRub =
-    (outgoingShipments._sum.totalAmount ?? 0) -
-    (customerReturns._sum.totalAmount ?? 0) -
-    (incomingPayments._sum.totalAmount ?? 0) -
-    (incomingShipments._sum.totalAmount ?? 0) +
-    (supplierReturns._sum.totalAmount ?? 0) +
-    (outgoingPayments._sum.totalAmount ?? 0);
+    toNumber(outgoingShipments._sum.totalAmount) -
+    toNumber(customerReturns._sum.totalAmount) -
+    toNumber(incomingPayments._sum.totalAmount) -
+    toNumber(incomingShipments._sum.totalAmount) +
+    toNumber(supplierReturns._sum.totalAmount) +
+    toNumber(outgoingPayments._sum.totalAmount);
 
   await db.counterpartyBalance.upsert({
     where: { counterpartyId },

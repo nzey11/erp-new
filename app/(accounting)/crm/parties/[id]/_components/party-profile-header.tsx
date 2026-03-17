@@ -6,7 +6,7 @@
  */
 
 import { Badge } from "@/components/ui/badge";
-import type { PartyProfileDto } from "@/lib/party";
+import type { PartyProfileDto } from "@/lib/domain/party";
 
 interface PartyProfileHeaderProps {
   profile: PartyProfileDto;

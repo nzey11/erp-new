@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { quickOrderSchema } from "@/lib/modules/ecommerce/schemas/quick-order.schema";
 import { createSalesOrderFromCart } from "@/lib/modules/ecommerce";
 import { logger } from "@/lib/shared/logger";
-import { resolveParty } from "@/lib/party";
+import { resolveParty } from "@/lib/domain/party";
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,13 +47,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate price
-    let price = product.salePrices[0]?.price || 0;
+    let price: number = toNumber(product.salePrices[0]?.price) || 0;
     const discount = product.discounts[0];
     if (discount) {
       if (discount.type === "percentage") {
-        price = price * (1 - discount.value / 100);
+        price = price * (1 - toNumber(discount.value) / 100);
       } else {
-        price = Math.max(0, price - discount.value);
+        price = Math.max(0, price - toNumber(discount.value));
       }
     }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         where: { id: data.variantId },
       });
       if (variant) {
-        price += variant.priceAdjustment;
+        price += toNumber(variant.priceAdjustment);
       }
     }
 

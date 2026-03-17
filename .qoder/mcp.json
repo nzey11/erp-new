@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "banani": {
+      "url": "https://app.banani.co/api/mcp/mcp",
+      "headers": {
+        "Authorization": "Bearer bnni_2HpzzZD4WMD8hjiKeaLpdDwnfWUnqjls"
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 /** T-Bank (T-Bank) payment integration. Placeholder for real integration. */
 
 import crypto from "crypto";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { confirmOrderPayment } from "@/lib/modules/ecommerce";
 
 interface PaymentResult {
@@ -50,7 +50,10 @@ export async function handlePaymentWebhook(externalId: string, status: "success"
     });
 
     return {
-      order: document,
+      order: {
+        ...document,
+        totalAmount: toNumber(document.totalAmount),
+      },
       message: "Платёж подтверждён",
       externalId,
       status: "success",
@@ -65,7 +68,10 @@ export async function handlePaymentWebhook(externalId: string, status: "success"
     });
 
     return {
-      order: document,
+      order: {
+        ...document,
+        totalAmount: toNumber(document.totalAmount),
+      },
       message: "Платёж не прошёл",
       externalId,
       status: "failed",

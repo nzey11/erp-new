@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseQuery, parseBody, validationError } from "@/lib/shared/validation";
 import { generateDocumentNumber, getDocTypeName, getDocStatusName } from "@/lib/modules/accounting/documents";
@@ -162,6 +162,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ...document,
+      totalAmount: toNumber(document.totalAmount),
+      items: document.items.map((item) => ({
+        ...item,
+        price: toNumber(item.price),
+        total: toNumber(item.total),
+      })),
       typeName: getDocTypeName(document.type),
       statusName: getDocStatusName(document.status),
     }, { status: 201 });

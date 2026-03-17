@@ -3,7 +3,7 @@ import { db } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createInteractionSchema } from "@/lib/modules/accounting/schemas/counterparties.schema";
-import { recordManagerInteraction } from "@/lib/party";
+import { recordManagerInteraction } from "@/lib/domain/party";
 
 type Params = { params: Promise<{ id: string }> };
 

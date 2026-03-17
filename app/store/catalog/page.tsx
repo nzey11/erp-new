@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ProductCard, type ProductCardData } from "@/components/ecommerce/ProductCard";
+import { ProductCard, type ProductCardData } from "@/components/domain/ecommerce/ProductCard";
 
 type Category = {
   id: string;

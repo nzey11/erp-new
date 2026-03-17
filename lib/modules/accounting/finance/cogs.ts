@@ -10,7 +10,7 @@
  * Import path changed to @/lib/modules/accounting/finance/cogs
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 
 /**
  * Calculate COGS for a specific outgoing_shipment document.
@@ -47,7 +47,7 @@ export async function calculateCogsForShipment(documentId: string): Promise<{
         })
       : null;
 
-    const averageCost = stockRecord?.averageCost ?? 0;
+    const averageCost = toNumber(stockRecord?.averageCost);
     const cogs = item.quantity * averageCost;
 
     lines.push({
@@ -85,5 +85,5 @@ export async function getCogsFromLedger(
     },
   });
 
-  return agg._sum.debit ?? 0;
+  return toNumber(agg._sum.debit);
 }

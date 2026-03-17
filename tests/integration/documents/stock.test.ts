@@ -149,7 +149,7 @@ describe("lib/stock - integration", () => {
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
       });
 
-      expect(record?.averageCost).toBe(50);
+      expect(Number(record?.averageCost)).toBe(50);
     });
 
     it("should calculate moving average for second receipt", async () => {
@@ -171,8 +171,8 @@ describe("lib/stock - integration", () => {
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
       });
 
-      expect(record?.averageCost).toBe(60);
-      expect(record?.totalCostValue).toBe(150 * 60); // 9000
+      expect(Number(record?.averageCost)).toBe(60);
+      expect(Number(record?.totalCostValue)).toBe(150 * 60); // 9000
     });
 
     it("should handle zero initial quantity", async () => {
@@ -193,7 +193,7 @@ describe("lib/stock - integration", () => {
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
       });
 
-      expect(record?.averageCost).toBe(100);
+      expect(Number(record?.averageCost)).toBe(100);
     });
 
     it("should create stock record if not exists", async () => {
@@ -208,7 +208,7 @@ describe("lib/stock - integration", () => {
       });
 
       expect(record).not.toBeNull();
-      expect(record?.averageCost).toBe(200);
+      expect(Number(record?.averageCost)).toBe(200);
       expect(record?.quantity).toBe(0); // quantity is managed by recalculateStock
     });
 
@@ -241,7 +241,7 @@ describe("lib/stock - integration", () => {
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
       });
 
-      expect(record?.averageCost).toBe(65);
+      expect(Number(record?.averageCost)).toBe(65);
     });
   });
 
@@ -271,7 +271,7 @@ describe("lib/stock - integration", () => {
       });
 
       // Target should have avgCost = 60 (same as source)
-      expect(targetRecord?.averageCost).toBe(60);
+      expect(Number(targetRecord?.averageCost)).toBe(60);
     });
 
     it("should blend averageCost if target already has stock", async () => {
@@ -306,7 +306,7 @@ describe("lib/stock - integration", () => {
         where: { warehouseId_productId: { warehouseId: targetWarehouse.id, productId: product.id } },
       });
 
-      expect(targetRecord?.averageCost).toBe(75);
+      expect(Number(targetRecord?.averageCost)).toBe(75);
     });
   });
 
@@ -328,7 +328,7 @@ describe("lib/stock - integration", () => {
         where: { warehouseId_productId: { warehouseId: warehouse.id, productId: product.id } },
       });
 
-      expect(record?.totalCostValue).toBe(5000); // 100 * 50
+      expect(Number(record?.totalCostValue)).toBe(5000); // 100 * 50
     });
 
     it("should do nothing if stock record does not exist", async () => {

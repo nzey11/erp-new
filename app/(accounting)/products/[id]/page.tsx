@@ -4,9 +4,26 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/page-header";
-import { ProductFormContent } from "@/components/accounting/catalog/ProductFormContent";
-import type { Product } from "@/components/accounting/ProductsTable";
+import { PageHeader } from "@/components/shared/page-header";
+import { ProductFormContent } from "@/components/domain/accounting/catalog/ProductFormContent";
+// Local Product type for page (matches API response)
+interface Product {
+  id: string;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  description: string | null;
+  unitId: string;
+  categoryId: string | null;
+  purchasePrice: number | null;
+  salePrice: number | null;
+  imageUrl: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  seoKeywords: string | null;
+  slug: string | null;
+  publishedToStore: boolean;
+}
 
 interface Unit { id: string; name: string; shortName: string; }
 interface Category { id: string; name: string; parentId: string | null; }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { dateRangeSchema } from "@/lib/modules/accounting/schemas/reports.schema";
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
           };
         }
         productSales[item.productId].quantitySold += item.quantity;
-        productSales[item.productId].revenue += item.total;
+        productSales[item.productId].revenue += toNumber(item.total);
       }
     }
 
@@ -79,8 +79,9 @@ export async function GET(request: NextRequest) {
       if (!avgCostByProduct[sr.productId]) {
         avgCostByProduct[sr.productId] = { totalCost: 0, count: 0 };
       }
-      if (sr.averageCost > 0) {
-        avgCostByProduct[sr.productId].totalCost += sr.averageCost;
+      const avgCost = toNumber(sr.averageCost);
+      if (avgCost > 0) {
+        avgCostByProduct[sr.productId].totalCost += avgCost;
         avgCostByProduct[sr.productId].count += 1;
       }
     }
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     const purchasePriceMap: Record<string, number> = {};
     for (const pp of purchasePrices) {
       if (!(pp.productId in purchasePriceMap)) {
-        purchasePriceMap[pp.productId] = pp.price;
+        purchasePriceMap[pp.productId] = toNumber(pp.price);
       }
     }
 

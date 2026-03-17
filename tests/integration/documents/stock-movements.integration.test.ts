@@ -93,8 +93,8 @@ describe("StockMovement Integration — DB persistence", () => {
     expect(movements).toHaveLength(1);
     expect(movements[0].type).toBe("receipt");
     expect(movements[0].quantity).toBe(100);
-    expect(movements[0].cost).toBe(50);
-    expect(movements[0].totalCost).toBe(5000);
+    expect(Number(movements[0].cost)).toBe(50);
+    expect(Number(movements[0].totalCost)).toBe(5000);
     expect(movements[0].isReversing).toBe(false);
     expect(movements[0].productId).toBe(product.id);
     expect(movements[0].warehouseId).toBe(warehouse.id);

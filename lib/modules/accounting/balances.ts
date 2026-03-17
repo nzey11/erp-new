@@ -3,7 +3,7 @@
  * All report figures must be derived from LedgerLine, not document aggregates
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 
 export interface AccountBalanceResult {
   accountId: string;
@@ -42,8 +42,8 @@ export async function getAccountBalance(
     where,
   });
 
-  const debit = agg._sum.debit ?? 0;
-  const credit = agg._sum.credit ?? 0;
+  const debit = toNumber(agg._sum.debit);
+  const credit = toNumber(agg._sum.credit);
   return { debit, credit, balance: debit - credit };
 }
 
@@ -73,8 +73,8 @@ export async function getAccountTurnovers(
   });
 
   return {
-    debit: agg._sum.debit ?? 0,
-    credit: agg._sum.credit ?? 0,
+    debit: toNumber(agg._sum.debit),
+    credit: toNumber(agg._sum.credit),
   };
 }
 
@@ -121,10 +121,10 @@ export async function getTrialBalance(
       },
     });
 
-    const openingDebit = openingAgg._sum.debit ?? 0;
-    const openingCredit = openingAgg._sum.credit ?? 0;
-    const periodDebit = periodAgg._sum.debit ?? 0;
-    const periodCredit = periodAgg._sum.credit ?? 0;
+    const openingDebit = toNumber(openingAgg._sum.debit);
+    const openingCredit = toNumber(openingAgg._sum.credit);
+    const periodDebit = toNumber(periodAgg._sum.debit);
+    const periodCredit = toNumber(periodAgg._sum.credit);
 
     const closingDebit = openingDebit + periodDebit;
     const closingCredit = openingCredit + periodCredit;

@@ -10,8 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";
-import { OrderTimeline } from "@/components/ecommerce/OrderTimeline";
-import { ReviewForm } from "@/components/ecommerce/ReviewForm";
+import { OrderTimeline } from "@/components/domain/ecommerce/OrderTimeline";
+import { ReviewForm } from "@/components/domain/ecommerce/ReviewForm";
 
 type OrderItem = {
   id: string;

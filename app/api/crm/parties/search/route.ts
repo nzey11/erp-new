@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { listParties } from "@/lib/party/queries";
+import { listParties } from "@/lib/domain/party/queries";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

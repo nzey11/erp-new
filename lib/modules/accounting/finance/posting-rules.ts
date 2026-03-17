@@ -30,7 +30,7 @@
  * Import path changed to @/lib/modules/accounting/finance/posting-rules
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { calculateCogsForShipment } from "./cogs";
 
 interface PostingLine {
@@ -71,7 +71,8 @@ export async function buildPostingLines(
 
   const settings = await getSettings(doc.tenantId);
   const isOsno = settings?.taxRegime === "osno";
-  const vatRate = settings?.vatRate ?? 20;
+  const vatRate = toNumber(settings?.vatRate ?? 20);
+  const docTotalAmount = toNumber(doc.totalAmount);
 
   const lines: PostingLine[] = [];
 
@@ -83,8 +84,8 @@ export async function buildPostingLines(
     // ─────────────────────────────────────────
     case "incoming_shipment": {
       const amountWithoutVat = isOsno
-        ? doc.totalAmount / (1 + vatRate / 100)
-        : doc.totalAmount;
+        ? docTotalAmount / (1 + vatRate / 100)
+        : docTotalAmount;
 
       lines.push({
         debitCode: "41.1",
@@ -95,7 +96,7 @@ export async function buildPostingLines(
       });
 
       if (isOsno) {
-        const vatAmount = doc.totalAmount - amountWithoutVat;
+        const vatAmount = docTotalAmount - amountWithoutVat;
         lines.push({
           debitCode: "19",
           creditCode: "60",
@@ -114,7 +115,7 @@ export async function buildPostingLines(
     // Дт 90.3 Кт 68.02 (НДС, только ОСНО)
     // ─────────────────────────────────────────
     case "outgoing_shipment": {
-      const revenueWithVat = doc.totalAmount;
+      const revenueWithVat = docTotalAmount;
       const revenueWithoutVat = isOsno
         ? revenueWithVat / (1 + vatRate / 100)
         : revenueWithVat;
@@ -172,7 +173,7 @@ export async function buildPostingLines(
       lines.push({
         debitCode: "51",
         creditCode: "62",
-        amount: doc.totalAmount,
+        amount: docTotalAmount,
         counterpartyId: doc.counterpartyId ?? undefined,
       });
       break;
@@ -186,7 +187,7 @@ export async function buildPostingLines(
       lines.push({
         debitCode: "60",
         creditCode: "51",
-        amount: doc.totalAmount,
+        amount: docTotalAmount,
         counterpartyId: doc.counterpartyId ?? undefined,
       });
       break;
@@ -200,7 +201,7 @@ export async function buildPostingLines(
       lines.push({
         debitCode: "41.1",
         creditCode: "62",
-        amount: doc.totalAmount,
+        amount: docTotalAmount,
         counterpartyId: doc.counterpartyId ?? undefined,
         warehouseId: doc.warehouseId ?? undefined,
       });
@@ -215,7 +216,7 @@ export async function buildPostingLines(
       lines.push({
         debitCode: "60",
         creditCode: "41.1",
-        amount: doc.totalAmount,
+        amount: docTotalAmount,
         counterpartyId: doc.counterpartyId ?? undefined,
         warehouseId: doc.warehouseId ?? undefined,
       });
@@ -230,7 +231,7 @@ export async function buildPostingLines(
       lines.push({
         debitCode: "41.1",
         creditCode: "91.1",
-        amount: doc.totalAmount,
+        amount: docTotalAmount,
         warehouseId: doc.warehouseId ?? undefined,
         description: "Оприходование товаров",
       });
@@ -245,7 +246,7 @@ export async function buildPostingLines(
       lines.push({
         debitCode: "94",
         creditCode: "41.1",
-        amount: doc.totalAmount,
+        amount: docTotalAmount,
         warehouseId: doc.warehouseId ?? undefined,
         description: "Списание товаров",
       });

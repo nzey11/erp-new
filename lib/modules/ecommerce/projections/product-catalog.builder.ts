@@ -12,7 +12,7 @@
  * - Normal product → upsert with full data
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import type { ProjectionResult, ProductCatalogProjectionData } from "./product-catalog.types";
 
 export async function buildProductCatalogProjection(
@@ -106,15 +106,15 @@ export async function buildProductCatalogProjection(
   }
 
   // Compute pricing (matches current storefront logic)
-  const salePrice = product.salePrices[0]?.price ?? 0;
+  const salePrice = toNumber(product.salePrices[0]?.price) ?? 0;
   const discount = product.discounts[0];
 
   let discountedPrice: number | null = null;
   if (discount) {
     discountedPrice =
       discount.type === "percentage"
-        ? salePrice * (1 - discount.value / 100)
-        : salePrice - discount.value;
+        ? salePrice * (1 - toNumber(discount.value) / 100)
+        : salePrice - toNumber(discount.value);
     discountedPrice = Math.max(0, discountedPrice);
   }
 
@@ -135,7 +135,7 @@ export async function buildProductCatalogProjection(
     product.childVariants.forEach((cv) => {
       const cvPrice = cv.salePrices[0]?.price;
       if (cvPrice !== undefined) {
-        allPrices.push(cvPrice);
+        allPrices.push(toNumber(cvPrice));
       }
     });
 
@@ -167,7 +167,7 @@ export async function buildProductCatalogProjection(
     discountedPrice,
     discountName: discount?.name ?? null,
     discountType: discount?.type ?? null,
-    discountValue: discount?.value ?? null,
+    discountValue: discount ? toNumber(discount.value) : null,
 
     avgRating: Math.round(avgRating * 10) / 10,
     reviewCount: ratings.length,

@@ -74,7 +74,7 @@ async function confirmDoc(docId: string) {
   // compute it from items here and update the document before posting.
   const db = getTestDb();
   const items = await db.documentItem.findMany({ where: { documentId: docId } });
-  const totalAmount = items.reduce((s, i) => s + i.quantity * i.price, 0);
+  const totalAmount = items.reduce((s, i) => s + i.quantity * Number(i.price), 0);
   const doc = await db.document.update({
     where: { id: docId },
     data: { totalAmount },
@@ -97,8 +97,8 @@ async function assertDoubleEntry(docId: string) {
   // At least one entry must have been created
   expect(entries.length).toBeGreaterThan(0);
   for (const entry of entries) {
-    const totalDebit  = entry.lines.reduce((s, l) => s + l.debit,  0);
-    const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0);
+    const totalDebit  = entry.lines.reduce((s, l) => s + Number(l.debit),  0);
+    const totalCredit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
     expect(totalDebit).toBeCloseTo(totalCredit, 2); // must balance to the cent
   }
 }

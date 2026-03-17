@@ -5,8 +5,8 @@
  * Handles empty state branching and composes all page sections.
  */
 
-import { PageHeader } from "@/components/page-header";
-import type { PartyListResult } from "@/lib/party";
+import { PageHeader } from "@/components/shared/page-header";
+import type { PartyListResult } from "@/lib/domain/party";
 import type { PartyListParams } from "../_lib";
 import { PartyFilters } from "./party-filters";
 import { PartyTable } from "./party-table";

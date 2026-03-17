@@ -12,7 +12,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Check, X } from "lucide-react";
-import type { MergeRequest } from "@/lib/party";
+import type { MergeRequest } from "@/lib/domain/party";
 import { approveMerge, rejectMerge } from "../_lib/actions";
 import { RejectDialog } from "./reject-dialog";
 

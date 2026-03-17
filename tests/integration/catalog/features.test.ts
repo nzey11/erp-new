@@ -250,7 +250,7 @@ describe("Catalog features - integration", () => {
 
       expect(variant.productId).toBe(product.id);
       expect(variant.optionId).toBe(option.id);
-      expect(variant.priceAdjustment).toBe(200);
+      expect(Number(variant.priceAdjustment)).toBe(200);
     });
 
     it("should enforce unique constraint per product+option", async () => {
@@ -332,7 +332,7 @@ describe("Catalog features - integration", () => {
 
       expect(discount.name).toBe("Летняя распродажа");
       expect(discount.type).toBe("percentage");
-      expect(discount.value).toBe(15);
+      expect(Number(discount.value)).toBe(15);
     });
 
     it("should create fixed discount", async () => {
@@ -344,7 +344,7 @@ describe("Catalog features - integration", () => {
       });
 
       expect(discount.type).toBe("fixed");
-      expect(discount.value).toBe(500);
+      expect(Number(discount.value)).toBe(500);
     });
 
     it("should calculate discounted price correctly for percentage", async () => {
@@ -711,7 +711,7 @@ describe("Catalog features - integration", () => {
       });
 
       expect(price.priceListId).toBe(priceList.id);
-      expect(price.price).toBe(800);
+      expect(Number(price.price)).toBe(800);
     });
 
     it("should support multiple prices for same product in different price lists", async () => {
@@ -727,7 +727,7 @@ describe("Catalog features - integration", () => {
       });
 
       expect(prices).toHaveLength(2);
-      expect(prices.map((p) => p.price).sort((a, b) => a - b)).toEqual([800, 1000]);
+      expect(prices.map((p) => Number(p.price)).sort((a, b) => a - b)).toEqual([800, 1000]);
     });
 
     it("should soft-delete price list", async () => {
@@ -757,7 +757,7 @@ describe("Catalog features - integration", () => {
         data: { price: 1200 },
       });
 
-      expect(updated.price).toBe(1200);
+      expect(Number(updated.price)).toBe(1200);
     });
   });
 
@@ -790,7 +790,7 @@ describe("Catalog features - integration", () => {
       expect(exportData!.name).toBe("Смартфон");
       expect(exportData!.sku).toBe("PHONE-001");
       expect(exportData!.category!.name).toBe("Электроника");
-      expect(exportData!.salePrices[0].price).toBe(50000);
+      expect(Number(exportData!.salePrices[0].price)).toBe(50000);
     });
 
     it("should match unit by name for import", async () => {

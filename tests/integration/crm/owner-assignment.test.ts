@@ -11,9 +11,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanDatabase, getTestDb } from "../../helpers/test-db";
 import { createUser, createParty } from "../../helpers/factories";
-import { assignOwner, getOwner, getOwners } from "@/lib/party/services/party-owner";
-import { listAssignableCrmOwners } from "@/lib/crm/queries/list-assignable-owners";
-import { getPartyProfile, listParties } from "@/lib/party/queries";
+import { assignOwner, getOwner, getOwners } from "@/lib/domain/party/services/party-owner";
+import { listAssignableCrmOwners } from "@/lib/domain/crm/queries/list-assignable-owners";
+import { getPartyProfile, listParties } from "@/lib/domain/party/queries";
 import { roleHasPermission } from "@/lib/shared/authorization";
 
 const db = getTestDb();

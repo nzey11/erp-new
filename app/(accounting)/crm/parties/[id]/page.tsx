@@ -7,11 +7,11 @@
  */
 
 import { notFound, redirect } from "next/navigation";
-import { getPartyProfile } from "@/lib/party";
+import { getPartyProfile } from "@/lib/domain/party";
 import { db } from "@/lib/shared/db";
 import { getAuthSession } from "@/lib/shared/auth";
 import { roleHasPermission } from "@/lib/shared/authorization";
-import { listAssignableCrmOwners, type AssignableOwner } from "@/lib/crm";
+import { listAssignableCrmOwners, type AssignableOwner } from "@/lib/domain/crm";
 import { PartyProfileShell } from "./_components/party-profile-shell";
 
 interface PageProps {

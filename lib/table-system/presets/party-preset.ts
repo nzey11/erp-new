@@ -7,7 +7,7 @@
 
 import type { ListTablePreset } from "@/lib/table-system/types";
 import { createListTablePreset } from "@/lib/table-system/types";
-import type { PartyListItemDto } from "@/lib/party/dto";
+import type { PartyListItemDto } from "@/lib/domain/party/dto";
 
 /**
  * Format date as relative time for CRM list views.

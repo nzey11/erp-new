@@ -11,9 +11,9 @@ import {
   rejectMergeRequest,
   getPendingMergeRequests,
   getMergeHistory,
-} from "@/lib/party/services/party-merge";
-import { resolveParty } from "@/lib/party/services/party-resolver";
-import { assignOwner } from "@/lib/party/services/party-owner";
+} from "@/lib/domain/party/services/party-merge";
+import { resolveParty } from "@/lib/domain/party/services/party-resolver";
+import { assignOwner } from "@/lib/domain/party/services/party-owner";
 import { createCustomer, createCounterparty, createUser } from "@/tests/helpers/factories";
 
 describe("Party Merge Service", () => {

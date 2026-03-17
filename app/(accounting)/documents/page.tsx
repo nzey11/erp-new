@@ -1,61 +1,51 @@
-"use client";
+import { Suspense } from "react";
+import { parseDocumentFilters } from "@/lib/domain/documents/parse-filters";
+import { getDocuments } from "@/lib/domain/documents/queries";
+import { db } from "@/lib/shared/db";
+import { requirePermission } from "@/lib/shared/authorization";
+import { DocumentsPageClient } from "./_components/documents-page-client";
 
-import { useRef, useState } from "react";
-import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
-import { DocumentsTable, DOC_TYPE_OPTIONS, CreateDocumentDialog } from "@/components/accounting";
-import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
-import { useAccountingRefs } from "@/lib/hooks/use-accounting-refs";
+// Force dynamic rendering - this page requires authentication
+export const dynamic = "force-dynamic";
 
-export default function DocumentsPage() {
-  const [groupFilter, setGroupFilter] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
-  const tableRef = useRef<DocumentsTableHandle>(null);
+interface DocumentsPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-  const { warehouses, counterparties } = useAccountingRefs();
+export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
+  const session = await requirePermission("documents:read");
+  const resolvedParams = await searchParams;
 
-  const filteredTypes = groupFilter
-    ? DOC_TYPE_OPTIONS.filter((t) => t.group === groupFilter)
-    : DOC_TYPE_OPTIONS;
+  const urlParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(resolvedParams)) {
+    if (typeof value === "string") urlParams.set(key, value);
+    else if (Array.isArray(value) && value[0]) urlParams.set(key, value[0]);
+  }
+
+  const filters = parseDocumentFilters(urlParams);
+
+  const [data, counterparties, warehouses] = await Promise.all([
+    getDocuments(filters),
+    db.counterparty.findMany({
+      where: { isActive: true, tenantId: session.tenantId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.warehouse.findMany({
+      where: { isActive: true, tenantId: session.tenantId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Документы"
-        actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Новый документ
-          </Button>
-        }
-      />
-
-      {/* Group filter tabs */}
-      <Tabs value={groupFilter || "all"} onValueChange={(v) => setGroupFilter(v === "all" ? "" : v)}>
-        <TabsList>
-          <TabsTrigger value="all">Все</TabsTrigger>
-          <TabsTrigger value="stock">Склад</TabsTrigger>
-          <TabsTrigger value="purchases">Закупки</TabsTrigger>
-          <TabsTrigger value="sales">Продажи</TabsTrigger>
-          <TabsTrigger value="finance">Финансы</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <DocumentsTable ref={tableRef} key={groupFilter} groupFilter={groupFilter} />
-
-      <CreateDocumentDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        title="Новый документ"
-        docTypes={filteredTypes}
-        warehouses={warehouses}
+    <Suspense fallback={<div className="p-4 text-muted-foreground">Загрузка...</div>}>
+      <DocumentsPageClient
+        initialData={data}
+        initialFilters={filters}
         counterparties={counterparties}
-        onSuccess={() => tableRef.current?.refresh()}
-        showTargetWarehouse
-        counterpartyRedirect="documents"
+        warehouses={warehouses}
       />
-    </div>
+    </Suspense>
   );
 }

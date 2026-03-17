@@ -80,8 +80,8 @@ describe("Journal — createJournalEntry", () => {
 
     expect(entry.lines).toHaveLength(2);
 
-    const totalDebit  = entry.lines.reduce((s, l) => s + l.debit, 0);
-    const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0);
+    const totalDebit  = entry.lines.reduce((s, l) => s + Number(l.debit), 0);
+    const totalCredit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
     expect(totalDebit).toBe(totalCredit);
     expect(totalDebit).toBe(2500);
   });
@@ -92,16 +92,16 @@ describe("Journal — createJournalEntry", () => {
       { allowRestrictedAccounts: true }
     );
 
-    const debitLine  = entry.lines.find(l => l.debit > 0)!;
-    const creditLine = entry.lines.find(l => l.credit > 0)!;
+    const debitLine  = entry.lines.find(l => Number(l.debit) > 0)!;
+    const creditLine = entry.lines.find(l => Number(l.credit) > 0)!;
 
     expect(debitLine.accountId).toBe(accountIds["41.1"]);
-    expect(debitLine.debit).toBe(5000);
-    expect(debitLine.credit).toBe(0);
+    expect(Number(debitLine.debit)).toBe(5000);
+    expect(Number(debitLine.credit)).toBe(0);
 
     expect(creditLine.accountId).toBe(accountIds["60"]);
-    expect(creditLine.credit).toBe(5000);
-    expect(creditLine.debit).toBe(0);
+    expect(Number(creditLine.credit)).toBe(5000);
+    expect(Number(creditLine.debit)).toBe(0);
   });
 
   it("multi-line entry: all lines created, totals balanced", async () => {
@@ -118,8 +118,8 @@ describe("Journal — createJournalEntry", () => {
 
     expect(entry.lines).toHaveLength(4); // 2 pairs
 
-    const totalDebit  = entry.lines.reduce((s, l) => s + l.debit, 0);
-    const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0);
+    const totalDebit  = entry.lines.reduce((s, l) => s + Number(l.debit), 0);
+    const totalCredit = entry.lines.reduce((s, l) => s + Number(l.credit), 0);
     expect(totalDebit).toBe(5000);
     expect(totalCredit).toBe(5000);
   });
@@ -202,8 +202,8 @@ describe("Journal — autoPostDocument", () => {
     expect(entries[0].lines.length).toBeGreaterThan(0);
 
     // Balance invariant must hold
-    const totalDebit  = entries[0].lines.reduce((s, l) => s + l.debit, 0);
-    const totalCredit = entries[0].lines.reduce((s, l) => s + l.credit, 0);
+    const totalDebit  = entries[0].lines.reduce((s, l) => s + Number(l.debit), 0);
+    const totalCredit = entries[0].lines.reduce((s, l) => s + Number(l.credit), 0);
     expect(totalDebit).toBe(totalCredit);
   });
 
@@ -263,11 +263,11 @@ describe("Journal — reverseEntry", () => {
     expect(reversal.lines).toHaveLength(2);
 
     // The account that was debited in original must be credited in reversal
-    const origDebitAccountId = original.lines.find(l => l.debit > 0)!.accountId;
+    const origDebitAccountId = original.lines.find(l => Number(l.debit) > 0)!.accountId;
     const reversalLine = reversal.lines.find(l => l.accountId === origDebitAccountId)!;
 
-    expect(reversalLine.debit).toBe(0);
-    expect(reversalLine.credit).toBe(3000);
+    expect(Number(reversalLine.debit)).toBe(0);
+    expect(Number(reversalLine.credit)).toBe(3000);
   });
 
   it("marks original entry as isReversed = true", async () => {
@@ -318,8 +318,8 @@ describe("Journal — reverseEntry", () => {
 
     const reversal = await reverseEntry(original.id, { allowRestrictedAccounts: true });
 
-    const totalDebit  = reversal.lines.reduce((s, l) => s + l.debit, 0);
-    const totalCredit = reversal.lines.reduce((s, l) => s + l.credit, 0);
+    const totalDebit  = reversal.lines.reduce((s, l) => s + Number(l.debit), 0);
+    const totalCredit = reversal.lines.reduce((s, l) => s + Number(l.credit), 0);
     expect(totalDebit).toBe(totalCredit);
     expect(totalDebit).toBe(4500);
   });
@@ -384,13 +384,13 @@ describe("Journal — autoPostPayment", () => {
     });
 
     expect(entries).toHaveLength(1);
-    const debitLine  = entries[0].lines.find(l => l.debit > 0)!;
-    const creditLine = entries[0].lines.find(l => l.credit > 0)!;
+    const debitLine  = entries[0].lines.find(l => Number(l.debit) > 0)!;
+    const creditLine = entries[0].lines.find(l => Number(l.credit) > 0)!;
 
     expect(debitLine.accountId).toBe(accountIds["50"]);    // Касса
     expect(creditLine.accountId).toBe(accountIds["91.1"]); // Прочие доходы
-    expect(debitLine.debit).toBe(1000);
-    expect(creditLine.credit).toBe(1000);
+    expect(Number(debitLine.debit)).toBe(1000);
+    expect(Number(creditLine.credit)).toBe(1000);
   });
 
   it("expense + bank_transfer posts Дт 91.2 (Прочие расходы) Кт 51 (Расчетный счет)", async () => {
@@ -406,13 +406,13 @@ describe("Journal — autoPostPayment", () => {
     });
 
     expect(entries).toHaveLength(1);
-    const debitLine  = entries[0].lines.find(l => l.debit > 0)!;
-    const creditLine = entries[0].lines.find(l => l.credit > 0)!;
+    const debitLine  = entries[0].lines.find(l => Number(l.debit) > 0)!;
+    const creditLine = entries[0].lines.find(l => Number(l.credit) > 0)!;
 
     expect(debitLine.accountId).toBe(accountIds["91.2"]); // Прочие расходы
     expect(creditLine.accountId).toBe(accountIds["51"]);  // Расчетный счет
-    expect(debitLine.debit).toBe(2500);
-    expect(creditLine.credit).toBe(2500);
+    expect(Number(debitLine.debit)).toBe(2500);
+    expect(Number(creditLine.credit)).toBe(2500);
   });
 
   it("uses category.defaultAccountCode when explicitly set", async () => {
@@ -428,7 +428,7 @@ describe("Journal — autoPostPayment", () => {
       include: { lines: true },
     });
 
-    const creditLine = entries[0].lines.find(l => l.credit > 0)!;
+    const creditLine = entries[0].lines.find(l => Number(l.credit) > 0)!;
     expect(creditLine.accountId).toBe(accountIds["90.1"]); // Выручка
   });
 

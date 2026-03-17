@@ -4,7 +4,7 @@
  * Server page for managing pending merge requests.
  */
 
-import { getPendingMergeRequests } from "@/lib/party";
+import { getPendingMergeRequests } from "@/lib/domain/party";
 import { MergeAdminPage } from "./_components/merge-admin-page";
 
 export default async function MergeAdminPageContainer() {

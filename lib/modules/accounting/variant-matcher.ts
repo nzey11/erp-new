@@ -7,7 +7,7 @@
  * 3. Category + Characteristics (40-60% confidence) - same category + similar custom fields
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 
 // Common variant keywords for name parsing
 const COLOR_KEYWORDS = [
@@ -430,19 +430,28 @@ export async function findVariantSuggestions(
 
   const suggestions: VariantSuggestion[] = [];
 
+  // Map Prisma Decimal prices to number to satisfy ProductForMatching interface
+  const mapProduct = (p: typeof sourceProduct & { salePrices: { price: unknown }[] }) => ({
+    ...p,
+    salePrices: p.salePrices.map((sp) => ({ price: toNumber(sp.price as Parameters<typeof toNumber>[0]) })),
+  });
+
+  const sourceMapped = mapProduct(sourceProduct);
+  const candidatesMapped = candidates.map(mapProduct);
+
   // Run matching strategies
   if (strategy === "all" || strategy === "sku") {
-    const skuMatches = await matchBySku(sourceProduct, candidates);
+    const skuMatches = await matchBySku(sourceMapped, candidatesMapped);
     suggestions.push(...skuMatches);
   }
 
   if (strategy === "all" || strategy === "name") {
-    const nameMatches = await matchByName(sourceProduct, candidates);
+    const nameMatches = await matchByName(sourceMapped, candidatesMapped);
     suggestions.push(...nameMatches);
   }
 
   if (strategy === "all" || strategy === "characteristics") {
-    const charMatches = await matchByCharacteristics(sourceProduct, candidates);
+    const charMatches = await matchByCharacteristics(sourceMapped, candidatesMapped);
     suggestions.push(...charMatches);
   }
 

@@ -5,7 +5,7 @@ import { signCustomerSession, CUSTOMER_COOKIE_NAME, CUSTOMER_SESSION_MAX_AGE } f
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { telegramAuthSchema } from "@/lib/shared/schemas/auth.schema";
 import { logger } from "@/lib/shared/logger";
-import { resolveParty } from "@/lib/party";
+import { resolveParty } from "@/lib/domain/party";
 
 /** Get bot token from DB or env */
 async function getBotToken(): Promise<string | null> {

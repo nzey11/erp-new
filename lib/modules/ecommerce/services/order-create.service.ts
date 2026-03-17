@@ -4,9 +4,9 @@
  * Handles creation of sales_order documents from cart checkout.
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { generateDocumentNumber } from "@/lib/modules/accounting/documents";
-import { recordOrderPlaced } from "@/lib/party";
+import { recordOrderPlaced } from "@/lib/domain/party";
 import { getOrCreateCounterparty } from "./counterparty-bridge.service";
 import type { CartItemInput, DeliveryType } from "../types";
 
@@ -125,13 +125,13 @@ export async function createSalesOrderFromCart(params: {
     counterpartyId,
     documentId: document.id,
     orderNumber: document.number,
-    totalAmount: document.totalAmount,
+    totalAmount: toNumber(document.totalAmount),
     occurredAt: document.createdAt,
   });
 
   return {
     documentId: document.id,
     documentNumber: document.number,
-    totalAmount: document.totalAmount,
+    totalAmount: toNumber(document.totalAmount),
   };
 }

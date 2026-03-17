@@ -4,8 +4,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { db } from "@/lib/shared/db";
-import { recordActivity, recordOrderPlaced, getPartyActivities } from "@/lib/party/services/activity-ingest";
-import { resolveParty } from "@/lib/party/services/party-resolver";
+import { recordActivity, recordOrderPlaced, getPartyActivities } from "@/lib/domain/party/services/activity-ingest";
+import { resolveParty } from "@/lib/domain/party/services/party-resolver";
 import { createCustomer, createCounterparty } from "@/tests/helpers/factories";
 
 describe("Activity Ingest", () => {

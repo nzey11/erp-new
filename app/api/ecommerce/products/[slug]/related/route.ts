@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { logger } from "@/lib/shared/logger";
 
 export async function GET(
@@ -66,15 +66,15 @@ export async function GET(
     });
 
     const data = related.map((p) => {
-      const basePrice = p.salePrices[0]?.price || 0;
+      const basePrice = toNumber(p.salePrices[0]?.price) || 0;
       const discount = p.discounts[0];
       let discountedPrice: number | null = null;
 
       if (discount) {
         if (discount.type === "percentage") {
-          discountedPrice = Math.round(basePrice * (1 - discount.value / 100) * 100) / 100;
+          discountedPrice = Math.round(basePrice * (1 - toNumber(discount.value) / 100) * 100) / 100;
         } else {
-          discountedPrice = Math.max(0, Math.round((basePrice - discount.value) * 100) / 100);
+          discountedPrice = Math.max(0, Math.round((basePrice - toNumber(discount.value)) * 100) / 100);
         }
       }
 

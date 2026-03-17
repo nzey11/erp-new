@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 
 export async function GET(request: NextRequest) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const header = ["Товар", "Артикул", "Категория", "Склад", "Ед.", "Кол-во", "Средн. себест.", "Стоимость"].join(",");
 
     const rows = records.map((r) => {
-      const costValue = r.averageCost > 0 ? r.quantity * r.averageCost : "";
+      const costValue = toNumber(r.averageCost) > 0 ? r.quantity * toNumber(r.averageCost) : "";
       return [
         `"${r.product.name}"`,
         r.product.sku ? `"${r.product.sku}"` : "",
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         `"${r.warehouse.name}"`,
         r.product.unit.shortName,
         r.quantity,
-        r.averageCost > 0 ? r.averageCost.toFixed(2) : "",
+        toNumber(r.averageCost) > 0 ? toNumber(r.averageCost).toFixed(2) : "",
         costValue !== "" ? (costValue as number).toFixed(2) : "",
       ].join(",");
     });

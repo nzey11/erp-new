@@ -12,8 +12,8 @@ import {
   removeOwner,
   getPartiesByOwner,
   getPartyCountByOwner,
-} from "@/lib/party/services/party-owner";
-import { resolveParty } from "@/lib/party/services/party-resolver";
+} from "@/lib/domain/party/services/party-owner";
+import { resolveParty } from "@/lib/domain/party/services/party-resolver";
 import { createCustomer, createUser } from "@/tests/helpers/factories";
 
 describe("Party Owner Service", () => {

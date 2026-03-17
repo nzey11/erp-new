@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
-import { useCart } from "@/components/ecommerce/CartContext";
+import { useCart } from "@/components/domain/ecommerce/CartContext";
 
 type CartItem = {
   id: string;

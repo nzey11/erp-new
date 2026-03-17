@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { z } from "zod";
 import { parseQuery, validationError } from "@/lib/shared/validation";
@@ -79,9 +79,9 @@ export async function GET(request: NextRequest) {
 
     // Transform to variant groups format
     const groups = masterProducts.map((master) => {
-      const masterPrice = master.salePrices[0]?.price ?? 0;
+      const masterPrice = toNumber(master.salePrices[0]?.price);
       const variantPrices = master.childVariants
-        .map((v) => v.salePrices[0]?.price ?? 0)
+        .map((v) => toNumber(v.salePrices[0]?.price))
         .filter((p) => p > 0);
       const allPrices = [masterPrice, ...variantPrices].filter((p) => p > 0);
 
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
           sku: v.sku,
           imageUrl: v.imageUrl,
           publishedToStore: v.publishedToStore,
-          salePrice: v.salePrices[0]?.price ?? null,
+          salePrice: toNumber(v.salePrices[0]?.price) || null,
           stock: v.stockRecords.reduce((sum, r) => sum + r.quantity, 0),
         })),
       };

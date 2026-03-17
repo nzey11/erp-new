@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { HeroCarousel } from "@/components/ecommerce/HeroCarousel";
-import { ProductSection } from "@/components/ecommerce/ProductSection";
-import { BenefitsSection } from "@/components/ecommerce/BenefitsSection";
+import { HeroCarousel } from "@/components/domain/ecommerce/HeroCarousel";
+import { ProductSection } from "@/components/domain/ecommerce/ProductSection";
+import { BenefitsSection } from "@/components/domain/ecommerce/BenefitsSection";
 
 interface PromoBlock {
   id: string;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { dateRangeSchema } from "@/lib/modules/accounting/schemas/reports.schema";
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           docCount: 0,
         };
       }
-      supplierMap[key].totalAmount += doc.totalAmount;
+      supplierMap[key].totalAmount += toNumber(doc.totalAmount);
       supplierMap[key].docCount += 1;
     }
 
@@ -58,14 +58,14 @@ export async function GET(request: NextRequest) {
       if (!monthMap[key]) {
         monthMap[key] = { month: key, totalAmount: 0, docCount: 0 };
       }
-      monthMap[key].totalAmount += doc.totalAmount;
+      monthMap[key].totalAmount += toNumber(doc.totalAmount);
       monthMap[key].docCount += 1;
     }
 
     const byMonth = Object.values(monthMap).sort((a, b) => a.month.localeCompare(b.month));
 
     // ── Totals ─────────────────────────────────────────────────────────────────
-    const totalAmount = purchaseDocs.reduce((s, d) => s + d.totalAmount, 0);
+    const totalAmount = purchaseDocs.reduce((s, d) => s + toNumber(d.totalAmount), 0);
     const totalDocs = purchaseDocs.length;
     const averageOrder = totalDocs > 0 ? totalAmount / totalDocs : 0;
 

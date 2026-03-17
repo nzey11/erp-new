@@ -2,7 +2,7 @@
 
 import { useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

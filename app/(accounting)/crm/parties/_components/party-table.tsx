@@ -9,8 +9,8 @@
  * - flag=false → LegacyPartyListTable (raw HTML table)
  */
 
-import { PartyListTable } from "@/components/crm/parties";
-import type { PartyListItemDto } from "@/lib/party";
+import { PartyListTable } from "@/components/domain/crm/parties";
+import type { PartyListItemDto } from "@/lib/domain/party";
 
 interface PartyTableProps {
   items: PartyListItemDto[];

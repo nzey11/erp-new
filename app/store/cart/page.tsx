@@ -5,8 +5,8 @@ import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatRub } from "@/lib/shared/utils";
-import { useCart } from "@/components/ecommerce/CartContext";
-import { CartItemCard } from "@/components/ecommerce/CartItemCard";
+import { useCart } from "@/components/domain/ecommerce/CartContext";
+import { CartItemCard } from "@/components/domain/ecommerce/CartItemCard";
 
 export default function CartPage() {
   const router = useRouter();

@@ -5,7 +5,7 @@
  * Orchestration only — delegates layout to PartyListPage shell.
  */
 
-import { listParties } from "@/lib/party";
+import { listParties } from "@/lib/domain/party";
 import { parsePartyListParams } from "./_lib";
 import { PartyListPage } from "./_components/party-list-page";
 

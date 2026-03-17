@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { executeMerge } from "@/lib/party";
+import { executeMerge } from "@/lib/domain/party";
 import { requirePermission } from "@/lib/shared/authorization";
 
 export async function POST(request: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { checkoutSchema } from "@/lib/modules/accounting";
@@ -54,13 +54,13 @@ export async function POST(request: NextRequest) {
 
     // Calculate prices with discounts
     const orderItems = cartItems.map((item) => {
-      let price = item.product.salePrices[0]?.price || 0;
-      if (item.variant) price += item.variant.priceAdjustment;
+      let price: number = toNumber(item.product.salePrices[0]?.price);
+      if (item.variant) price += toNumber(item.variant.priceAdjustment);
       const discount = item.product.discounts[0];
       if (discount) {
         price = discount.type === "percentage" 
-          ? price * (1 - discount.value / 100) 
-          : price - discount.value;
+          ? price * (1 - toNumber(discount.value) / 100) 
+          : price - toNumber(discount.value);
         price = Math.max(0, price);
       }
       return {

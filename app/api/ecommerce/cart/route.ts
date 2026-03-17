@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requireCustomer, handleCustomerAuthError } from "@/lib/shared/customer-auth";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { addToCartSchema } from "@/lib/modules/ecommerce/schemas/cart.schema";
@@ -87,19 +87,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate price
-    let price = product.salePrices[0]?.price || 0;
+    let price = toNumber(product.salePrices[0]?.price);
     const discount = product.discounts[0];
     if (discount) {
       price =
         discount.type === "percentage"
-          ? price * (1 - discount.value / 100)
-          : price - discount.value;
+          ? price * (1 - toNumber(discount.value) / 100)
+          : price - toNumber(discount.value);
       price = Math.max(0, price);
     }
 
     // Add variant price adjustment
     if (variantId && product.variants[0]) {
-      price += product.variants[0].priceAdjustment;
+      price += toNumber(product.variants[0].priceAdjustment);
     }
 
     price = Math.round(price * 100) / 100;

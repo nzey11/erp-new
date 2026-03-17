@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RichTextRenderer } from "@/components/ecommerce/RichTextRenderer";
+import { RichTextRenderer } from "@/components/domain/ecommerce/RichTextRenderer";
 
 type PageData = {
   id: string;

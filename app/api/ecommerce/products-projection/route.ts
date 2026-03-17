@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryStorefrontProductsSchema } from "@/lib/modules/ecommerce/schemas/products.schema";
 import { logger } from "@/lib/shared/logger";
@@ -139,12 +139,12 @@ export async function GET(request: NextRequest) {
 
     // Price filtering (post-fetch since price is in projection)
     let filtered = data;
-    if (minPrice !== undefined) filtered = filtered.filter((p) => (p.discountedPrice || p.price) >= minPrice);
-    if (maxPrice !== undefined) filtered = filtered.filter((p) => (p.discountedPrice || p.price) <= maxPrice);
+    if (minPrice !== undefined) filtered = filtered.filter((p) => (toNumber(p.discountedPrice) || toNumber(p.price)) >= minPrice);
+    if (maxPrice !== undefined) filtered = filtered.filter((p) => (toNumber(p.discountedPrice) || toNumber(p.price)) <= maxPrice);
 
     // Price sorting (post-fetch)
-    if (sort === "price_asc") filtered.sort((a, b) => (a.discountedPrice || a.price) - (b.discountedPrice || b.price));
-    if (sort === "price_desc") filtered.sort((a, b) => (b.discountedPrice || b.price) - (a.discountedPrice || a.price));
+    if (sort === "price_asc") filtered.sort((a, b) => (toNumber(a.discountedPrice) || toNumber(a.price)) - (toNumber(b.discountedPrice) || toNumber(b.price)));
+    if (sort === "price_desc") filtered.sort((a, b) => (toNumber(b.discountedPrice) || toNumber(b.price)) - (toNumber(a.discountedPrice) || toNumber(a.price)));
 
     // Compare mode: dual-read and return diff report
     if (compareMode) {
@@ -219,14 +219,14 @@ async function compareWithOriginal(
 
   // Map original to comparable format
   const originalData = originalProducts.map((p) => {
-    const salePrice = p.salePrices[0]?.price ?? 0;
+    const salePrice = toNumber(p.salePrices[0]?.price) ?? 0;
     const discount = p.discounts[0];
     let discountedPrice: number | null = null;
     if (discount) {
       discountedPrice =
         discount.type === "percentage"
-          ? salePrice * (1 - discount.value / 100)
-          : salePrice - discount.value;
+          ? salePrice * (1 - toNumber(discount.value) / 100)
+          : salePrice - toNumber(discount.value);
       discountedPrice = Math.max(0, discountedPrice);
     }
 
@@ -237,7 +237,7 @@ async function compareWithOriginal(
     const childVariantCount = p.childVariants.length;
     let priceRange: { min: number; max: number } | null = null;
     if (childVariantCount > 0) {
-      const allPrices = [salePrice, ...p.childVariants.map((cv) => cv.salePrices[0]?.price).filter(Boolean) as number[]];
+      const allPrices = [salePrice, ...p.childVariants.map((cv) => toNumber(cv.salePrices[0]?.price)).filter(Boolean) as number[]];
       const minVal = Math.min(...allPrices);
       const maxVal = Math.max(...allPrices);
       if (minVal !== maxVal) priceRange = { min: minVal, max: maxVal };

@@ -12,7 +12,7 @@
  * by outbox event handlers. This service does NOT know about those handlers.
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import type { DocumentType } from "@/lib/generated/prisma/client";
 import {
   affectsStock,
@@ -254,8 +254,22 @@ export async function confirmDocumentTransactional(
     throw new DocumentConfirmError("Документ не найден", 404);
   }
 
+  // Map Prisma Decimal fields to number for internal processing
+  const docWithNumbers: DocumentWithItems = {
+    ...doc,
+    totalAmount: toNumber(doc.totalAmount),
+    items: doc.items.map((i) => ({
+      ...i,
+      price: toNumber(i.price),
+      quantity: toNumber(i.quantity),
+      expectedQty: i.expectedQty !== null ? toNumber(i.expectedQty) : null,
+      actualQty: i.actualQty !== null ? toNumber(i.actualQty) : null,
+      difference: i.difference !== null ? toNumber(i.difference) : null,
+    })),
+  };
+
   // Step 2: Validate — throws DocumentConfirmError on any violation
-  await validateForConfirmation(doc);
+  await validateForConfirmation(docWithNumbers);
 
   // Steps 3–5: Critical stock effects (must all succeed before status update)
   if (affectsStock(doc.type)) {
@@ -270,19 +284,19 @@ export async function confirmDocumentTransactional(
       items: doc.items.map((i) => ({
         productId: i.productId,
         variantId: i.variantId,
-        quantity: i.quantity,
-        price: i.price,
+        quantity: toNumber(i.quantity),
+        price: toNumber(i.price),
       })),
     });
 
     // 4. Average cost update (uses updated StockRecord from step 3)
-    await updateAverageCostForDocument(doc);
+    await updateAverageCostForDocument(docWithNumbers);
   }
 
   // Step 5b: inventory_count — create linked adjustment documents (write_off / stock_receipt)
   // This IS the stock effect for inventory counts: creating adjustment docs is the critical path.
   if (isInventoryCount(doc.type) && doc.warehouseId) {
-    const adjustmentItems = doc.items.map((i) => ({
+    const adjustmentItems = docWithNumbers.items.map((i) => ({
       productId: i.productId,
       expectedQty: i.expectedQty,
       actualQty: i.actualQty,
@@ -329,7 +343,7 @@ export async function confirmDocumentTransactional(
           documentNumber: updated.number,
           counterpartyId: updated.counterpartyId,
           warehouseId: updated.warehouseId,
-          totalAmount: updated.totalAmount,
+          totalAmount: toNumber(updated.totalAmount),
           confirmedAt,
           confirmedBy: actor,
           tenantId: updated.tenantId,
@@ -344,9 +358,16 @@ export async function confirmDocumentTransactional(
 
   return {
     ...confirmed,
+    totalAmount: toNumber(confirmed.totalAmount),
+    items: confirmed.items.map((i) => ({
+      ...i,
+      price: toNumber(i.price),
+      total: toNumber(i.total),
+      quantity: toNumber(i.quantity),
+    })),
     typeName: getDocTypeName(confirmed.type),
     statusName: getDocStatusName(confirmed.status),
-  };
+  } as ConfirmedDocumentResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -429,6 +450,7 @@ export async function cancelDocumentTransactional(
   if (doc.status === "cancelled") {
     return {
       ...doc,
+      totalAmount: toNumber(doc.totalAmount),
       typeName: getDocTypeName(doc.type),
       statusName: getDocStatusName(doc.status),
       items: [],
@@ -497,9 +519,16 @@ export async function cancelDocumentTransactional(
 
   return {
     ...cancelled,
+    totalAmount: toNumber(cancelled.totalAmount),
+    items: cancelled.items.map((i) => ({
+      ...i,
+      price: toNumber(i.price),
+      total: toNumber(i.total),
+      quantity: toNumber(i.quantity),
+    })),
     typeName: getDocTypeName(cancelled.type),
     statusName: getDocStatusName(cancelled.status),
-  };
+  } as CancelledDocumentResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -650,8 +679,8 @@ async function createInventoryAdjustments(
         items: adjDoc.items.map((i) => ({
           productId: i.productId,
           variantId: i.variantId,
-          quantity: i.quantity,
-          price: i.price,
+          quantity: toNumber(i.quantity),
+          price: toNumber(i.price),
         })),
       });
     }

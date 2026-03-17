@@ -11,8 +11,8 @@ import { PartyOwnerCard } from "./party-owner-card";
 import { PartyLinksCard } from "./party-links-card";
 import { PartyNotesCard } from "./party-notes-card";
 import { PartyActivityTimeline } from "./party-activity-timeline";
-import type { PartyProfileDto } from "@/lib/party";
-import type { AssignableOwner } from "@/lib/crm";
+import type { PartyProfileDto } from "@/lib/domain/party";
+import type { AssignableOwner } from "@/lib/domain/crm";
 
 interface PartyProfileShellProps {
   profile: PartyProfileDto;

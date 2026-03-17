@@ -14,7 +14,7 @@ import {
   UserPlus,
   Merge,
 } from "lucide-react";
-import type { PartyProfileActivityDto } from "@/lib/party";
+import type { PartyProfileActivityDto } from "@/lib/domain/party";
 
 interface PartyActivityTimelineProps {
   activities: PartyProfileActivityDto[];

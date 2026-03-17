@@ -7,7 +7,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { assignOwner } from "@/lib/party";
+import { assignOwner } from "@/lib/domain/party";
 import { requirePermission, AuthorizationError } from "@/lib/shared/authorization";
 
 export type AssignPartyOwnerResult =

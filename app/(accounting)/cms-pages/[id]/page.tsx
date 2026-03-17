@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { RichTextEditor } from "@/components/ecommerce/RichTextEditor";
+import { RichTextEditor } from "@/components/domain/ecommerce/RichTextEditor";
 import { ChevronLeft, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { generateSlug } from "@/lib/shared/utils";

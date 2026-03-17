@@ -315,7 +315,7 @@ describe("lib/balance - integration", () => {
       // Then get the balance
       const balance = await getBalance(customer.id);
 
-      expect(balance).toBe(1500);
+      expect(Number(balance)).toBe(1500);
     });
   });
 });

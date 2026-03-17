@@ -7,7 +7,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link2 } from "lucide-react";
-import type { PartyProfileLinkDto } from "@/lib/party";
+import type { PartyProfileLinkDto } from "@/lib/domain/party";
 
 interface PartyLinksCardProps {
   links: PartyProfileLinkDto[];

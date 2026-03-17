@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { getDocTypeName, getDocStatusName } from "@/lib/modules/accounting/documents";
@@ -36,6 +36,12 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
     return NextResponse.json({
       ...document,
+      totalAmount: toNumber(document.totalAmount),
+      items: document.items.map((item) => ({
+        ...item,
+        price: toNumber(item.price),
+        total: toNumber(item.total),
+      })),
       typeName: getDocTypeName(document.type),
       statusName: getDocStatusName(document.status),
       linkedDocument: document.linkedDocument ? {
@@ -77,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       paymentType, description, notes, items,
     } = data;
 
-    let totalAmount = existing.totalAmount;
+    let totalAmount = toNumber(existing.totalAmount);
 
     // If items are provided, replace all items
     if (items !== undefined) {
@@ -128,6 +134,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     return NextResponse.json({
       ...document,
+      totalAmount: toNumber(document.totalAmount),
+      items: document.items.map((item) => ({
+        ...item,
+        price: toNumber(item.price),
+        total: toNumber(item.total),
+      })),
       typeName: getDocTypeName(document.type),
       statusName: getDocStatusName(document.status),
     });

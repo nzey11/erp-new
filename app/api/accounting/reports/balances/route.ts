@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
 import { getAllBalances } from "@/lib/modules/finance/reports";
+import { toNumber } from "@/lib/shared/db";
 
 export async function GET() {
   try {
@@ -10,11 +11,11 @@ export async function GET() {
     const balances = await getAllBalances();
 
     // Split into receivable (positive) and payable (negative)
-    const receivable = balances.filter((b) => b.balanceRub > 0);
-    const payable = balances.filter((b) => b.balanceRub < 0);
+    const receivable = balances.filter((b) => toNumber(b.balanceRub) > 0);
+    const payable = balances.filter((b) => toNumber(b.balanceRub) < 0);
 
-    const totalReceivable = receivable.reduce((sum, b) => sum + b.balanceRub, 0);
-    const totalPayable = payable.reduce((sum, b) => sum + Math.abs(b.balanceRub), 0);
+    const totalReceivable = receivable.reduce((sum, b) => sum + toNumber(b.balanceRub), 0);
+    const totalPayable = payable.reduce((sum, b) => sum + Math.abs(toNumber(b.balanceRub)), 0);
 
     return NextResponse.json({
       balances,

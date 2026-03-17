@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/shared/app-sidebar";
 import { getCsrfToken } from "@/lib/client/csrf";
 
 export default function DashboardLayout({

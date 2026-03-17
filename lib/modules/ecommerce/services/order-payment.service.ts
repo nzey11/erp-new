@@ -4,8 +4,8 @@
  * Handles payment confirmation for e-commerce orders.
  */
 
-import { db } from "@/lib/shared/db";
-import { recordPaymentReceived } from "@/lib/party";
+import { db, toNumber } from "@/lib/shared/db";
+import { recordPaymentReceived } from "@/lib/domain/party";
 import {
   confirmDocumentTransactional,
   type ConfirmedDocumentResult,
@@ -62,6 +62,7 @@ export async function confirmEcommerceOrderPayment(params: {
   if (document.status === "confirmed" && document.paymentStatus === "paid") {
     return {
       ...document,
+      totalAmount: toNumber(document.totalAmount),
       typeName: "Заказ",
       statusName: "Подтверждён",
       items: [],
@@ -91,7 +92,7 @@ export async function confirmEcommerceOrderPayment(params: {
     await recordPaymentReceived({
       counterpartyId: document.counterpartyId,
       paymentId: paymentExternalId || documentId,
-      amount: document.totalAmount,
+      amount: toNumber(document.totalAmount),
       method: paymentMethod,
       occurredAt: new Date(),
     });

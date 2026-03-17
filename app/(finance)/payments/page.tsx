@@ -1,107 +1,48 @@
-"use client";
+import { Suspense } from "react";
+import { parsePaymentFilters } from "@/lib/domain/payments/parse-filters";
+import { getPayments } from "@/lib/domain/payments/queries";
+import { PaymentsPageClient } from "./_components/payments-page-client";
 
-import { useRef, useState, Suspense } from "react";
-import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { DocumentsTable, DOC_TYPE_OPTIONS } from "@/components/accounting";
-import type { DocumentsTableHandle } from "@/components/accounting/DocumentsTable";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-
-const FINANCE_TYPES = DOC_TYPE_OPTIONS.filter((t) => t.group === "finance");
-
-// Loading fallback for Suspense
-function DocumentsTableFallback() {
-  return <div className="py-8 text-center text-muted-foreground">Загрузка...</div>;
+/**
+ * Payments list page — Server Component.
+ *
+ * Data flow:
+ * 1. Read searchParams from URL
+ * 2. Parse into typed PaymentFilters
+ * 3. Fetch data server-side via getPayments()
+ * 4. Pass serializable props to PaymentsPageClient
+ *
+ * No client-side fetching, no ref.current?.refresh().
+ */
+interface PaymentsPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default function PaymentsPage() {
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createType, setCreateType] = useState("");
-  const [creating, setCreating] = useState(false);
-  const tableRef = useRef<DocumentsTableHandle>(null);
+export default async function PaymentsPage({ searchParams }: PaymentsPageProps) {
+  // Await searchParams (Next.js 15+ async API)
+  const params = await searchParams;
 
-  const handleCreate = async () => {
-    if (!createType) {
-      toast.error("Выберите тип документа");
-      return;
+  // Convert to URLSearchParams for parsing
+  const urlParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (typeof value === "string") {
+      urlParams.set(key, value);
+    } else if (Array.isArray(value)) {
+      // Take first value for arrays
+      urlParams.set(key, value[0]);
     }
-    setCreating(true);
-    try {
-      const body: Record<string, unknown> = { type: createType, items: [] };
+  });
 
-      const res = await fetch("/api/accounting/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Ошибка");
-      }
-
-      toast.success("Документ создан");
-      setCreateOpen(false);
-      setCreateType("");
-      tableRef.current?.refresh();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Ошибка");
-    } finally {
-      setCreating(false);
-    }
-  };
+  // Parse filters and fetch data
+  const filters = parsePaymentFilters(urlParams);
+  const data = await getPayments(filters);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Платежи"
-        actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Новый платёж
-          </Button>
-        }
+    <Suspense fallback={<div className="p-8 text-center">Загрузка платежей...</div>}>
+      <PaymentsPageClient
+        initialData={data}
+        initialFilters={filters}
       />
-
-      <Suspense fallback={<DocumentsTableFallback />}>
-        <DocumentsTable
-          ref={tableRef}
-          groupFilter="finance"
-          defaultTypeFilter=""
-        />
-      </Suspense>
-
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Новый платёж</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Тип документа *</Label>
-              <Select value={createType} onValueChange={setCreateType}>
-                <SelectTrigger><SelectValue placeholder="Выберите тип" /></SelectTrigger>
-                <SelectContent>
-                  {FINANCE_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Отмена</Button>
-            <Button onClick={handleCreate} disabled={creating}>
-              {creating ? "Создание..." : "Создать"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </Suspense>
   );
 }

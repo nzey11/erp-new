@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { CartProvider, useCart } from "@/components/ecommerce/CartContext";
+import { CartProvider, useCart } from "@/components/domain/ecommerce/CartContext";
 
 type CmsPageLink = {
   id: string;

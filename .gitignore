@@ -45,6 +45,7 @@ next-env.d.ts
 # sqlite dev db
 prisma/dev.db
 prisma/*.db-journal
+dev.db
 
 # nx
 .nx/
@@ -53,3 +54,7 @@ prisma/*.db-journal
 /test-results/
 /playwright-report/
 /playwright/.auth/
+
+# generated artifacts
+deploy.tar.gz
+tsc-out.txt

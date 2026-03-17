@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { validationError } from "@/lib/shared/validation";
 
@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
     });
 
     // Split into receivable (positive) and payable (negative)
-    const receivable = balances.filter((b) => b.balanceRub > 0);
-    const payable = balances.filter((b) => b.balanceRub < 0);
+    const receivable = balances.filter((b) => toNumber(b.balanceRub) > 0);
+    const payable = balances.filter((b) => toNumber(b.balanceRub) < 0);
 
-    const totalReceivable = receivable.reduce((sum, b) => sum + b.balanceRub, 0);
-    const totalPayable = payable.reduce((sum, b) => sum + Math.abs(b.balanceRub), 0);
+    const totalReceivable = receivable.reduce((sum, b) => sum + toNumber(b.balanceRub), 0);
+    const totalPayable = payable.reduce((sum, b) => sum + Math.abs(toNumber(b.balanceRub)), 0);
 
     return NextResponse.json({
       balances,

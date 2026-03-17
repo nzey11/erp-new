@@ -9,15 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
-import { ProductImageGallery } from "@/components/ecommerce/ProductImageGallery";
-import { ProductVariantChips } from "@/components/ecommerce/ProductVariantChips";
-import { ProductTabs } from "@/components/ecommerce/ProductTabs";
-import { ProductBreadcrumb } from "@/components/ecommerce/ProductBreadcrumb";
-import { StockIndicator } from "@/components/ecommerce/StockIndicator";
-import { ShareButton } from "@/components/ecommerce/ShareButton";
-import { RelatedProducts } from "@/components/ecommerce/RelatedProducts";
-import { BuyOneClick } from "@/components/ecommerce/BuyOneClick";
-import { useCart } from "@/components/ecommerce/CartContext";
+import { ProductImageGallery } from "@/components/domain/ecommerce/ProductImageGallery";
+import { ProductVariantChips } from "@/components/domain/ecommerce/ProductVariantChips";
+import { ProductTabs } from "@/components/domain/ecommerce/ProductTabs";
+import { ProductBreadcrumb } from "@/components/domain/ecommerce/ProductBreadcrumb";
+import { StockIndicator } from "@/components/domain/ecommerce/StockIndicator";
+import { ShareButton } from "@/components/domain/ecommerce/ShareButton";
+import { RelatedProducts } from "@/components/domain/ecommerce/RelatedProducts";
+import { BuyOneClick } from "@/components/domain/ecommerce/BuyOneClick";
+import { useCart } from "@/components/domain/ecommerce/CartContext";
 
 type ProductDetail = {
   id: string;

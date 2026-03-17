@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, validationError } from "@/lib/shared/validation";
 import { createDiscountSchema } from "@/lib/modules/accounting/schemas/products.schema";
@@ -55,8 +55,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Товар не найден" }, { status: 404 });
     }
 
-    const purchasePrice = product.purchasePrices[0]?.price ?? 0;
-    const salePrice = product.salePrices[0]?.price ?? 0;
+    const purchasePrice = toNumber(product.purchasePrices[0]?.price);
+    const salePrice = toNumber(product.salePrices[0]?.price);
 
     // Calculate discounted price and validate it doesn't go below cost
     let discountedPrice: number;

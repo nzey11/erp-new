@@ -3,7 +3,7 @@
  * CRUD operations for Chart of Accounts (План счетов)
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import type { Account, AccountType, AccountCategory } from "@/lib/generated/prisma/client";
 
 export interface CreateAccountInput {
@@ -192,8 +192,8 @@ export async function getAccountBalance(
     },
   });
   
-  const debit = lines.reduce((sum, line) => sum + (line.debit || 0), 0);
-  const credit = lines.reduce((sum, line) => sum + (line.credit || 0), 0);
+  const debit = lines.reduce((sum, line) => sum + toNumber(line.debit), 0);
+  const credit = lines.reduce((sum, line) => sum + toNumber(line.credit), 0);
   
   return { debit, credit, balance: debit - credit };
 }

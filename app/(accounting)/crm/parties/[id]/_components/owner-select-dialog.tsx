@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
-import type { AssignableOwner } from "@/lib/crm";
+import type { AssignableOwner } from "@/lib/domain/crm";
 import { assignPartyOwner } from "../_lib/actions";
 
 interface OwnerSelectDialogProps {

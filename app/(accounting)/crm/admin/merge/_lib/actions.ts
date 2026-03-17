@@ -7,7 +7,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { approveMergeRequest, rejectMergeRequest } from "@/lib/party";
+import { approveMergeRequest, rejectMergeRequest } from "@/lib/domain/party";
 import { requirePermission } from "@/lib/shared/authorization";
 
 /**

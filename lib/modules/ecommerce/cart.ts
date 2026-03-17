@@ -1,4 +1,4 @@
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 
 /** Add item to cart or update quantity if exists */
 export async function addToCart(
@@ -60,11 +60,11 @@ export async function calculateCartTotal(customerId: string) {
 
   let subtotal = 0;
   for (const item of items) {
-    let price = item.product.salePrices[0]?.price || 0;
-    if (item.variant) price += item.variant.priceAdjustment;
+    let price = toNumber(item.product.salePrices[0]?.price) || 0;
+    if (item.variant) price += toNumber(item.variant.priceAdjustment);
     const discount = item.product.discounts[0];
     if (discount) {
-      price = discount.type === "percentage" ? price * (1 - discount.value / 100) : price - discount.value;
+      price = discount.type === "percentage" ? price * (1 - toNumber(discount.value) / 100) : price - toNumber(discount.value);
       price = Math.max(0, price);
     }
     subtotal += price * item.quantity;

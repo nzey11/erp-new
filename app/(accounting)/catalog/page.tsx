@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,10 +17,9 @@ import { Plus, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Trash2 } f
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
 import { csrfFetch } from "@/lib/client/csrf";
-import { ProductsTable } from "@/components/accounting";
-import { PriceListsPanel } from "@/components/accounting/catalog/PriceListsPanel";
-import { PriceListDetail } from "@/components/accounting/catalog/PriceListDetail";
-import { VariantGroupsPanel } from "@/components/accounting/catalog/VariantGroupsPanel";
+import { PriceListsPanel } from "@/components/domain/accounting/catalog/PriceListsPanel";
+import { PriceListDetail } from "@/components/domain/accounting/catalog/PriceListDetail";
+import { VariantGroupsPanel } from "@/components/domain/accounting/catalog/VariantGroupsPanel";
 
 interface Category {
   id: string;
@@ -355,10 +354,8 @@ export default function CatalogPage() {
               <div className="mb-4">
                 <h2 className="text-lg font-semibold">{selectedCategoryName}</h2>
               </div>
-              <ProductsTable
-                key={selectedCategoryId || "all"}
-                categoryId={selectedCategoryId}
-              />
+              {/* TODO: Replace with ERPTable - ProductsTable was removed */}
+              <div className="p-4 text-muted-foreground">Products table temporarily unavailable</div>
             </div>
           </div>
         </TabsContent>

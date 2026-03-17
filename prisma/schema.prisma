@@ -66,9 +66,9 @@ model TenantSettings {
   kpp                       String?
   ogrn                      String?
   taxRegime                 String    @default("usn_income")
-  vatRate                   Float     @default(20)
-  usnRate                   Float     @default(6)
-  initialCapital            Float     @default(0)
+  vatRate                   Decimal   @db.Decimal(5,2) @default(20)
+  usnRate                   Decimal   @db.Decimal(5,2) @default(6)
+  initialCapital            Decimal   @db.Decimal(19,4) @default(0)
   initialCapitalDate        DateTime?
   cashAccountId             String?
   bankAccountId             String?
@@ -222,7 +222,7 @@ model ProductVariant {
   optionId        String
   sku             String?
   barcode         String?         @unique
-  priceAdjustment Float           @default(0)
+  priceAdjustment Decimal         @db.Decimal(19,4) @default(0)
   isActive        Boolean         @default(true)
   createdAt       DateTime        @default(now())
   tenantId        String
@@ -245,7 +245,7 @@ model ProductDiscount {
   productId String
   name      String
   type      DiscountType
-  value     Float
+  value     Decimal   @db.Decimal(19,4)
   validFrom DateTime     @default(now())
   validTo   DateTime?
   isActive  Boolean      @default(true)
@@ -301,11 +301,11 @@ model ProductCatalogProjection {
   categoryName      String?
 
   // Pricing (current storefront logic)
-  price             Float
-  discountedPrice   Float?
+  price             Decimal   @db.Decimal(19,4)
+  discountedPrice   Decimal?  @db.Decimal(19,4)
   discountName      String?
   discountType      String?
-  discountValue     Float?
+  discountValue     Decimal?  @db.Decimal(19,4)
 
   // Rating (aggregated)
   avgRating         Float    @default(0)
@@ -313,8 +313,8 @@ model ProductCatalogProjection {
 
   // Variant summary (lightweight)
   childVariantCount Int      @default(0)
-  priceRangeMin     Float?
-  priceRangeMax     Float?
+  priceRangeMin     Decimal?  @db.Decimal(19,4)
+  priceRangeMax     Decimal?  @db.Decimal(19,4)
 
   // State
   isActive          Boolean  @default(true)
@@ -381,7 +381,7 @@ model CounterpartyInteraction {
 model CounterpartyBalance {
   id             String       @id @default(cuid())
   counterpartyId String       @unique
-  balanceRub     Float        @default(0)
+  balanceRub     Decimal      @db.Decimal(19,4) @default(0)
   lastUpdatedAt  DateTime     @updatedAt
   counterparty   Counterparty @relation(fields: [counterpartyId], references: [id], onDelete: Cascade)
 }
@@ -409,9 +409,9 @@ model StockRecord {
   id             String    @id @default(cuid())
   warehouseId    String
   productId      String
-  quantity       Float     @default(0)
-  averageCost    Float     @default(0)
-  totalCostValue Float     @default(0)
+  quantity       Float       @default(0)
+  averageCost    Decimal     @db.Decimal(19,4) @default(0)
+  totalCostValue Decimal     @db.Decimal(19,4) @default(0)
   updatedAt      DateTime  @updatedAt
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   warehouse      Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
@@ -427,8 +427,8 @@ model StockMovement {
   warehouseId        String
   variantId          String?
   quantity           Float
-  cost               Float
-  totalCost          Float
+  cost               Decimal    @db.Decimal(19,4)
+  totalCost          Decimal    @db.Decimal(19,4)
   type               MovementType
   createdAt          DateTime        @default(now())
   isReversing        Boolean         @default(false)
@@ -460,7 +460,7 @@ model Document {
   warehouseId        String?
   targetWarehouseId  String?
   counterpartyId     String?
-  totalAmount        Float            @default(0)
+  totalAmount        Decimal          @db.Decimal(19,4) @default(0)
   currency           String           @default("RUB")
   paymentType        PaymentType?
   linkedDocumentId   String?
@@ -474,7 +474,7 @@ model Document {
   customerId         String?
   deliveryType       String?
   deliveryAddressId  String?
-  deliveryCost       Float            @default(0)
+  deliveryCost       Decimal          @db.Decimal(19,4) @default(0)
   paymentMethod      String?
   paymentStatus      String           @default("pending")
   paymentExternalId  String?
@@ -515,8 +515,8 @@ model DocumentItem {
   productId   String
   variantId   String?
   quantity    Float
-  price       Float           @default(0)
-  total       Float           @default(0)
+  price       Decimal         @db.Decimal(19,4) @default(0)
+  total       Decimal         @db.Decimal(19,4) @default(0)
   expectedQty Float?
   actualQty   Float?
   difference  Float?
@@ -546,7 +546,7 @@ model PurchasePrice {
   id         String        @id @default(cuid())
   productId  String
   supplierId String?
-  price      Float
+  price      Decimal   @db.Decimal(19,4)
   currency   String        @default("RUB")
   validFrom  DateTime      @default(now())
   validTo    DateTime?
@@ -563,7 +563,7 @@ model SalePrice {
   id          String     @id @default(cuid())
   productId   String
   priceListId String?
-  price       Float
+  price       Decimal   @db.Decimal(19,4)
   currency    String     @default("RUB")
   validFrom   DateTime   @default(now())
   validTo     DateTime?
@@ -623,7 +623,7 @@ model CartItem {
   productId     String
   variantId     String?
   quantity      Int             @default(1)
-  priceSnapshot Float
+  priceSnapshot Decimal   @db.Decimal(19,4)
   addedAt       DateTime        @default(now())
   customer      Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   product       Product         @relation(fields: [productId], references: [id])
@@ -641,8 +641,8 @@ model Order {
   documentId        String?            @unique
   deliveryType      DeliveryType
   deliveryAddressId String?
-  deliveryCost      Float              @default(0)
-  totalAmount       Float
+  deliveryCost      Decimal            @db.Decimal(19,4) @default(0)
+  totalAmount       Decimal            @db.Decimal(19,4)
   paymentMethod     EcomPaymentMethod?
   paymentStatus     EcomPaymentStatus  @default(pending)
   paymentExternalId String?
@@ -668,8 +668,8 @@ model OrderItem {
   productId String
   variantId String?
   quantity  Int
-  price     Float
-  total     Float
+  price     Decimal   @db.Decimal(19,4)
+  total     Decimal   @db.Decimal(19,4)
   createdAt DateTime        @default(now())
   order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product         @relation(fields: [productId], references: [id])
@@ -791,7 +791,7 @@ model Payment {
   categoryId     String
   counterpartyId String?
   documentId     String?
-  amount         Float
+  amount         Decimal   @db.Decimal(19,4)
   paymentMethod  PaymentType
   date           DateTime        @default(now())
   description    String?
@@ -855,13 +855,13 @@ model LedgerLine {
   id             String       @id @default(cuid())
   entryId        String
   accountId      String
-  debit          Float        @default(0)
-  credit         Float        @default(0)
+  debit          Decimal      @db.Decimal(19,4) @default(0)
+  credit         Decimal      @db.Decimal(19,4) @default(0)
   counterpartyId String?
   warehouseId    String?
   productId      String?
   currency       String?
-  amountRub      Float        @default(0)
+  amountRub      Decimal      @db.Decimal(19,4) @default(0)
   account        Account      @relation(fields: [accountId], references: [id])
   entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
@@ -883,9 +883,9 @@ model CompanySettings {
   kpp                       String?
   ogrn                      String?
   taxRegime                 TaxRegime @default(usn_income)
-  vatRate                   Float     @default(20)
-  usnRate                   Float     @default(6)
-  initialCapital            Float     @default(0)
+  vatRate                   Decimal   @db.Decimal(5,2) @default(20)
+  usnRate                   Decimal   @db.Decimal(5,2) @default(6)
+  initialCapital            Decimal   @db.Decimal(19,4) @default(0)
   initialCapitalDate        DateTime?
   cashAccountId             String?
   bankAccountId             String?

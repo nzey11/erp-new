@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { parseQuery, validationError } from "@/lib/shared/validation";
 import { queryStorefrontProductsSchema } from "@/lib/modules/ecommerce/schemas/products.schema";
 import { logger } from "@/lib/shared/logger";
@@ -85,13 +85,13 @@ export async function GET(request: NextRequest) {
 
     // Map to storefront-friendly format
     const data = products.map((p) => {
-      const salePrice = p.salePrices[0]?.price || 0;
+      const salePrice = toNumber(p.salePrices[0]?.price) || 0;
       const discount = p.discounts[0];
-      let discountedPrice = salePrice;
+      let discountedPrice: number = salePrice;
       if (discount) {
         discountedPrice = discount.type === "percentage"
-          ? salePrice * (1 - discount.value / 100)
-          : salePrice - discount.value;
+          ? salePrice * (1 - toNumber(discount.value) / 100)
+          : salePrice - toNumber(discount.value);
         discountedPrice = Math.max(0, discountedPrice);
       }
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       if (childVariantCount > 0) {
         const allPrices = [salePrice];
         p.childVariants.forEach((cv) => {
-          const cvPrice = cv.salePrices[0]?.price;
+          const cvPrice = toNumber(cv.salePrices[0]?.price);
           if (cvPrice) allPrices.push(cvPrice);
         });
         const minPriceVal = Math.min(...allPrices);

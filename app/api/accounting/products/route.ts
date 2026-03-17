@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { parseBody, parseQuery, validationError } from "@/lib/shared/validation";
 import { createProductSchema, queryProductsSchema } from "@/lib/modules/accounting/schemas/products.schema";
@@ -104,18 +104,18 @@ export async function GET(request: NextRequest) {
     ]);
 
     let enriched = products.map((p) => {
-      const salePrice = p.salePrices[0]?.price ?? null;
+      const salePrice = p.salePrices[0]?.price ? toNumber(p.salePrices[0].price) : null;
       const discount = p.discounts[0] ?? null;
       let discountedPrice: number | null = null;
       if (salePrice != null && discount) {
         discountedPrice = discount.type === "percentage"
-          ? salePrice * (1 - discount.value / 100)
-          : salePrice - discount.value;
+          ? salePrice * (1 - toNumber(discount.value) / 100)
+          : salePrice - toNumber(discount.value);
         discountedPrice = Math.round(discountedPrice * 100) / 100;
       }
       return {
         ...p,
-        purchasePrice: p.purchasePrices[0]?.price ?? null,
+        purchasePrice: p.purchasePrices[0]?.price ? toNumber(p.purchasePrices[0].price) : null,
         salePrice,
         discountedPrice,
         discountValidTo: discount?.validTo ?? null,
@@ -130,9 +130,9 @@ export async function GET(request: NextRequest) {
     // Post-process sort for price fields (cannot sort by relation in Prisma directly)
     if (sortBy === "purchasePrice" || sortBy === "salePrice") {
       enriched = enriched.sort((a, b) => {
-        const aVal = a[sortBy] ?? (sortOrder === "asc" ? Infinity : -Infinity);
-        const bVal = b[sortBy] ?? (sortOrder === "asc" ? Infinity : -Infinity);
-        return sortOrder === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+        const aVal = toNumber(a[sortBy] as unknown as number | null) ?? (sortOrder === "asc" ? Infinity : -Infinity);
+        const bVal = toNumber(b[sortBy] as unknown as number | null) ?? (sortOrder === "asc" ? Infinity : -Infinity);
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
       });
     }
 
@@ -215,8 +215,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ...product,
-      purchasePrice: product.purchasePrices[0]?.price ?? null,
-      salePrice: product.salePrices[0]?.price ?? null,
+      purchasePrice: toNumber(product.purchasePrices[0]?.price) || null,
+      salePrice: toNumber(product.salePrices[0]?.price) || null,
     }, { status: 201 });
   } catch (error) {
     const vErr = validationError(error);

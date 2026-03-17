@@ -147,7 +147,7 @@ jobs:
             scripts/ \
             package.json \
             package-lock.json \
-            ecosystem.config.js \
+            infra/pm2/ecosystem.config.js \
             next.config.ts
           echo "Archive size: $(du -sh /tmp/release.tar.gz | cut -f1)"
           echo "Check .next in archive:"
@@ -259,7 +259,7 @@ jobs:
 
           echo "==> Reloading pm2"
           pm2 delete listopt-erp 2>/dev/null || true
-          pm2 start "$BASE/current/ecosystem.config.js"
+          pm2 start "$BASE/current/infra/pm2/ecosystem.config.js"
           pm2 save
 
           echo "==> Installing deployment scripts to stable bin/"

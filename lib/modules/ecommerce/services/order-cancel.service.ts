@@ -4,7 +4,7 @@
  * Handles order cancellation for both customer and admin flows.
  */
 
-import { db } from "@/lib/shared/db";
+import { db, toNumber } from "@/lib/shared/db";
 import {
   cancelDocumentTransactional,
   type CancelledDocumentResult,
@@ -86,6 +86,7 @@ export async function cancelEcommerceOrder(params: {
   if (document.status === "cancelled") {
     return {
       ...document,
+      totalAmount: toNumber(document.totalAmount),
       typeName: "Заказ",
       statusName: "Отменён",
       items: [],

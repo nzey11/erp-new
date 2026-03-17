@@ -5,7 +5,7 @@
  */
 
 import { MergeRequestCard } from "./merge-request-card";
-import type { MergeRequest } from "@/lib/party";
+import type { MergeRequest } from "@/lib/domain/party";
 
 interface MergeRequestListProps {
   requests: MergeRequest[];
