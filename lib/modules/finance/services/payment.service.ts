@@ -301,4 +301,21 @@ export const PaymentService = {
     await db.financeCategory.delete({ where: { id } })
     return { success: true }
   },
+
+  /** Cash flow summary (income vs expense) for a given period */
+  async getCashFlow(tenantId: string, from: Date, to: Date) {
+    const [incomeAgg, expenseAgg] = await Promise.all([
+      db.payment.aggregate({
+        _sum: { amount: true },
+        where: { tenantId, type: 'income', date: { gte: from, lte: to } },
+      }),
+      db.payment.aggregate({
+        _sum: { amount: true },
+        where: { tenantId, type: 'expense', date: { gte: from, lte: to } },
+      }),
+    ])
+    const cashIn = toNumber(incomeAgg._sum.amount)
+    const cashOut = toNumber(expenseAgg._sum.amount)
+    return { cashIn, cashOut, netCashFlow: cashIn - cashOut }
+  },
 }

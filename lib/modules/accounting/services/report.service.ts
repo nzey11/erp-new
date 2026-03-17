@@ -49,6 +49,15 @@ export const ReportService = {
   async getAccountBalances() {
     return db.ledgerLine.groupBy({ by: ['accountId'], _sum: { debit: true, credit: true } })
   },
+
+  /** Total revenue from confirmed outgoing_shipment documents for the period */
+  async getMonthRevenue(tenantId: string, from: Date, to: Date): Promise<number> {
+    const agg = await db.document.aggregate({
+      _sum: { totalAmount: true },
+      where: { tenantId, type: 'outgoing_shipment', status: 'confirmed', date: { gte: from, lte: to } },
+    })
+    return toNumber(agg._sum.totalAmount)
+  },
 }
 
 export { toNumber }

@@ -52,7 +52,7 @@ const modules = [
 // Navigation items per module
 const moduleNavigation: Record<string, Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }> }>> = {
   accounting: [
-    { name: "Панель", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Обзор", href: "/dashboard", icon: LayoutDashboard },
     { name: "Каталог", href: "/catalog", icon: Package },
     { name: "Склад", href: "/stock", icon: Boxes },
     { name: "Закупки", href: "/purchases", icon: ShoppingCart },
@@ -208,6 +208,24 @@ export function AppSidebar() {
           </DropdownMenuContent>
         </DropdownMenu>
         )}
+      </div>
+
+      {/* Global nav: Главная — visible across all modules */}
+      <div className="px-2 py-1 border-b">
+        <Link
+          href="/"
+          onClick={() => setMobileOpen(false)}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+            (pathname === "/" || pathname === "/dashboard")
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          )}
+          title={collapsed ? "Главная" : undefined}
+        >
+          <LayoutDashboard className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Главная</span>}
+        </Link>
       </div>
 
       {/* Navigation */}

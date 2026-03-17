@@ -447,4 +447,27 @@ export const DocumentService = {
       orderBy: { date: 'desc' },
     })
   },
+
+  /** Count of draft documents for the tenant (pending confirmation) */
+  async getPendingCount(tenantId: string): Promise<number> {
+    return db.document.count({ where: { tenantId, status: 'draft' } })
+  },
+
+  /** Most recent N documents for the tenant, ordered by date desc */
+  async getRecent(tenantId: string, limit: number) {
+    return db.document.findMany({
+      where: { tenantId },
+      orderBy: { date: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        number: true,
+        type: true,
+        status: true,
+        totalAmount: true,
+        date: true,
+        counterparty: { select: { name: true } },
+      },
+    })
+  },
 }

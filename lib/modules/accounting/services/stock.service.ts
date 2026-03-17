@@ -135,6 +135,25 @@ export const StockService = {
     }
   },
 
+  /** Total cost value of all stock: SUM(quantity * averageCost) for the tenant */
+  async getTotalValue(tenantId: string): Promise<number> {
+    const records = await db.stockRecord.findMany({
+      where: { warehouse: { tenantId } },
+      select: { quantity: true, averageCost: true },
+    })
+    return records.reduce(
+      (sum, r) => sum + Number(r.quantity) * Number(r.averageCost),
+      0
+    )
+  },
+
+  /** Count of stock records with quantity <= 0 (low-stock / empty positions) */
+  async getLowStockCount(tenantId: string): Promise<number> {
+    return db.stockRecord.count({
+      where: { warehouse: { tenantId }, quantity: { lte: 0 } },
+    })
+  },
+
   async exportStockRecords(params: ExportStockParams, tenantId: string) {
     const { warehouseId = '', search = '' } = params
 
