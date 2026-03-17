@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
+// NOTE: Turbopack is enabled for development (see project.json: "next dev --turbopack")
+// Turbopack in Next.js 16 is stable for dev but some CSS edge cases may differ from webpack.
+// If CSS/styling issues occur in dev, try: next dev (without --turbopack)
+
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
   poweredByHeader: false,
   async redirects() {
     return [
