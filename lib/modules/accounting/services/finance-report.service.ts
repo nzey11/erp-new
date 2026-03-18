@@ -1,5 +1,6 @@
 import 'server-only'
 import { db, toNumber } from '@/lib/shared/db'
+import { Prisma, type PaymentType } from '@/lib/generated/prisma/client'
 
 export const FinanceReportService = {
   async getCounterpartyBalances(params: { asOfDate?: string } = {}) {
@@ -41,13 +42,22 @@ export const FinanceReportService = {
     dateFilter: Record<string, unknown>
     paymentMethod?: string
   }) {
-    return db.payment.findMany({
-      where: {
-        type: params.paymentType,
-        tenantId: params.tenantId,
-        ...(params.paymentMethod ? { paymentMethod: params.paymentMethod as never } : {}),
-        ...params.dateFilter,
-      },
+    // Build WHERE clause with explicit PaymentType cast so Prisma
+    // generates a proper SQL = filter (not ignored).
+    const where: Prisma.PaymentWhereInput = {
+      type: params.paymentType,
+      tenantId: params.tenantId,
+    }
+    if (params.paymentMethod) {
+      where.paymentMethod = params.paymentMethod as PaymentType
+    }
+    // Merge date filter ({ date: { gte, lte } })
+    if (params.dateFilter.date) {
+      where.date = params.dateFilter.date as Prisma.DateTimeFilter<'Payment'>
+    }
+
+    const results = await db.payment.findMany({
+      where,
       include: {
         counterparty: { select: { id: true, name: true } },
         category: { select: { id: true, name: true } },
@@ -56,6 +66,8 @@ export const FinanceReportService = {
       orderBy: { date: 'desc' },
       take: 500,
     })
+
+    return results
   },
 
   async getReceivablesBalances() {

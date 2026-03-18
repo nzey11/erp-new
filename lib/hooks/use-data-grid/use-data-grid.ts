@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { buildCacheKey, getCache, setCache, invalidateCache } from "./cache";
+import { csrfFetch } from "@/lib/client/csrf";
 import type { UseDataGridConfig, UseDataGridReturn } from "./types";
 
 const defaultAdapter = (json: unknown): { data: unknown[]; total: number } => {
@@ -219,14 +220,14 @@ export function useDataGrid<TData extends { id: string }>(
     setPageState(1);
   }, []);
 
-  // --- Mutations ---
+  // --- Mutations (CSRF-protected) ---
   const mutate = useMemo(() => ({
     delete: async (id: string) => {
       const snapshot = [...data];
       setData(prev => prev.filter(r => r.id !== id));
       setTotal(prev => Math.max(0, prev - 1));
       try {
-        const res = await fetch(`${endpoint}/${id}`, { method: "DELETE" });
+        const res = await csrfFetch(`${endpoint}/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         invalidateCache(endpoint);
       } catch {
@@ -239,7 +240,7 @@ export function useDataGrid<TData extends { id: string }>(
       const snapshot = [...data];
       setData(prev => prev.map(r => r.id === id ? { ...r, ...partial } : r));
       try {
-        const res = await fetch(`${endpoint}/${id}`, {
+        const res = await csrfFetch(`${endpoint}/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(partial),
@@ -252,7 +253,7 @@ export function useDataGrid<TData extends { id: string }>(
       }
     },
     create: async (body: unknown): Promise<TData> => {
-      const res = await fetch(endpoint, {
+      const res = await csrfFetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
