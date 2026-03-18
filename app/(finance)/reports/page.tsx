@@ -150,11 +150,39 @@ const CATEGORY_LABELS: Record<string, string> = {
   sellingExpenses: "Коммерческие расходы",
   "operating.in": "Поступления (операционная деятельность)",
   "operating.out": "Выплаты (операционная деятельность)",
+  "operating.in.bank": "Расчётный счёт — Поступления (Дт 51)",
+  "operating.in.cash": "Касса — Поступления (Дт 50)",
+  "operating.in.forex": "Валютный счёт — Поступления (Дт 52)",
+  "operating.out.bank": "Расчётный счёт — Выплаты (Кт 51)",
+  "operating.out.cash": "Касса — Выплаты (Кт 50)",
+  "operating.out.forex": "Валютный счёт — Выплаты (Кт 52)",
   "assets.receivables": "Дебиторская задолженность",
   "liabilities.payables": "Кредиторская задолженность",
   "assets.stock.incoming": "Приход товаров",
   "assets.stock.outgoing": "Расход товаров",
 };
+
+// ─── Translated document type labels ──────────────────────────────────────────
+
+const DOC_TYPE_LABELS: Record<string, string> = {
+  incoming_shipment: "Приёмка",
+  outgoing_shipment: "Отгрузка",
+  incoming_payment: "Входящий платёж",
+  outgoing_payment: "Исходящий платёж",
+  write_off: "Списание",
+  inventory_count: "Инвентаризация",
+  stock_receipt: "Поступление товара",
+  customer_return: "Возврат покупателя",
+  supplier_return: "Возврат поставщику",
+  sales_order: "Заказ покупателя",
+  purchase_order: "Заказ поставщику",
+  stock_transfer: "Перемещение товара",
+};
+
+function getDocLabel(type: string, number: string): string {
+  const label = DOC_TYPE_LABELS[type] ?? type;
+  return `${label} №${number}`;
+}
 
 // ─── Drill-down Dialog ────────────────────────────────────────────────────────
 
@@ -182,17 +210,18 @@ function DrillDownDialog({ open, onClose, loading, data }: DrillDownDialogProps)
       allItems.push({
         id: doc.id,
         date: doc.date,
-        label: `${doc.type} №${doc.number}`,
+        label: getDocLabel(doc.type, doc.number),
         amount: doc.amount,
         counterparty: doc.counterparty,
         extra: doc.warehouse ?? doc.status,
       });
     }
     for (const pay of data.payments) {
+      const payLabel = pay.type === "income" ? "Входящий платёж" : "Исходящий платёж";
       allItems.push({
         id: pay.id,
         date: pay.date,
-        label: `Платёж №${pay.number}`,
+        label: `${payLabel} №${pay.number}`,
         amount: pay.amount,
         counterparty: pay.counterparty,
         extra: pay.category,
@@ -214,7 +243,7 @@ function DrillDownDialog({ open, onClose, loading, data }: DrillDownDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+      <DialogContent className="w-[80vw] max-w-[80vw] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -268,18 +297,20 @@ function DrillDownDialog({ open, onClose, loading, data }: DrillDownDialogProps)
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="font-bold bg-muted/30">
-                    <TableCell colSpan={4}>Итого</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatRub(total)}
-                    </TableCell>
-                  </TableRow>
                 </TableBody>
               </Table>
             )}
           </div>
         ) : (
           <div className="py-12 text-center text-muted-foreground">Нет данных</div>
+        )}
+
+        {/* ── Totals footer ────────────────────────────────────────────────────── */}
+        {!loading && data && allItems.length > 0 && (
+          <div className="border-t-2 pt-3 pb-1 flex justify-end gap-8 font-bold text-sm shrink-0">
+            <span>Итого: {formatRub(total)}</span>
+            <span className="text-muted-foreground">{allItems.length} записей</span>
+          </div>
         )}
       </DialogContent>
     </Dialog>
@@ -698,7 +729,7 @@ export default function ReportsPage() {
                         <TableCell className="font-bold">Поступления денежных средств</TableCell>
                         <TableCell />
                       </TableRow>
-                      <TableRow {...drillRowProps("operating.in")}>
+                      <TableRow {...drillRowProps("operating.in.bank")}>
                         <TableCell className="pl-6">
                           Расчётный счёт — поступления (Дт 51)
                         </TableCell>
@@ -707,7 +738,7 @@ export default function ReportsPage() {
                         </TableCell>
                       </TableRow>
                       {cashFlow.inflows.cash > 0 && (
-                        <TableRow {...drillRowProps("operating.in")}>
+                        <TableRow {...drillRowProps("operating.in.cash")}>
                           <TableCell className="pl-6">Касса — поступления (Дт 50)</TableCell>
                           <TableCell className="text-right text-green-600">
                             +{formatRub(cashFlow.inflows.cash)}
@@ -715,7 +746,7 @@ export default function ReportsPage() {
                         </TableRow>
                       )}
                       {cashFlow.inflows.forex > 0 && (
-                        <TableRow {...drillRowProps("operating.in")}>
+                        <TableRow {...drillRowProps("operating.in.forex")}>
                           <TableCell className="pl-6">
                             Валютный счёт — поступления (Дт 52)
                           </TableCell>
@@ -736,7 +767,7 @@ export default function ReportsPage() {
                         <TableCell className="font-bold">Выплаты денежных средств</TableCell>
                         <TableCell />
                       </TableRow>
-                      <TableRow {...drillRowProps("operating.out")}>
+                      <TableRow {...drillRowProps("operating.out.bank")}>
                         <TableCell className="pl-6">
                           Расчётный счёт — выплаты (Кт 51)
                         </TableCell>
@@ -745,7 +776,7 @@ export default function ReportsPage() {
                         </TableCell>
                       </TableRow>
                       {cashFlow.outflows.cash > 0 && (
-                        <TableRow {...drillRowProps("operating.out")}>
+                        <TableRow {...drillRowProps("operating.out.cash")}>
                           <TableCell className="pl-6">Касса — выплаты (Кт 50)</TableCell>
                           <TableCell className="text-right text-red-600">
                             -{formatRub(cashFlow.outflows.cash)}
@@ -753,7 +784,7 @@ export default function ReportsPage() {
                         </TableRow>
                       )}
                       {cashFlow.outflows.forex > 0 && (
-                        <TableRow {...drillRowProps("operating.out")}>
+                        <TableRow {...drillRowProps("operating.out.forex")}>
                           <TableCell className="pl-6">
                             Валютный счёт — выплаты (Кт 52)
                           </TableCell>

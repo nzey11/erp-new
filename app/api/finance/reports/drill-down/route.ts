@@ -13,12 +13,29 @@ const CATEGORY_DOCUMENT_TYPES: Record<string, DocumentType[]> = {
   supplierReturns: ["supplier_return"],
   // Selling expenses — outgoing shipments carry selling costs
   sellingExpenses: ["outgoing_shipment"],
-  // Cash Flow
+  // Cash Flow — aggregated
   "operating.in": ["incoming_payment"],
   "operating.out": ["outgoing_payment"],
+  // Cash Flow — broken down by payment method (account)
+  "operating.in.bank": ["incoming_payment"],
+  "operating.in.cash": ["incoming_payment"],
+  "operating.in.forex": ["incoming_payment"],
+  "operating.out.bank": ["outgoing_payment"],
+  "operating.out.cash": ["outgoing_payment"],
+  "operating.out.forex": ["outgoing_payment"],
   // Balance Sheet - stock movements
   "assets.stock.incoming": ["incoming_shipment", "stock_receipt", "customer_return"],
   "assets.stock.outgoing": ["outgoing_shipment", "write_off", "supplier_return"],
+};
+
+// Map payment method categories to paymentMethod filter values
+const CATEGORY_PAYMENT_METHODS: Record<string, string> = {
+  "operating.in.bank": "bank_transfer",
+  "operating.in.cash": "cash",
+  "operating.in.forex": "card",
+  "operating.out.bank": "bank_transfer",
+  "operating.out.cash": "cash",
+  "operating.out.forex": "card",
 };
 
 export async function GET(request: NextRequest) {
@@ -73,8 +90,14 @@ export async function GET(request: NextRequest) {
 
     // Also fetch payments from Payment table for cash flow
     const payments = [];
-    if (category === "operating.in" || category === "operating.out") {
-      const paymentType = category === "operating.in" ? "income" : "expense";
+    const isCashFlowCategory =
+      category === "operating.in" ||
+      category === "operating.out" ||
+      category.startsWith("operating.in.") ||
+      category.startsWith("operating.out.");
+
+    if (isCashFlowCategory) {
+      const paymentType = category.startsWith("operating.in") ? "income" : "expense";
       const paymentDateFilter: { date?: { gte?: Date; lte?: Date } } = {};
       
       if (dateFrom && dateTo) {
@@ -84,10 +107,14 @@ export async function GET(request: NextRequest) {
         };
       }
 
+      // For sub-categories, additionally filter by paymentMethod
+      const paymentMethod = CATEGORY_PAYMENT_METHODS[category];
+
       const paymentResults = await FinanceReportService.getDrillDownPayments({
         paymentType,
         tenantId: session.tenantId,
         dateFilter: paymentDateFilter,
+        paymentMethod,
       });
       payments.push(...paymentResults);
     }

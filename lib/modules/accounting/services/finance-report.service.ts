@@ -39,11 +39,13 @@ export const FinanceReportService = {
     paymentType: string
     tenantId: string
     dateFilter: Record<string, unknown>
+    paymentMethod?: string
   }) {
     return db.payment.findMany({
       where: {
         type: params.paymentType,
         tenantId: params.tenantId,
+        ...(params.paymentMethod ? { paymentMethod: params.paymentMethod as never } : {}),
         ...params.dateFilter,
       },
       include: {
