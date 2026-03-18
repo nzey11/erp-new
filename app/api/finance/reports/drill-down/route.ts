@@ -173,9 +173,29 @@ async function getCogsDrillDown(
   dateFrom: string | null,
   dateTo: string | null
 ) {
-  const cogsAccount = await db.account.findUnique({ where: { code: "90.2" } });
+  // Try to find COGS account: first by standard code "90.2",
+  // then fall back to CompanySettings.cogsAccountId
+  let cogsAccount = await db.account.findUnique({ where: { code: "90.2" } });
+
   if (!cogsAccount) {
-    return NextResponse.json({ documents: [], payments: [], category: "cogs", message: "Счёт 90.2 не найден" });
+    // Fallback: use cogsAccountId from company settings
+    const settings = await db.companySettings.findFirst({
+      select: { cogsAccountId: true },
+    });
+    if (settings?.cogsAccountId) {
+      cogsAccount = await db.account.findUnique({
+        where: { id: settings.cogsAccountId },
+      });
+    }
+  }
+
+  if (!cogsAccount) {
+    return NextResponse.json({
+      documents: [],
+      payments: [],
+      category: "cogs",
+      message: "Счёт 90.2 (Себестоимость продаж) не найден. Проверьте наличие счёта 90.2 в Плане счетов.",
+    });
   }
 
   const dateFilter: { gte?: Date; lte?: Date } = {};
@@ -183,13 +203,15 @@ async function getCogsDrillDown(
   if (dateTo) dateFilter.lte = new Date(dateTo);
 
   // Fetch LedgerLines on 90.2, include JournalEntry (has sourceType/sourceId)
+  // Note: sourceType is set to doc.type (e.g. "outgoing_shipment") by autoPostDocument,
+  // NOT to "document" — so we filter by the document type that generates COGS.
   const lines = await db.ledgerLine.findMany({
     where: {
       accountId: cogsAccount.id,
       debit: { gt: 0 },
       entry: {
         isReversed: false,
-        sourceType: "document",
+        sourceType: "outgoing_shipment",
         ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
       },
     },

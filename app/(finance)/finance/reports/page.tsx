@@ -218,8 +218,12 @@ export default function ReportsPage() {
   // Combine all items for display
   const getAllDrillDownItems = () => {
     if (!drillDownData) return [];
+    // For cash-flow categories, use only payments (canonical source) to avoid
+    // duplicate rows when both Document and Payment records exist (BUG 1A)
+    // Also, do NOT fall back to documents — they are not filtered by paymentMethod
+    const isCashFlow = drillDownCategory.startsWith("operating.");
     const items = [
-      ...drillDownData.documents,
+      ...(isCashFlow ? [] : drillDownData.documents),
       ...drillDownData.payments,
       ...(drillDownData.balances || []),
     ];
@@ -227,7 +231,7 @@ export default function ReportsPage() {
   };
 
   const getTotalAmount = () => {
-    return getAllDrillDownItems().reduce((sum, item) => sum + item.amount, 0);
+    return getAllDrillDownItems().reduce((sum, item) => sum + Number(item.amount), 0);
   };
 
   const loadReports = useCallback(async () => {
@@ -536,7 +540,15 @@ export default function ReportsPage() {
         footer={
           !drillDownLoading && drillDownData && getAllDrillDownItems().length > 0 ? (
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 24, fontWeight: "bold" }}>
-              <span>Итого: {formatRub(getTotalAmount())}</span>
+              {drillDownCategory.startsWith("operating.") ? (
+                <div style={{ textAlign: "right" }}>
+                  <div>Дебет:&nbsp;&nbsp; {formatRub(getAllDrillDownItems().filter(i => i.type === "income" || drillDownCategory.startsWith("operating.in")).reduce((s, i) => s + Number(i.amount), 0))}</div>
+                  <div>Кредит: {formatRub(getAllDrillDownItems().filter(i => i.type === "expense" || drillDownCategory.startsWith("operating.out")).reduce((s, i) => s + Number(i.amount), 0))}</div>
+                  <div>Сальдо: {formatRub(getTotalAmount())}</div>
+                </div>
+              ) : (
+                <span>Итого: {formatRub(getTotalAmount())}</span>
+              )}
               <span style={{ color: "#8c8c8c", fontWeight: "normal" }}>
                 {getAllDrillDownItems().length} записей
               </span>
