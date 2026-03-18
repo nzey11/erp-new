@@ -144,17 +144,17 @@ export default function DocumentDetailPage() {
   useEffect(() => { loadDoc(); }, [loadDoc]);
 
   // Initialize editingActualQty from loaded items (for inventory_count documents)
+  // Use doc.id as dependency to prevent re-initialization on every render
   useEffect(() => {
     if (doc?.type === "inventory_count" && doc.items.length > 0) {
       const initial: Record<number, string> = {};
       doc.items.forEach((item, i) => {
-        if (item.actualQty != null) {
-          initial[i] = String(item.actualQty);
-        }
+        // Always initialize, use 0 as default for null/undefined
+        initial[i] = String(item.actualQty ?? 0);
       });
       setEditingActualQty(initial);
     }
-  }, [doc?.type, doc?.items]);
+  }, [doc?.id, doc?.type]);
 
   const loadJournalEntries = useCallback(async () => {
     setJournalLoading(true);
@@ -842,7 +842,14 @@ export default function DocumentDetailPage() {
                       <TableHead className="text-right">Кол-во</TableHead>
                     )}
                     <TableHead className="text-right">Цена</TableHead>
-                    <TableHead className="text-right">Сумма</TableHead>
+                    {doc.type === "inventory_count" ? (
+                      <>
+                        <TableHead className="text-right">Сумма факта</TableHead>
+                        <TableHead className="text-right">Сумма отклонения</TableHead>
+                      </>
+                    ) : (
+                      <TableHead className="text-right">Сумма</TableHead>
+                    )}
                     {doc.status === "draft" && <TableHead className="w-20" />}
                   </TableRow>
                 </TableHeader>
@@ -850,7 +857,7 @@ export default function DocumentDetailPage() {
                   {doc.items.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={doc.type === "inventory_count" ? (doc.status === "draft" ? 9 : 8) : (doc.status === "draft" ? 8 : 7)}
+                        colSpan={doc.type === "inventory_count" ? (doc.status === "draft" ? 10 : 9) : (doc.status === "draft" ? 8 : 7)}
                         className="text-center text-muted-foreground py-8"
                       >
                         {doc.type === "inventory_count" && doc.status === "draft"
@@ -956,18 +963,37 @@ export default function DocumentDetailPage() {
                             />
                           ) : formatRub(item.price)}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {doc.type === "inventory_count"
-                            ? (() => {
-                              // Use same logic as Отклонение column for real-time updates
-                              const actual = doc.status === "draft" && editingActualQty[i] !== undefined
-                                ? (parseFloat(editingActualQty[i]) || 0)
-                                : (item.actualQty ?? 0);
-                              const diff = Math.abs(actual - (item.expectedQty ?? 0));
-                              return formatRub(diff * Number(item.price));
-                            })()
-                            : formatRub(Number(item.price) * Number(item.quantity))}
-                        </TableCell>
+                        {doc.type === "inventory_count" ? (
+                          <>
+                            {/* Сумма факта = actualQty * price */}
+                            <TableCell className="text-right font-medium">
+                              {(() => {
+                                const actual = doc.status === "draft" && editingActualQty[i] !== undefined
+                                  ? (parseFloat(editingActualQty[i]) || 0)
+                                  : (item.actualQty ?? 0);
+                                return formatRub(actual * Number(item.price));
+                              })()}
+                            </TableCell>
+                            {/* Сумма отклонения = |actualQty - expectedQty| * price */}
+                            <TableCell className="text-right font-medium">
+                              {(() => {
+                                const actual = doc.status === "draft" && editingActualQty[i] !== undefined
+                                  ? (parseFloat(editingActualQty[i]) || 0)
+                                  : (item.actualQty ?? 0);
+                                const diff = Math.abs(actual - (item.expectedQty ?? 0));
+                                return (
+                                  <span style={{ color: diff > 0 ? "#ef4444" : undefined }}>
+                                    {formatRub(diff * Number(item.price))}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+                          </>
+                        ) : (
+                          <TableCell className="text-right font-medium">
+                            {formatRub(Number(item.price) * Number(item.quantity))}
+                          </TableCell>
+                        )}
                         {doc.status === "draft" && (
                           <TableCell>
                             <Button
