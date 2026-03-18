@@ -104,6 +104,8 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 const DRILL_DOWN_CATEGORIES = [
   "grossRevenue", "customerReturns", "cogs", "supplierReturns", "sellingExpenses",
   "operating.in", "operating.out",
+  "operating.in.bank", "operating.in.cash", "operating.in.forex",
+  "operating.out.bank", "operating.out.cash", "operating.out.forex",
   "assets.stock.incoming", "assets.stock.outgoing", "assets.receivables", "liabilities.payables",
 ];
 
@@ -197,8 +199,14 @@ export default function ReportsPage() {
       cogs: "Себестоимость продаж",
       supplierReturns: "Возвраты поставщикам",
       sellingExpenses: "Расходы на продажу (Дт 44)",
-      "operating.in": "Поступления от покупателей",
-      "operating.out": "Выплаты поставщикам",
+      "operating.in": "Поступления (все счета)",
+      "operating.out": "Выплаты (все счета)",
+      "operating.in.bank": "Поступления — Расчётный счёт (Дт 51)",
+      "operating.in.cash": "Поступления — Касса (Дт 50)",
+      "operating.in.forex": "Поступления — Валютный счёт (Дт 52)",
+      "operating.out.bank": "Выплаты — Расчётный счёт (Кт 51)",
+      "operating.out.cash": "Выплаты — Касса (Кт 50)",
+      "operating.out.forex": "Выплаты — Валютный счёт (Кт 52)",
       "assets.stock.incoming": "Поступление товаров",
       "assets.stock.outgoing": "Выбытие товаров",
       "assets.receivables": "Дебиторская задолженность",
@@ -392,15 +400,15 @@ export default function ReportsPage() {
                       </TableRow>
 
                       <TableRow className="bg-muted/30"><TableCell className="font-bold">Поступления денежных средств</TableCell><TableCell></TableCell></TableRow>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in")}><TableCell className="pl-6">Касса (Дт 50)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.cash)}</TableCell></TableRow>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in")}><TableCell className="pl-6">Расчётный счёт (Дт 51)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.bank)}</TableCell></TableRow>
-                      {cashFlow.inflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in")}><TableCell className="pl-6">Валютный счёт (Дт 52)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.forex)}</TableCell></TableRow>}
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.cash")}><TableCell className="pl-6">Касса (Дт 50)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.cash)}</TableCell></TableRow>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.bank")}><TableCell className="pl-6">Расчётный счёт (Дт 51)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.bank)}</TableCell></TableRow>
+                      {cashFlow.inflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.forex")}><TableCell className="pl-6">Валютный счёт (Дт 52)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.forex)}</TableCell></TableRow>}
                       <TableRow className="font-medium"><TableCell>Итого поступления</TableCell><TableCell className="text-right font-bold text-green-600">+{formatRub(cashFlow.inflows.total)}</TableCell></TableRow>
 
                       <TableRow className="bg-muted/30"><TableCell className="font-bold">Выплаты денежных средств</TableCell><TableCell></TableCell></TableRow>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out")}><TableCell className="pl-6">Касса (Кт 50)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.cash)}</TableCell></TableRow>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out")}><TableCell className="pl-6">Расчётный счёт (Кт 51)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.bank)}</TableCell></TableRow>
-                      {cashFlow.outflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out")}><TableCell className="pl-6">Валютный счёт (Кт 52)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.forex)}</TableCell></TableRow>}
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.cash")}><TableCell className="pl-6">Касса (Кт 50)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.cash)}</TableCell></TableRow>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.bank")}><TableCell className="pl-6">Расчётный счёт (Кт 51)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.bank)}</TableCell></TableRow>
+                      {cashFlow.outflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.forex")}><TableCell className="pl-6">Валютный счёт (Кт 52)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.forex)}</TableCell></TableRow>}
                       <TableRow className="font-medium"><TableCell>Итого выплаты</TableCell><TableCell className="text-right font-bold text-red-600">-{formatRub(cashFlow.outflows.total)}</TableCell></TableRow>
 
                       <TableRow className="font-bold bg-muted/50">
@@ -513,7 +521,7 @@ export default function ReportsPage() {
 
       {/* Drill-down Dialog */}
       <Dialog open={drillDownOpen} onOpenChange={setDrillDownOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="w-[80vw] max-w-[80vw] max-h-[85vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>{getDrillDownTitle(drillDownCategory)}</DialogTitle>
           </DialogHeader>
