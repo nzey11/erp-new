@@ -574,6 +574,85 @@ export async function cancelDocumentTransactional(
     );
   }
 
+  // ── Guard: Block cancellation if linked child documents exist ───────────
+  // Each parent type has its own explicit check (no generic cascade).
+  // A child document is any Document with linkedDocumentId === this.id.
+  // Regardless of child status — even a draft child blocks cancellation.
+
+  if (doc.type === "purchase_order") {
+    const childShipment = await db.document.findFirst({
+      where: { linkedDocumentId: documentId, type: "incoming_shipment" },
+      select: { id: true, number: true },
+    });
+    if (childShipment) {
+      throw new DocumentCancelError(
+        `Невозможно отменить: существует связанный документ «${getDocTypeName("incoming_shipment")}» №${childShipment.number}`,
+        409
+      );
+    }
+
+    const childPayment = await db.document.findFirst({
+      where: { linkedDocumentId: documentId, type: "outgoing_payment" },
+      select: { id: true, number: true },
+    });
+    if (childPayment) {
+      throw new DocumentCancelError(
+        `Невозможно отменить: существует связанный документ «${getDocTypeName("outgoing_payment")}» №${childPayment.number}`,
+        409
+      );
+    }
+  }
+
+  if (doc.type === "sales_order") {
+    const childShipment = await db.document.findFirst({
+      where: { linkedDocumentId: documentId, type: "outgoing_shipment" },
+      select: { id: true, number: true },
+    });
+    if (childShipment) {
+      throw new DocumentCancelError(
+        `Невозможно отменить: существует связанный документ «${getDocTypeName("outgoing_shipment")}» №${childShipment.number}`,
+        409
+      );
+    }
+
+    const childPayment = await db.document.findFirst({
+      where: { linkedDocumentId: documentId, type: "incoming_payment" },
+      select: { id: true, number: true },
+    });
+    if (childPayment) {
+      throw new DocumentCancelError(
+        `Невозможно отменить: существует связанный документ «${getDocTypeName("incoming_payment")}» №${childPayment.number}`,
+        409
+      );
+    }
+  }
+
+  if (doc.type === "incoming_shipment") {
+    const childPayment = await db.document.findFirst({
+      where: { linkedDocumentId: documentId, type: "outgoing_payment" },
+      select: { id: true, number: true },
+    });
+    if (childPayment) {
+      throw new DocumentCancelError(
+        `Невозможно отменить: существует связанный документ «${getDocTypeName("outgoing_payment")}» №${childPayment.number}`,
+        409
+      );
+    }
+  }
+
+  if (doc.type === "outgoing_shipment") {
+    const childPayment = await db.document.findFirst({
+      where: { linkedDocumentId: documentId, type: "incoming_payment" },
+      select: { id: true, number: true },
+    });
+    if (childPayment) {
+      throw new DocumentCancelError(
+        `Невозможно отменить: существует связанный документ «${getDocTypeName("incoming_payment")}» №${childPayment.number}`,
+        409
+      );
+    }
+  }
+
   // Atomic transaction: status + reversing stock movements + journal reversals
   const cancelled = await db.$transaction(async (tx) => {
     // Update document status to cancelled
