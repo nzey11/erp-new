@@ -200,7 +200,12 @@ async function getCogsDrillDown(
 
   const dateFilter: { gte?: Date; lte?: Date } = {};
   if (dateFrom) dateFilter.gte = new Date(dateFrom);
-  if (dateTo) dateFilter.lte = new Date(dateTo);
+  // Set lte to END of day (23:59:59.999) to include entries on the end date
+  if (dateTo) {
+    const endOfDay = new Date(dateTo);
+    endOfDay.setHours(23, 59, 59, 999);
+    dateFilter.lte = endOfDay;
+  }
 
   // Fetch LedgerLines on 90.2, include JournalEntry (has sourceType/sourceId)
   // Note: sourceType is set to doc.type (e.g. "outgoing_shipment") by autoPostDocument,
@@ -225,9 +230,10 @@ async function getCogsDrillDown(
   const truncated = lines.length === 500;
 
   // Collect unique document IDs from journal entries
+  // sourceType is the document type (e.g. "outgoing_shipment"), sourceId is the document ID
   const docIds = [...new Set(
     lines
-      .filter((l) => l.entry.sourceType === "document" && l.entry.sourceId)
+      .filter((l) => l.entry.sourceId)
       .map((l) => l.entry.sourceId!)
   )];
 
