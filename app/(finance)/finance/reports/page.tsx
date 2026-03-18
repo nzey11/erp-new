@@ -7,12 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";
+import { Modal } from "antd";
 
 interface ProfitLoss {
   dateFrom: string;
@@ -519,106 +519,123 @@ export default function ReportsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Drill-down Dialog */}
-      <Dialog open={drillDownOpen} onOpenChange={setDrillDownOpen}>
-        <DialogContent className="w-[80vw] max-w-[80vw] max-h-[85vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>{getDrillDownTitle(drillDownCategory)}</DialogTitle>
-          </DialogHeader>
-          
-          {drillDownLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      {/* Drill-down Modal (Ant Design) */}
+      <Modal
+        title={getDrillDownTitle(drillDownCategory)}
+        open={drillDownOpen}
+        onCancel={() => setDrillDownOpen(false)}
+        width="80vw"
+        style={{ top: 20 }}
+        styles={{
+          body: {
+            maxHeight: "75vh",
+            overflowY: "auto",
+            padding: "16px",
+          },
+        }}
+        footer={
+          !drillDownLoading && drillDownData && getAllDrillDownItems().length > 0 ? (
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 24, fontWeight: "bold" }}>
+              <span>Итого: {formatRub(getTotalAmount())}</span>
+              <span style={{ color: "#8c8c8c", fontWeight: "normal" }}>
+                {getAllDrillDownItems().length} записей
+              </span>
             </div>
-          ) : drillDownData ? (
-            <div className="space-y-4">
-              {drillDownData.message && (
-                <p className="text-sm text-muted-foreground">{drillDownData.message}</p>
-              )}
-              {drillDownData.truncated && (
-                <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                  Показаны первые 500 записей. Используйте фильтры дат для уточнения.
-                </p>
-              )}
-              
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="font-medium">Итого:</span>
-                <span className="font-bold text-lg">{formatRub(getTotalAmount())}</span>
-              </div>
-              
-              {getAllDrillDownItems().length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">Нет данных за период</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Номер</TableHead>
-                      <TableHead>Тип</TableHead>
-                      <TableHead>Дата</TableHead>
-                      <TableHead>Контрагент</TableHead>
-                      <TableHead className="text-right">Сумма</TableHead>
-                      <TableHead>Документ</TableHead>
+          ) : null
+        }
+      >
+        {drillDownLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : drillDownData ? (
+          <div className="space-y-3">
+            {drillDownData.message && (
+              <p className="text-sm text-muted-foreground">{drillDownData.message}</p>
+            )}
+            {drillDownData.truncated && (
+              <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                Показаны первые 500 записей. Используйте фильтры дат для уточнения.
+              </p>
+            )}
+            {getAllDrillDownItems().length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Нет данных за период</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Дата</TableHead>
+                    <TableHead>Номер</TableHead>
+                    <TableHead>Тип</TableHead>
+                    <TableHead>Контрагент</TableHead>
+                    <TableHead className="text-right">Сумма</TableHead>
+                    <TableHead>Связ. документ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getAllDrillDownItems().map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {formatDate(item.date)}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {item.isBalance ? (
+                          item.number
+                        ) : item.isPayment ? (
+                          <Link
+                            href="/finance/payments"
+                            className="text-primary hover:underline inline-flex items-center gap-1"
+                            onClick={() => setDrillDownOpen(false)}
+                          >
+                            {item.number}
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/documents/${item.id}`}
+                            className="text-primary hover:underline inline-flex items-center gap-1"
+                            onClick={() => setDrillDownOpen(false)}
+                          >
+                            {item.number}
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {item.isBalance
+                            ? DOC_TYPE_LABELS["counterparty_balance"]
+                            : item.isPayment
+                            ? (item.type === "income" ? "Входящий платёж" : "Исходящий платёж")
+                            : (DOC_TYPE_LABELS[item.type] || item.type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {item.counterparty || "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatRub(item.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {item.isPayment && item.linkedDocument && (
+                          <Link
+                            href={`/documents/${item.linkedDocument.id}`}
+                            className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                            onClick={() => setDrillDownOpen(false)}
+                          >
+                            <span className="font-mono">{item.linkedDocument.number}</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        )}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {getAllDrillDownItems().map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-mono text-sm">
-                          {item.isBalance ? (
-                            item.number
-                          ) : item.isPayment ? (
-                            <Link
-                              href="/finance/payments"
-                              className="text-primary hover:underline inline-flex items-center gap-1"
-                              onClick={() => setDrillDownOpen(false)}
-                            >
-                              {item.number}
-                              <ExternalLink className="h-3 w-3" />
-                            </Link>
-                          ) : (
-                            <Link
-                              href={`/documents/${item.id}`}
-                              className="text-primary hover:underline inline-flex items-center gap-1"
-                              onClick={() => setDrillDownOpen(false)}
-                            >
-                              {item.number}
-                              <ExternalLink className="h-3 w-3" />
-                            </Link>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{DOC_TYPE_LABELS[item.type] || item.type}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(item.date)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {item.counterparty || "—"}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatRub(item.amount)}
-                        </TableCell>
-                        <TableCell>
-                          {item.isPayment && item.linkedDocument && (
-                            <Link
-                              href={`/documents/${item.linkedDocument.id}`}
-                              className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
-                              onClick={() => setDrillDownOpen(false)}
-                            >
-                              <span className="font-mono">{item.linkedDocument.number}</span>
-                              <ExternalLink className="h-3 w-3" />
-                            </Link>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }

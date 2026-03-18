@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { FinanceReportService } from "@/lib/modules/accounting";
+import { db, toNumber } from "@/lib/shared/db";
 import type { DocumentType } from "@/lib/generated/prisma/client";
 
 // Map categories to document types
@@ -58,6 +59,11 @@ export async function GET(request: NextRequest) {
     }
     if (category === "liabilities.payables") {
       return NextResponse.json({ documents: [], payments: [], message: "Кредиторская задолженность рассчитывается на основе сальдо контрагентов" });
+    }
+
+    // COGS special path: fetch LedgerLine debit on 90.2 (actual cost, not sale price)
+    if (category === "cogs") {
+      return await getCogsDrillDown(session.tenantId, dateFrom, dateTo);
     }
 
     const docTypes = CATEGORY_DOCUMENT_TYPES[category];
@@ -121,7 +127,8 @@ export async function GET(request: NextRequest) {
 
     const paymentsTruncated = payments.length === 500;
 
-    // Format response
+    // Format response — for COGS handled separately above
+    // For other categories use document totalAmount
     const formattedDocs = documents.map((doc) => ({
       id: doc.id,
       number: doc.number,
@@ -154,6 +161,95 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return handleAuthError(error);
   }
+}
+
+/**
+ * COGS drill-down: fetch LedgerLine rows on account 90.2 (Дт 90.2 Кт 41.1)
+ * Returns actual cost amounts, not document sale prices.
+ * JournalEntry links to Document via sourceType/sourceId (polymorphic).
+ */
+async function getCogsDrillDown(
+  tenantId: string,
+  dateFrom: string | null,
+  dateTo: string | null
+) {
+  const cogsAccount = await db.account.findUnique({ where: { code: "90.2" } });
+  if (!cogsAccount) {
+    return NextResponse.json({ documents: [], payments: [], category: "cogs", message: "Счёт 90.2 не найден" });
+  }
+
+  const dateFilter: { gte?: Date; lte?: Date } = {};
+  if (dateFrom) dateFilter.gte = new Date(dateFrom);
+  if (dateTo) dateFilter.lte = new Date(dateTo);
+
+  // Fetch LedgerLines on 90.2, include JournalEntry (has sourceType/sourceId)
+  const lines = await db.ledgerLine.findMany({
+    where: {
+      accountId: cogsAccount.id,
+      debit: { gt: 0 },
+      entry: {
+        isReversed: false,
+        sourceType: "document",
+        ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
+      },
+    },
+    include: {
+      entry: true,
+    },
+    orderBy: { entry: { date: "desc" } },
+    take: 500,
+  });
+
+  const truncated = lines.length === 500;
+
+  // Collect unique document IDs from journal entries
+  const docIds = [...new Set(
+    lines
+      .filter((l) => l.entry.sourceType === "document" && l.entry.sourceId)
+      .map((l) => l.entry.sourceId!)
+  )];
+
+  // Fetch documents by IDs, scoped to tenant
+  const docsMap = new Map<string, {
+    id: string; number: string; type: string; status: string;
+    counterparty: { name: string } | null;
+    warehouse: { name: string } | null;
+  }>();
+
+  if (docIds.length > 0) {
+    const docs = await db.document.findMany({
+      where: { id: { in: docIds }, tenantId },
+      include: {
+        counterparty: { select: { name: true } },
+        warehouse: { select: { name: true } },
+      },
+    });
+    for (const d of docs) docsMap.set(d.id, d);
+  }
+
+  const documents = lines
+    .filter((l) => l.entry.sourceId && docsMap.has(l.entry.sourceId))
+    .map((l) => {
+      const doc = docsMap.get(l.entry.sourceId!)!;
+      return {
+        id: doc.id,
+        number: doc.number,
+        type: doc.type as string,
+        date: l.entry.date.toISOString(),
+        amount: toNumber(l.debit),
+        counterparty: doc.counterparty?.name ?? null,
+        warehouse: doc.warehouse?.name ?? null,
+        status: doc.status as string,
+      };
+    });
+
+  return NextResponse.json({
+    documents,
+    payments: [],
+    category: "cogs",
+    truncated,
+    message: "Сумма себестоимости из проводок Дт 90.2 (средняя стоимость товаров)",
+  });
 }
 
 async function getReceivablesDrillDown() {
