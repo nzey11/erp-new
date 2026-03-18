@@ -176,7 +176,9 @@ async function validateForConfirmation(doc: DocumentWithItems): Promise<void> {
     throw e;
   }
 
-  if (doc.items.length === 0) {
+  // Payment documents (incoming_payment, outgoing_payment) don't require items
+  const isPayment = doc.type === "incoming_payment" || doc.type === "outgoing_payment";
+  if (doc.items.length === 0 && !isPayment) {
     throw new DocumentConfirmError("Нельзя подтвердить документ без позиций", 400);
   }
 
