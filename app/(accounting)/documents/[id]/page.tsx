@@ -237,7 +237,7 @@ export default function DocumentDetailPage() {
     try {
       const [recordsRes, productsRes] = await Promise.all([
         fetch(`/api/accounting/stock/records?warehouseId=${doc.warehouse.id}&includeZero=true`),
-        fetch(`/api/accounting/products?limit=5000`),
+        fetch(`/api/accounting/products?limit=500`),
       ]);
       const recordsJson = recordsRes.ok ? await recordsRes.json() : {};
       const productsJson = productsRes.ok ? await productsRes.json() : {};
