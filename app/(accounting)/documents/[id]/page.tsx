@@ -21,7 +21,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, RefreshCw } from "lucide-react";
+import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, RefreshCw, Edit2, MinusCircle, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub, formatDate, formatDateTime } from "@/lib/shared/utils";
 import Link from "next/link";
@@ -182,6 +182,9 @@ export default function DocumentDetailPage() {
   // Inventory count: stock lookup state for "add item" dialog
   const [itemExpectedQty, setItemExpectedQty] = useState<number>(0);
   const [fillingStock, setFillingStock] = useState(false);
+  const [fillingAll, setFillingAll] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [creatingLinkedAdj, setCreatingLinkedAdj] = useState(false);
 
   // "Заполнить по складу" — calls existing /fill-inventory endpoint
   const handleFillFromStock = async () => {
@@ -207,6 +210,106 @@ export default function DocumentDetailPage() {
       toast.error(e instanceof Error ? e.message : "Ошибка заполнения");
     } finally {
       setFillingStock(false);
+    }
+  };
+
+  // Button B — "Заполнить все товары": fills ALL products (even with zero stock)
+  const handleFillAllProducts = async () => {
+    if (!doc) return;
+    if (!doc.warehouse) {
+      toast.warning("Сначала укажите склад в документе");
+      return;
+    }
+    setFillingAll(true);
+    try {
+      const [recordsRes, productsRes] = await Promise.all([
+        fetch(`/api/accounting/stock/records?warehouseId=${doc.warehouse.id}&includeZero=true`),
+        fetch(`/api/accounting/products?limit=5000`),
+      ]);
+      const { records } = await recordsRes.json();
+      const { data: products } = await productsRes.json();
+      const recordMap = new Map<string, { quantity: number; averageCost: number }>(
+        (records as Array<{ productId: string; quantity: number; averageCost: number }>)
+          .map((r) => [r.productId, r])
+      );
+      const currentItems = (products as Array<{ id: string; name: string }>).map((p) => {
+        const record = recordMap.get(p.id);
+        return {
+          productId: p.id,
+          quantity: 0,
+          price: record?.averageCost ?? 0,
+          expectedQty: record?.quantity ?? 0,
+          actualQty: 0,
+        };
+      });
+      const res = await csrfFetch(`/api/accounting/documents/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: currentItems }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+      toast.success(`Заполнено ${currentItems.length} товаров (все позиции, факт = 0)`);
+      loadDoc();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка заполнения");
+    } finally {
+      setFillingAll(false);
+    }
+  };
+
+  // Create linked adjustment document manually (write_off for shortages, stock_receipt for surpluses)
+  const handleCreateAdjustment = async (type: "write_off" | "stock_receipt") => {
+    if (!doc) return;
+    setCreatingLinkedAdj(true);
+    try {
+      const relevantItems = doc.items.filter((i) =>
+        type === "write_off"
+          ? (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) < 0
+          : (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) > 0
+      );
+      const body = {
+        type,
+        status: "draft",
+        warehouseId: doc.warehouse?.id ?? null,
+        date: new Date().toISOString(),
+        description: `На основании инвентаризации ${doc.number}`,
+        linkedDocumentId: doc.id,
+        items: relevantItems.map((item) => ({
+          productId: item.productId,
+          quantity: Math.abs(item.difference ?? Math.abs((item.actualQty ?? 0) - (item.expectedQty ?? 0))),
+          price: item.price,
+        })),
+      };
+      const res = await csrfFetch("/api/accounting/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+      const newDoc = await res.json();
+      toast.success("Документ создан как черновик");
+      router.push(`/documents/${newDoc.id}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка создания");
+    } finally {
+      setCreatingLinkedAdj(false);
+    }
+  };
+
+  // Reopen confirmed stock document: reverse journal entries + set status to draft
+  const handleReopen = async () => {
+    if (!doc) return;
+    if (!confirm("Открыть документ для редактирования?\n\nПроводки будут отменены. После изменений нужно повторно подтвердить документ.")) return;
+    setReopening(true);
+    try {
+      const res = await csrfFetch(`/api/accounting/documents/${id}/reopen`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+      toast.success("Документ открыт для редактирования");
+      loadDoc();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка");
+    } finally {
+      setReopening(false);
     }
   };
 
@@ -502,10 +605,16 @@ export default function DocumentDetailPage() {
               {doc.status === "draft" && (
                 <>
                   {doc.type === "inventory_count" && (
-                    <Button variant="outline" size="sm" onClick={handleFillFromStock} disabled={fillingStock}>
-                      <Database className="h-4 w-4 mr-1" />
-                      {fillingStock ? "Заполнение..." : "Заполнить по складу"}
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleFillFromStock} disabled={fillingStock || fillingAll}>
+                        <Database className="h-4 w-4 mr-1" />
+                        {fillingStock ? "Заполнение..." : "Заполнить фактические остатки"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleFillAllProducts} disabled={fillingStock || fillingAll}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        {fillingAll ? "Заполнение..." : "Заполнить все товары"}
+                      </Button>
+                    </>
                   )}
                   <Button variant="outline" size="sm" onClick={() => setAddItemOpen(true)}>
                     <Plus className="h-4 w-4 mr-1" />Добавить позицию
@@ -519,9 +628,45 @@ export default function DocumentDetailPage() {
                 </>
               )}
               {doc.status === "confirmed" && (
-                <Button variant="destructive" size="sm" onClick={handleCancel}>
-                  <X className="h-4 w-4 mr-1" />Отменить
-                </Button>
+                <>
+                  <Button variant="destructive" size="sm" onClick={handleCancel}>
+                    <X className="h-4 w-4 mr-1" />Отменить
+                  </Button>
+                  {/* Reopen button for editable stock document types */}
+                  {["inventory_count", "write_off", "stock_receipt"].includes(doc.type) && (
+                    <Button variant="outline" size="sm" onClick={handleReopen} disabled={reopening}>
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      {reopening ? "Открытие..." : "Редактировать"}
+                    </Button>
+                  )}
+                  {/* Manual adjustment document creation for confirmed inventory count */}
+                  {doc.type === "inventory_count" && (
+                    <>
+                      {doc.items.some((i) => (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) < 0) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCreateAdjustment("write_off")}
+                          disabled={creatingLinkedAdj}
+                        >
+                          <MinusCircle className="h-4 w-4 mr-1" />
+                          Создать списание ({doc.items.filter((i) => (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) < 0).length} поз.)
+                        </Button>
+                      )}
+                      {doc.items.some((i) => (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) > 0) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCreateAdjustment("stock_receipt")}
+                          disabled={creatingLinkedAdj}
+                        >
+                          <PlusCircle className="h-4 w-4 mr-1" />
+                          Создать оприходование ({doc.items.filter((i) => (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) > 0).length} поз.)
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
               )}
               {/* Inventory count: quick navigation to auto-created adjustment docs */}
               {doc.type === "inventory_count" && doc.status === "confirmed" && doc.linkedFrom.length > 0 && (
@@ -691,7 +836,9 @@ export default function DocumentDetailPage() {
                         className="text-center text-muted-foreground py-8"
                       >
                         {doc.type === "inventory_count" && doc.status === "draft"
-                          ? "Нет позиций. Используйте «Заполнить по складу» или добавьте позиции вручную"
+                          ? "Нет позиций. Используйте «Заполнить» или добавьте позиции вручную"
+                          : ["write_off", "stock_receipt"].includes(doc.type) && doc.status === "draft"
+                          ? "Нет позиций. Нажмите «Добавить позицию» для добавления товаров"
                           : "Нет позиций"
                         }
                       </TableCell>

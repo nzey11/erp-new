@@ -28,6 +28,9 @@ import {
   BookMarked,
   ClipboardList,
   Merge,
+  ClipboardCheck,
+  MinusCircle,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +58,9 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Обзор", href: "/dashboard", icon: LayoutDashboard },
     { name: "Каталог", href: "/catalog", icon: Package },
     { name: "Склад", href: "/stock", icon: Boxes },
+    { name: "Инвентаризации", href: "/stock?tab=inventory", icon: ClipboardCheck },
+    { name: "Списания", href: "/stock?tab=write_off", icon: MinusCircle },
+    { name: "Оприходования", href: "/stock?tab=stock_receipt", icon: PlusCircle },
     { name: "Закупки", href: "/purchases", icon: ShoppingCart },
     { name: "Продажи", href: "/sales", icon: TrendingUp },
     { name: "Контрагенты", href: "/counterparties", icon: Users },
@@ -231,9 +237,11 @@ export function AppSidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2 px-2">
         {navigation.map((item) => {
-          const isActive = item.href === "/dashboard"
+        const isActive = item.href === "/dashboard"
             ? pathname === "/dashboard" || pathname === "/"
-            : pathname.startsWith(item.href);
+            : item.href.includes("?")
+              ? pathname === item.href.split("?")[0]
+              : pathname.startsWith(item.href);
 
           return (
             <Link

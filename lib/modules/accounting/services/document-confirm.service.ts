@@ -25,7 +25,6 @@ import { createOutboxEvent } from "@/lib/events";
 import {
   getDocTypeName,
   getDocStatusName,
-  generateDocumentNumber,
 } from "@/lib/modules/accounting/documents";
 import {
   validateTransition,
@@ -39,8 +38,6 @@ import {
 } from "@/lib/modules/accounting/inventory/stock";
 import {
   createMovementsForDocument,
-  createReversingMovements,
-  hasReversingMovements,
   reconcileStockRecord,
 } from "@/lib/modules/accounting/inventory/stock-movements";
 import { recalculateBalance } from "./balance.service";
@@ -406,21 +403,9 @@ export async function confirmDocumentTransactional(
     await updateAverageCostForDocument(docWithNumbers, preConfirmQty);
   }
 
-  // Step 5b: inventory_count — create linked adjustment documents (write_off / stock_receipt)
-  // This IS the stock effect for inventory counts: creating adjustment docs is the critical path.
-  if (isInventoryCount(doc.type) && doc.warehouseId) {
-    const adjustmentItems = docWithNumbers.items.map((i) => ({
-      productId: i.productId,
-      expectedQty: i.expectedQty,
-      actualQty: i.actualQty,
-      difference: i.difference ?? ((i.actualQty ?? 0) - (i.expectedQty ?? 0)),
-      price: i.price,
-    }));
-    const hasDiscrepancies = adjustmentItems.some((i) => (i.difference ?? 0) !== 0);
-    if (hasDiscrepancies) {
-      await createInventoryAdjustments(doc.id, doc.warehouseId, adjustmentItems, doc.createdBy);
-    }
-  }
+  // Step 5b: inventory_count — adjustment documents (write_off / stock_receipt) are now
+  // created MANUALLY by the user via buttons on the confirmed document page.
+  // Auto-creation has been removed to give users full control over adjustments.
 
   // Step 6: Mark confirmed + write outbox event — atomic transaction
   // Only reached if steps 3–5 all succeeded
@@ -695,159 +680,7 @@ export async function cancelDocumentTransactional(
 }
 
 // ---------------------------------------------------------------------------
-// Private: Create inventory adjustment documents
+// Note: createInventoryAdjustments was removed.
+// Adjustment documents (write_off / stock_receipt) are now created
+// MANUALLY by the user after confirmation via the document detail page.
 // ---------------------------------------------------------------------------
-
-/**
- * Create write_off (shortages) and stock_receipt (surpluses) linked
- * to the inventory count document.
- * IDEMPOTENT: uses adjustmentsCreated flag + existence check.
- * 
- * Adjustment documents inherit tenantId from parent inventory_count document.
- */
-async function createInventoryAdjustments(
-  inventoryDocId: string,
-  warehouseId: string,
-  items: Array<{
-    productId: string;
-    expectedQty: number | null;
-    actualQty: number | null;
-    difference: number | null;
-    price: number;
-  }>,
-  createdBy: string | null
-): Promise<string[]> {
-  // Idempotency check 1: flag + get tenantId from parent
-  const inventoryDoc = await db.document.findUnique({
-    where: { id: inventoryDocId },
-    select: { adjustmentsCreated: true, tenantId: true },
-  });
-
-  if (inventoryDoc?.adjustmentsCreated) {
-    const existingCount = await db.document.count({
-      where: {
-        linkedDocumentId: inventoryDocId,
-        type: { in: ["write_off", "stock_receipt"] },
-      },
-    });
-    if (existingCount > 0) return []; // Already created
-  }
-
-  // Idempotency check 2: documents exist even if flag not set
-  const existingDocs = await db.document.findMany({
-    where: {
-      linkedDocumentId: inventoryDocId,
-      type: { in: ["write_off", "stock_receipt"] },
-    },
-  });
-
-  if (existingDocs.length > 0) {
-    await db.document.update({
-      where: { id: inventoryDocId },
-      data: { adjustmentsCreated: true },
-    });
-    return existingDocs.map((d) => d.id);
-  }
-
-  // Inherit tenantId from parent inventory_count document
-  const tenantId = inventoryDoc?.tenantId;
-  
-  // Guard: tenantId is required for document creation
-  if (!tenantId) {
-    throw new Error("Cannot create adjustment documents: inventory_count document has no tenantId");
-  }
-
-  const shortages = items.filter((i) => (i.difference ?? 0) < 0);
-  const surpluses = items.filter((i) => (i.difference ?? 0) > 0);
-  const createdIds: string[] = [];
-
-  await db.$transaction(async (tx) => {
-    if (shortages.length > 0) {
-      const number = await generateDocumentNumber("write_off");
-      const writeOffItems = shortages.map((item) => {
-        const qty = Math.abs(item.difference ?? 0);
-        return { productId: item.productId, quantity: qty, price: item.price, total: qty * item.price };
-      });
-      const totalAmount = writeOffItems.reduce((s, i) => s + i.total, 0);
-
-      const writeOff = await tx.document.create({
-        data: {
-          tenantId,  // Inherited from inventory_count
-          number,
-          type: "write_off",
-          status: "confirmed",
-          date: new Date(),
-          warehouseId,
-          linkedDocumentId: inventoryDocId,
-          totalAmount,
-          description: "Списание по инвентаризации",
-          createdBy,
-          confirmedAt: new Date(),
-          adjustmentsCreated: true,
-          items: { create: writeOffItems },
-        },
-      });
-      createdIds.push(writeOff.id);
-    }
-
-    if (surpluses.length > 0) {
-      const number = await generateDocumentNumber("stock_receipt");
-      const receiptItems = surpluses.map((item) => {
-        const qty = item.difference ?? 0;
-        return { productId: item.productId, quantity: qty, price: item.price, total: qty * item.price };
-      });
-      const totalAmount = receiptItems.reduce((s, i) => s + i.total, 0);
-
-      const receipt = await tx.document.create({
-        data: {
-          tenantId,  // Inherited from inventory_count
-          number,
-          type: "stock_receipt",
-          status: "confirmed",
-          date: new Date(),
-          warehouseId,
-          linkedDocumentId: inventoryDocId,
-          totalAmount,
-          description: "Оприходование по инвентаризации",
-          createdBy,
-          confirmedAt: new Date(),
-          adjustmentsCreated: true,
-          items: { create: receiptItems },
-        },
-      });
-      createdIds.push(receipt.id);
-    }
-
-    if (createdIds.length > 0) {
-      await tx.document.update({
-        where: { id: inventoryDocId },
-        data: { adjustmentsCreated: true },
-      });
-    }
-  });
-
-  // Update stock movements for adjustment docs
-  // Note: reconcileStockRecord is called inside createMovementsForDocument, so no separate updateStockForDocument needed.
-  for (const docId of createdIds) {
-    const adjDoc = await db.document.findUnique({
-      where: { id: docId },
-      include: { items: true },
-    });
-    if (adjDoc?.warehouseId) {
-      await createMovementsForDocument({
-        id: adjDoc.id,
-        type: adjDoc.type,
-        warehouseId: adjDoc.warehouseId,
-        targetWarehouseId: adjDoc.targetWarehouseId,
-        items: adjDoc.items.map((i) => ({
-          productId: i.productId,
-          variantId: i.variantId,
-          quantity: toNumber(i.quantity),
-          price: toNumber(i.price),
-        })),
-      });
-    }
-  }
-
-  return createdIds;
-}
