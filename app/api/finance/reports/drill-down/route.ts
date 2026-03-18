@@ -107,9 +107,12 @@ export async function GET(request: NextRequest) {
       const paymentDateFilter: { date?: { gte?: Date; lte?: Date } } = {};
       
       if (dateFrom && dateTo) {
+        // Set lte to END of day to include all payments on the end date
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
         paymentDateFilter.date = { 
           gte: new Date(dateFrom), 
-          lte: new Date(dateTo) 
+          lte: endOfDay,
         };
       }
 
