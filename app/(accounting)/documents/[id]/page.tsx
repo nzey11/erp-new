@@ -143,6 +143,19 @@ export default function DocumentDetailPage() {
 
   useEffect(() => { loadDoc(); }, [loadDoc]);
 
+  // Initialize editingActualQty from loaded items (for inventory_count documents)
+  useEffect(() => {
+    if (doc?.type === "inventory_count" && doc.items.length > 0) {
+      const initial: Record<number, string> = {};
+      doc.items.forEach((item, i) => {
+        if (item.actualQty != null) {
+          initial[i] = String(item.actualQty);
+        }
+      });
+      setEditingActualQty(initial);
+    }
+  }, [doc?.type, doc?.items]);
+
   const loadJournalEntries = useCallback(async () => {
     setJournalLoading(true);
     try {
