@@ -21,7 +21,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer } from "lucide-react";
+import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub, formatDate, formatDateTime } from "@/lib/shared/utils";
 import Link from "next/link";
@@ -52,6 +52,9 @@ interface DocumentItem {
   quantity: number;
   price: number;
   total: number;
+  expectedQty: number | null;
+  actualQty: number | null;
+  difference: number | null;
   product: { id: string; name: string; sku: string | null; unit?: { shortName: string } };
 }
 
@@ -173,8 +176,67 @@ export default function DocumentDetailPage() {
   // Inline edit state: key = item index
   const [editingItems, setEditingItems] = useState<Record<number, { quantity: string; price: string }>>({});
 
+  // Inventory count: actualQty inline edit state (key = item index)
+  const [editingActualQty, setEditingActualQty] = useState<Record<number, string>>({});
+
+  // Inventory count: stock lookup state for "add item" dialog
+  const [itemExpectedQty, setItemExpectedQty] = useState<number>(0);
+  const [fillingStock, setFillingStock] = useState(false);
+
+  // "Заполнить по складу" — calls existing /fill-inventory endpoint
+  const handleFillFromStock = async () => {
+    if (!doc) return;
+    if (!doc.warehouse) {
+      toast.warning("Сначала укажите склад в документе");
+      return;
+    }
+    setFillingStock(true);
+    try {
+      const res = await csrfFetch(`/api/accounting/documents/${id}/fill-inventory`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка");
+      }
+      const data = await res.json();
+      const itemCount = Array.isArray(data.items) ? data.items.length : 0;
+      toast.success(`Заполнено ${itemCount} позиций по складу`);
+      loadDoc();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка заполнения");
+    } finally {
+      setFillingStock(false);
+    }
+  };
+
+  // Inventory count: save actualQty for one item (sends full items array with updated actualQty)
+  const handleUpdateActualQty = async (index: number, newActualQty: number) => {
+    if (!doc) return;
+    const currentItems = doc.items.map((item, i) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      expectedQty: item.expectedQty ?? undefined,
+      actualQty: i === index ? newActualQty : (item.actualQty ?? undefined),
+    }));
+    try {
+      const res = await csrfFetch(`/api/accounting/documents/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: currentItems }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Ошибка");
+      setEditingActualQty((prev) => { const next = { ...prev }; delete next[index]; return next; });
+      loadDoc();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка сохранения");
+    }
+  };
+
   // When product is selected — auto-fill price based on document type
-  const handleProductSelect = (productId: string) => {
+  // For inventory_count: also fetch current stock quantity to pre-fill expectedQty
+  const handleProductSelect = async (productId: string) => {
     setItemProductId(productId);
     const product = products.find((p) => p.id === productId);
     if (!product || !doc) return;
@@ -184,6 +246,24 @@ export default function DocumentDetailPage() {
       setItemPrice(String(product.purchasePrice));
     } else if (isSale && product.salePrice != null) {
       setItemPrice(String(product.salePrice));
+    }
+    // For inventory_count: fetch current stock to pre-fill expectedQty/actualQty
+    if (doc.type === "inventory_count" && doc.warehouse) {
+      try {
+        const params = new URLSearchParams({ warehouseId: doc.warehouse.id, productId, enhanced: "true" });
+        const res = await fetch(`/api/accounting/stock?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          const record = Array.isArray(data.records) ? data.records[0] : null;
+          const currentStock = record ? Number(record.quantity) : 0;
+          const avgCost = record?.averageCost != null ? Number(record.averageCost) : 0;
+          setItemExpectedQty(currentStock);
+          setItemQuantity(String(currentStock));
+          if (avgCost > 0) setItemPrice(String(avgCost));
+        }
+      } catch {
+        // Non-critical: stock fetch failed, keep defaults
+      }
     }
   };
 
@@ -257,16 +337,27 @@ export default function DocumentDetailPage() {
     if (!itemProductId || !doc) return;
     setSaving(true);
     try {
+      const isInventory = doc.type === "inventory_count";
       const currentItems = doc.items.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
         price: item.price,
+        ...(isInventory && {
+          expectedQty: item.expectedQty ?? undefined,
+          actualQty: item.actualQty ?? undefined,
+        }),
       }));
-      currentItems.push({
+      const qty = parseFloat(itemQuantity) || 0;
+      const newItem: Record<string, unknown> = {
         productId: itemProductId,
-        quantity: parseFloat(itemQuantity) || 1,
+        quantity: isInventory ? 0 : (parseFloat(itemQuantity) || 1),
         price: parseFloat(itemPrice) || 0,
-      });
+      };
+      if (isInventory) {
+        newItem.expectedQty = itemExpectedQty;
+        newItem.actualQty = qty;
+      }
+      currentItems.push(newItem as typeof currentItems[0]);
 
       const res = await csrfFetch(`/api/accounting/documents/${id}`, {
         method: "PUT",
@@ -284,6 +375,7 @@ export default function DocumentDetailPage() {
       setItemProductId("");
       setItemQuantity("1");
       setItemPrice("0");
+      setItemExpectedQty(0);
       loadDoc();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
@@ -294,12 +386,17 @@ export default function DocumentDetailPage() {
 
   const handleRemoveItem = async (removeIndex: number) => {
     if (!doc) return;
+    const isInventory = doc.type === "inventory_count";
     const currentItems = doc.items
       .filter((_, i) => i !== removeIndex)
       .map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
         price: item.price,
+        ...(isInventory && {
+          expectedQty: item.expectedQty ?? undefined,
+          actualQty: item.actualQty ?? undefined,
+        }),
       }));
 
     try {
@@ -404,6 +501,12 @@ export default function DocumentDetailPage() {
               </Button>
               {doc.status === "draft" && (
                 <>
+                  {doc.type === "inventory_count" && (
+                    <Button variant="outline" size="sm" onClick={handleFillFromStock} disabled={fillingStock}>
+                      <Database className="h-4 w-4 mr-1" />
+                      {fillingStock ? "Заполнение..." : "Заполнить по складу"}
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => setAddItemOpen(true)}>
                     <Plus className="h-4 w-4 mr-1" />Добавить позицию
                   </Button>
@@ -419,6 +522,23 @@ export default function DocumentDetailPage() {
                 <Button variant="destructive" size="sm" onClick={handleCancel}>
                   <X className="h-4 w-4 mr-1" />Отменить
                 </Button>
+              )}
+              {/* Inventory count: quick navigation to auto-created adjustment docs */}
+              {doc.type === "inventory_count" && doc.status === "confirmed" && doc.linkedFrom.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="h-4 w-4 mr-1" />Док. коррекции
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {doc.linkedFrom.map((linked) => (
+                      <DropdownMenuItem key={linked.id} onClick={() => router.push(`/documents/${linked.id}`)}>
+                        {linked.typeName || linked.type} {linked.number}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
               {linkedOptions.length > 0 && (
                 <DropdownMenu>
@@ -549,7 +669,15 @@ export default function DocumentDetailPage() {
                     <TableHead>Товар</TableHead>
                     <TableHead>Артикул</TableHead>
                     <TableHead>Ед.</TableHead>
-                    <TableHead className="text-right">Кол-во</TableHead>
+                    {doc.type === "inventory_count" ? (
+                      <>
+                        <TableHead className="text-right">По учёту</TableHead>
+                        <TableHead className="text-right">Факт</TableHead>
+                        <TableHead className="text-right">Отклонение</TableHead>
+                      </>
+                    ) : (
+                      <TableHead className="text-right">Кол-во</TableHead>
+                    )}
                     <TableHead className="text-right">Цена</TableHead>
                     <TableHead className="text-right">Сумма</TableHead>
                     {doc.status === "draft" && <TableHead className="w-20" />}
@@ -558,8 +686,14 @@ export default function DocumentDetailPage() {
                 <TableBody>
                   {doc.items.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={doc.status === "draft" ? 7 : 6} className="text-center text-muted-foreground py-8">
-                        Нет позиций
+                      <TableCell
+                        colSpan={doc.type === "inventory_count" ? (doc.status === "draft" ? 9 : 8) : (doc.status === "draft" ? 8 : 7)}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        {doc.type === "inventory_count" && doc.status === "draft"
+                          ? "Нет позиций. Используйте «Заполнить по складу» или добавьте позиции вручную"
+                          : "Нет позиций"
+                        }
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -569,24 +703,80 @@ export default function DocumentDetailPage() {
                         <TableCell className="font-medium">{item.product.name}</TableCell>
                         <TableCell className="text-muted-foreground">{item.product.sku || "—"}</TableCell>
                         <TableCell className="text-muted-foreground text-xs">{item.product.unit?.shortName || "—"}</TableCell>
+
+                        {doc.type === "inventory_count" ? (
+                          <>
+                            {/* По учёту: expectedQty (read-only) */}
+                            <TableCell className="text-right text-muted-foreground">
+                              {item.expectedQty ?? 0}
+                            </TableCell>
+
+                            {/* Факт: actualQty (editable in draft) */}
+                            <TableCell className="text-right">
+                              {doc.status === "draft" ? (
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  className="w-24 h-7 text-right text-sm"
+                                  value={editingActualQty[i] ?? String(item.actualQty ?? 0)}
+                                  onChange={(e) =>
+                                    setEditingActualQty((prev) => ({ ...prev, [i]: e.target.value }))
+                                  }
+                                  onBlur={() => {
+                                    const raw = editingActualQty[i];
+                                    if (raw !== undefined) {
+                                      handleUpdateActualQty(i, parseFloat(raw) || 0);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span>{item.actualQty ?? 0}</span>
+                              )}
+                            </TableCell>
+
+                            {/* Отклонение: computed from actualQty - expectedQty */}
+                            <TableCell className="text-right">
+                              {(() => {
+                                const actual = doc.status === "draft" && editingActualQty[i] !== undefined
+                                  ? (parseFloat(editingActualQty[i]) || 0)
+                                  : (item.actualQty ?? 0);
+                                const diff = actual - (item.expectedQty ?? 0);
+                                return (
+                                  <span
+                                    className="font-medium"
+                                    style={{
+                                      color: diff < 0 ? "#ef4444" : diff > 0 ? "#22c55e" : undefined,
+                                    }}
+                                  >
+                                    {diff > 0 ? "+" : ""}{diff % 1 === 0 ? diff : diff.toFixed(3)}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+                          </>
+                        ) : (
+                          /* Standard quantity column for non-inventory docs */
+                          <TableCell className="text-right">
+                            {doc.status === "draft" ? (
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="w-20 h-7 text-right text-sm"
+                                value={editingItems[i]?.quantity ?? String(item.quantity)}
+                                onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: e.target.value, price: prev[i]?.price ?? String(item.price) } }))}
+                                onBlur={() => {
+                                  const ed = editingItems[i];
+                                  if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
+                                }}
+                              />
+                            ) : item.quantity}
+                          </TableCell>
+                        )}
+
                         <TableCell className="text-right">
-                          {doc.status === "draft" ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              className="w-20 h-7 text-right text-sm"
-                              value={editingItems[i]?.quantity ?? String(item.quantity)}
-                              onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: e.target.value, price: prev[i]?.price ?? String(item.price) } }))}
-                              onBlur={() => {
-                                const ed = editingItems[i];
-                                if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
-                              }}
-                            />
-                          ) : item.quantity}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {doc.status === "draft" ? (
+                          {doc.status === "draft" && doc.type !== "inventory_count" ? (
                             <Input
                               type="number"
                               min="0"
@@ -727,28 +917,53 @@ export default function DocumentDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>Количество</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={itemQuantity}
-                  onChange={(e) => setItemQuantity(e.target.value)}
-                />
+            {doc?.type === "inventory_count" ? (
+              /* Inventory count: show По учёту + Факт fields */
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>По учёту</Label>
+                  <Input
+                    type="number"
+                    readOnly
+                    value={itemExpectedQty}
+                    className="bg-muted cursor-default"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Фактическое кол-во</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={itemQuantity}
+                    onChange={(e) => setItemQuantity(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label>Цена {products.find(p => p.id === itemProductId)?.purchasePrice != null && doc && ["incoming_shipment","purchase_order","supplier_return","stock_receipt"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(закупочная)</span> : products.find(p => p.id === itemProductId)?.salePrice != null && doc && ["outgoing_shipment","sales_order","customer_return"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(продажная)</span> : null}</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={itemPrice}
-                  onChange={(e) => setItemPrice(e.target.value)}
-                />
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Количество</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={itemQuantity}
+                    onChange={(e) => setItemQuantity(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Цена {products.find(p => p.id === itemProductId)?.purchasePrice != null && doc && ["incoming_shipment","purchase_order","supplier_return","stock_receipt"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(закупочная)</span> : products.find(p => p.id === itemProductId)?.salePrice != null && doc && ["outgoing_shipment","sales_order","customer_return"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(продажная)</span> : null}</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={itemPrice}
+                    onChange={(e) => setItemPrice(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddItemOpen(false)}>Отмена</Button>
