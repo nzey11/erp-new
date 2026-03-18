@@ -3,34 +3,28 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/shared/db";
 import { requirePermission } from "@/lib/shared/authorization";
+import { createCounterpartyWithParty } from "@/lib/modules/accounting";
 import type { CounterpartyFormValues } from "./_components/counterparty-drawer";
 
 /**
  * Create a new counterparty.
+ *
+ * Delegates to createCounterpartyWithParty() which atomically creates
+ * the Counterparty, its initial balance, and a CRM Party mirror.
+ * Direct db.counterparty.create() calls are forbidden here (guardrail AP-09).
  */
 export async function createCounterparty(values: CounterpartyFormValues) {
   const session = await requirePermission("counterparties:write");
 
-  const counterparty = await db.counterparty.create({
-    data: {
-      name: values.name,
-      legalName: values.legalName || null,
-      type: values.type,
-      inn: values.inn || null,
-      phone: values.phone || null,
-      email: values.email || null,
-      contactPerson: values.contactPerson || null,
-      isActive: values.isActive,
-      tenantId: session.tenantId,
-    },
-  });
-
-  // Create initial balance record
-  await db.counterpartyBalance.create({
-    data: {
-      counterpartyId: counterparty.id,
-      balanceRub: 0,
-    },
+  const { counterparty } = await createCounterpartyWithParty({
+    tenantId: session.tenantId,
+    type: values.type,
+    name: values.name,
+    legalName: values.legalName || null,
+    inn: values.inn || null,
+    phone: values.phone || null,
+    email: values.email || null,
+    contactPerson: values.contactPerson || null,
   });
 
   revalidatePath("/accounting/counterparties");
