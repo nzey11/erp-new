@@ -114,7 +114,7 @@ function StoreContent({
                 </Button>
               </Link>
             ) : (
-              <Link href="/store/auth/telegram">
+              <Link href="/store/account">
                 <Button variant="outline" size="sm" className="gap-2">
                   <User className="h-4 w-4" />
                   <span className="hidden sm:block">Войти</span>

@@ -41,7 +41,7 @@ import {
   reconcileStockRecord,
 } from "@/lib/modules/accounting/inventory/stock-movements";
 import { recalculateBalance } from "./balance.service";
-import { reverseEntryWithTx } from "@/lib/modules/accounting/finance/journal";
+import { reverseEntryWithTx, autoPostDocument } from "@/lib/modules/accounting/finance/journal";
 
 // Re-export so callers only need one import
 export { DocumentStateError } from "@/lib/modules/accounting/document-states";
@@ -653,6 +653,34 @@ export async function cancelDocumentTransactional(
     }
   }
 
+  // ── Ensure journal entries exist before cancellation (race-condition guard) ─────────────
+  // autoPostDocument is idempotent: no-op if entries already exist.
+  // Required because DocumentConfirmed outbox processing may not have run yet
+  // when the user cancels immediately after confirmation.
+  console.log("[DEBUG] Cancel handler called for:", { docType: doc.type, docId: documentId });
+  const entriesBefore = await db.journalEntry.findMany({
+    where: { sourceId: documentId, isReversed: false },
+    select: { id: true },
+  });
+  console.log("[DEBUG] Journal entries before cancel:", entriesBefore.length);
+
+  if (entriesBefore.length === 0) {
+    // Outbox hasn't processed DocumentConfirmed yet — force sync posting now
+    await autoPostDocument(
+      documentId,
+      doc.number,
+      doc.date,
+      actor ?? undefined
+    );
+    console.log("[DEBUG] autoPostDocument called synchronously (outbox not yet processed)");
+  }
+
+  const entriesAfterSync = await db.journalEntry.findMany({
+    where: { sourceId: documentId, isReversed: false },
+    select: { id: true },
+  });
+  console.log("[DEBUG] Journal entries after sync ensure:", entriesAfterSync.length);
+
   // Atomic transaction: status + reversing stock movements + journal reversals
   const cancelled = await db.$transaction(async (tx) => {
     // Update document status to cancelled
@@ -720,9 +748,17 @@ export async function cancelDocumentTransactional(
         createdBy: actor ?? undefined,
       });
     }
+    console.log("[DEBUG] reverseEntry called:", journalEntries.length > 0);
+    console.log("[DEBUG] Journal entries reversed:", journalEntries.length);
 
     return updated;
   });
+
+  const entriesAfterCancel = await db.journalEntry.findMany({
+    where: { sourceId: documentId },
+    select: { id: true, isReversed: true },
+  });
+  console.log("[DEBUG] Journal entries after cancel:", entriesAfterCancel.length, "(reversed:", entriesAfterCancel.filter(e => e.isReversed).length, ")");
 
   // Reconcile StockRecord projections after reversal movements (brings qty back from sum of movements)
   if (affectsStock(doc.type) && doc.warehouseId) {
