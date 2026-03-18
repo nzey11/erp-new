@@ -226,13 +226,16 @@ export default function DocumentDetailPage() {
         fetch(`/api/accounting/stock/records?warehouseId=${doc.warehouse.id}&includeZero=true`),
         fetch(`/api/accounting/products?limit=5000`),
       ]);
-      const { records } = await recordsRes.json();
-      const { data: products } = await productsRes.json();
+      const recordsJson = recordsRes.ok ? await recordsRes.json() : {};
+      const productsJson = productsRes.ok ? await productsRes.json() : {};
+      const records: Array<{ productId: string; quantity: number; averageCost: number }> =
+        Array.isArray(recordsJson.records) ? recordsJson.records : [];
+      const productsList: Array<{ id: string; name: string }> =
+        Array.isArray(productsJson.data) ? productsJson.data : [];
       const recordMap = new Map<string, { quantity: number; averageCost: number }>(
-        (records as Array<{ productId: string; quantity: number; averageCost: number }>)
-          .map((r) => [r.productId, r])
+        records.map((r) => [r.productId, r])
       );
-      const currentItems = (products as Array<{ id: string; name: string }>).map((p) => {
+      const currentItems = productsList.map((p) => {
         const record = recordMap.get(p.id);
         return {
           productId: p.id,
@@ -538,8 +541,10 @@ export default function DocumentDetailPage() {
           price: item.price,
         })),
         // For payment documents carry the parent's total so the new doc
-        // reflects the correct amount to pay/receive (BUG-2 fix)
-        ...(isPayment && { totalAmount: doc.totalAmount }),
+        // reflects the correct amount to pay/receive (BUG-5 fix)
+        ...(isPayment && { totalAmount: Number(doc.totalAmount) }),
+        // Direction mapping: outgoing_shipment → incoming_payment (client pays us)
+        //                    incoming_shipment  → outgoing_payment  (we pay supplier)
       };
 
       const res = await csrfFetch("/api/accounting/documents", {
@@ -938,7 +943,18 @@ export default function DocumentDetailPage() {
                             />
                           ) : formatRub(item.price)}
                         </TableCell>
-                        <TableCell className="text-right font-medium">{formatRub(item.total)}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {doc.type === "inventory_count"
+                            ? (() => {
+                              // Use same logic as Отклонение column for real-time updates
+                              const actual = doc.status === "draft" && editingActualQty[i] !== undefined
+                                ? (parseFloat(editingActualQty[i]) || 0)
+                                : (item.actualQty ?? 0);
+                              const diff = Math.abs(actual - (item.expectedQty ?? 0));
+                              return formatRub(diff * Number(item.price));
+                            })()
+                            : formatRub(Number(item.price) * Number(item.quantity))}
+                        </TableCell>
                         {doc.status === "draft" && (
                           <TableCell>
                             <Button
