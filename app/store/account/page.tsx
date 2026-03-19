@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShoppingBag, Heart, MapPin, LogOut, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card } from "antd";
 import { Tag } from "antd";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";

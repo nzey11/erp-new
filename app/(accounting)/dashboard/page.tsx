@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { PageHeader } from "@/components/shared/page-header";
 import { formatRub } from "@/lib/shared/utils";
 import {

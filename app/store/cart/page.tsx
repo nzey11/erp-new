@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { useCart } from "@/components/domain/ecommerce/CartContext";
 import { CartItemCard } from "@/components/domain/ecommerce/CartItemCard";

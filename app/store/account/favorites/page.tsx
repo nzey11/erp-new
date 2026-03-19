@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, Heart, X, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card } from "antd";
 import { Tag } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";

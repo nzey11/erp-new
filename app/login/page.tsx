@@ -6,7 +6,7 @@ import { fetchCsrfToken } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,14 +48,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
+        <div className="text-center pt-6 px-6">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground text-xl font-bold">
             L
           </div>
-          <CardTitle className="text-2xl">ListOpt ERP</CardTitle>
-          <CardDescription>Войдите в систему</CardDescription>
-        </CardHeader>
-        <CardContent>
+          <h2 className="text-2xl font-semibold">ListOpt ERP</h2>
+          <p className="text-muted-foreground mt-1">Войдите в систему</p>
+        </div>
+        <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Логин</Label>
@@ -94,7 +94,7 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-xs text-muted-foreground">
             По умолчанию: admin / admin123
           </p>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

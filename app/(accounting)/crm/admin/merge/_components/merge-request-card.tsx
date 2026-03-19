@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "antd";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Check, X } from "lucide-react";
 import type { MergeRequest } from "@/lib/domain/party";
@@ -37,7 +37,7 @@ export function MergeRequestCard({ request }: MergeRequestCardProps) {
 
   return (
     <Card>
-      <CardContent className="flex items-center justify-between py-4">
+      <div className="flex items-center justify-between py-4 px-6">
         <div className="space-y-1 flex-1">
           <div className="flex items-center gap-2">
             <Link
@@ -79,7 +79,7 @@ export function MergeRequestCard({ request }: MergeRequestCardProps) {
             Отклонить
           </Button>
         </div>
-      </CardContent>
+      </div>
 
       <RejectDialog
         open={isRejectDialogOpen}

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Card } from "antd";
 import {
   Select,
   SelectContent,
