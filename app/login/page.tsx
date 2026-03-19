@@ -46,10 +46,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <div className="text-center pt-6 px-6">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground text-xl font-bold">
-            L
-          </div>
-          <h2 className="text-2xl font-semibold">ListOpt ERP</h2>
+          <img src="/oprix-logo.svg" alt="OPRIX" className="mx-auto mb-4 h-38 w-auto" />
           <p className="text-muted-foreground mt-1">Войдите в систему</p>
         </div>
         <div className="p-6">
@@ -86,7 +83,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            По умолчанию: admin / admin123
+        
           </p>
         </div>
       </Card>
