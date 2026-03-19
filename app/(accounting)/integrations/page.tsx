@@ -3,12 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "antd";
+import { Card, Switch, Tabs, Tag, Input } from "antd";
 import { Label } from "@/components/ui/label";
-import { Switch } from "antd";
-import { Tabs } from "antd";
-import { Tag } from "antd";
 import { Bot, Save, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -165,9 +161,8 @@ export default function IntegrationsPage() {
                     <div className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="botToken">Токен бота *</Label>
-                        <Input
+                        <Input.Password
                           id="botToken"
-                          type="password"
                           placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
                           value={telegram.settings.botToken}
                           onChange={(e) => updateTelegramSetting("botToken", e.target.value)}

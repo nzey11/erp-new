@@ -7,8 +7,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Tag } from "antd";
+import { Tag, Input } from "antd";
 import { PartyListItemDto } from "@/lib/domain/party/dto";
 
 interface MergePartyPickerProps {

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Select } from "antd";
+import { Select, Input } from "antd";
+import type { InputRef } from "antd/es/input";
 import type { EditableConfig } from "./data-grid-types";
 
 interface DataGridCellProps {
@@ -25,11 +25,11 @@ export function DataGridCell({ value, editable, rowId, onClose }: DataGridCellPr
   const [localValue, setLocalValue] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<InputRef>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
-    inputRef.current?.select();
+    inputRef.current?.select?.();
   }, []);
 
   const handleSave = async () => {

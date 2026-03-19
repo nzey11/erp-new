@@ -5,10 +5,9 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Tag, Input as AntdInput, Select, Divider } from "antd";
-import { Input } from "@/components/ui/input";
+import { Tag, Input, Select, Divider } from "antd";
 import { Label } from "@/components/ui/label";
-const { TextArea } = AntdInput;
+const { TextArea } = Input;
 
 
 import { toast } from "sonner";

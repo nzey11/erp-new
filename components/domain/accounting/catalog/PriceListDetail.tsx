@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
-import { Modal } from "antd";
+import { Table, type TableColumnsType, Modal, Input } from "antd";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Search, Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";

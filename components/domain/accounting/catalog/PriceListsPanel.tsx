@@ -2,13 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Modal } from "antd";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
+import { Modal, Table, type TableColumnsType, Input } from "antd";
 import { Label } from "@/components/ui/label";
-import { Input as AntdInput } from "antd";
-const { TextArea } = AntdInput;
+const { TextArea } = Input;
 import { Plus, Pencil, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";

@@ -3,14 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card } from "antd";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
-import { Tag } from "antd";
+import { Card, Table, type TableColumnsType, Tag, Modal, Input } from "antd";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Modal } from "antd";
 import { Loader2, FileText, ExternalLink } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";

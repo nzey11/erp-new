@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, Select, Drawer } from "antd";
+import { Card, Select, Drawer, Input } from "antd";
 import { ProductCard, type ProductCardData } from "@/components/domain/ecommerce/ProductCard";
 
 type Category = {

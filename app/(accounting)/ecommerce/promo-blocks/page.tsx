@@ -3,12 +3,8 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tag } from "antd";
-import { Card } from "antd";
-import { Modal } from "antd";
-import { Table } from "antd";
+import { Tag, Card, Modal, Table, Input } from "antd";
 import type { TableColumnsType } from "antd";
 import { Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";

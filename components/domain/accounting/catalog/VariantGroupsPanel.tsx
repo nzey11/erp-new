@@ -2,11 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Tag } from "antd";
-import { Input } from "@/components/ui/input";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
-import { Select } from "antd";
+import { Tag, Table, type TableColumnsType, Select, Input } from "antd";
 import { Search, ImageIcon, Crown, ChevronRight, ChevronDown } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 

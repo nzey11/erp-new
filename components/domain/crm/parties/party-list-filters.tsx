@@ -8,8 +8,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Select } from "antd";
+import { Select, Input } from "antd";
 import { Button } from "@/components/ui/button";
 
 interface PartyListFiltersProps {

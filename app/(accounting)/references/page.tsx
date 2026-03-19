@@ -3,12 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "antd";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
-import { Modal } from "antd";
-import { Select } from "antd";
+import { Card, Table, type TableColumnsType, Modal, Select, Input } from "antd";
 import { Label } from "@/components/ui/label";
 import { Tabs } from "antd";
 import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";

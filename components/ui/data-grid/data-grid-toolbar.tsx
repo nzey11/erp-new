@@ -1,9 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dropdown, Checkbox } from "antd";
+import { Dropdown, Checkbox, Input } from "antd";
 import type { MenuProps } from "antd";
 import { Search, Settings2, X } from "lucide-react";
 import type { Table as TanStackTable } from "@tanstack/react-table";

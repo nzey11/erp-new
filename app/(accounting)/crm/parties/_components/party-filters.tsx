@@ -10,8 +10,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "antd";
+import { Input, Select } from "antd";
 import type { PartyListParams } from "../_lib";
 import { buildFilterQueryString, buildResetQueryString } from "../_lib";
 

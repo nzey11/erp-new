@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card } from "antd";
+import { Card, Input } from "antd";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
@@ -135,10 +134,9 @@ export default function RegisterPage() {
 
           <div className="space-y-1">
             <Label htmlFor="password">Пароль *</Label>
-            <Input
+            <Input.Password
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               placeholder="Минимум 6 символов"
               value={form.password}
@@ -153,10 +151,9 @@ export default function RegisterPage() {
 
           <div className="space-y-1">
             <Label htmlFor="confirmPassword">Подтверждение пароля *</Label>
-            <Input
+            <Input.Password
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               autoComplete="new-password"
               placeholder="Повторите пароль"
               value={form.confirmPassword}

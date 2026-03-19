@@ -2,12 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "antd";
-import { Tabs, Tag } from "antd";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
+import { Card, Tabs, Tag, Table, type TableColumnsType, Input } from "antd";
 import { ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { formatRub, formatDate } from "@/lib/shared/utils";

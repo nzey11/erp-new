@@ -3,11 +3,9 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Input as AntdInput } from "antd";
-const { TextArea } = AntdInput;
+import { Input, Modal } from "antd";
+const { TextArea } = Input;
 import { Label } from "@/components/ui/label";
-import { Modal } from "antd";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
 

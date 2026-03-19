@@ -3,13 +3,8 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tag } from "antd";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
-import { Modal } from "antd";
-import { Select } from "antd";
+import { Tag, Table, type TableColumnsType, Modal, Select, Input } from "antd";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";

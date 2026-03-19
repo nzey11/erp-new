@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tag, Card, Modal, Select } from "antd";
+import { Tag, Card, Modal, Select, Input } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { Label } from "@/components/ui/label";
@@ -285,7 +284,7 @@ export default function SettingsPage() {
           </div>
           <div className="grid gap-2">
             <Label>{editingUser ? "Новый пароль (оставьте пустым)" : "Пароль *"}</Label>
-            <Input type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
+            <Input.Password value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
           </div>
           <div className="grid gap-2">
             <Label>Email</Label>

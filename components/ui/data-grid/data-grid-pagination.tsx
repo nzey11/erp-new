@@ -2,8 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select } from "antd";
+import { Select, Input } from "antd";
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DataGridPaginationBarProps {
