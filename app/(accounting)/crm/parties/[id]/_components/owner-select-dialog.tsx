@@ -8,13 +8,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { Modal } from "antd";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import type { AssignableOwner } from "@/lib/domain/crm";
@@ -83,18 +77,13 @@ export function OwnerSelectDialog({
         <p className="text-muted-foreground mb-4">
           Выберите пользователя для назначения владельцем партии
         </p>
-        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите пользователя" />
-          </SelectTrigger>
-          <SelectContent>
-            {owners.map((owner) => (
-              <SelectItem key={owner.id} value={owner.id}>
-                {owner.username}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Select
+          value={selectedUserId}
+          onChange={setSelectedUserId}
+          placeholder="Выберите пользователя"
+          style={{ width: "100%" }}
+          options={owners.map((owner) => ({ value: owner.id, label: owner.username }))}
+        />
       </div>
 
       {error && (

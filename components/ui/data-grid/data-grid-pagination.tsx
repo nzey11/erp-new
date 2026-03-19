@@ -3,13 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DataGridPaginationBarProps {
@@ -63,22 +57,13 @@ export function DataGridPaginationBar({
             {mounted ? (
             <Select
               value={String(pageSize)}
-              onValueChange={(v) => {
+              onChange={(v: string) => {
                 onPageSizeChange(Number(v));
                 onPageChange(1);
               }}
-            >
-              <SelectTrigger className="h-8 w-[72px] text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeOptions.map((opt) => (
-                  <SelectItem key={opt} value={String(opt)}>
-                    {opt}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              style={{ width: 72 }}
+              options={pageSizeOptions.map((opt) => ({ value: String(opt), label: opt }))}
+            />
             ) : (
               <span className="h-8 w-[72px] text-sm border rounded-md flex items-center justify-center text-muted-foreground">{pageSize}</span>
             )}

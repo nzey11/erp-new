@@ -2,13 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import type { EditableConfig } from "./data-grid-types";
 
 interface DataGridCellProps {
@@ -89,7 +83,7 @@ export function DataGridCell({ value, editable, rowId, onClose }: DataGridCellPr
     return (
       <Select
         value={localValue}
-        onValueChange={async (val) => {
+        onChange={async (val: string) => {
           setLocalValue(val);
           setSaving(true);
           try {
@@ -101,19 +95,11 @@ export function DataGridCell({ value, editable, rowId, onClose }: DataGridCellPr
           }
         }}
         open
-        onOpenChange={(open) => { if (!open) onClose(); }}
-      >
-        <SelectTrigger className="h-7 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {editable.options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        onDropdownVisibleChange={(open) => { if (!open) onClose(); }}
+        className="h-7 text-xs"
+        style={{ width: "100%" }}
+        options={editable.options.map((opt) => ({ value: opt.value, label: opt.label }))}
+      />
     );
   }
 

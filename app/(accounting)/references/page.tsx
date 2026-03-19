@@ -8,9 +8,7 @@ import { Card } from "antd";
 import { Table } from "antd";
 import type { TableColumnsType } from "antd";
 import { Modal } from "antd";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { Label } from "@/components/ui/label";
 import { Tabs } from "antd";
 import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
@@ -414,15 +412,17 @@ export default function ReferencesPage() {
           </div>
           <div className="grid gap-2">
             <Label>Тип поля</Label>
-            <Select value={cfForm.fieldType} onValueChange={(v) => setCfForm({ ...cfForm, fieldType: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Текст</SelectItem>
-                <SelectItem value="number">Число</SelectItem>
-                <SelectItem value="select">Список (выбор из вариантов)</SelectItem>
-                <SelectItem value="boolean">Да / Нет</SelectItem>
-              </SelectContent>
-            </Select>
+            <Select
+              value={cfForm.fieldType}
+              onChange={(v) => setCfForm({ ...cfForm, fieldType: v })}
+              style={{ width: "100%" }}
+              options={[
+                { value: "text", label: "Текст" },
+                { value: "number", label: "Число" },
+                { value: "select", label: "Список (выбор из вариантов)" },
+                { value: "boolean", label: "Да / Нет" },
+              ]}
+            />
           </div>
           {cfForm.fieldType === "select" && (
             <div className="grid gap-2">

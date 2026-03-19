@@ -10,13 +10,7 @@
 import { useState, useEffect } from "react";
 import { csrfFetch } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { ShoppingCart, User, Eye } from "lucide-react";
@@ -349,17 +343,14 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
         filters: mounted ? (
           <Select
             value={sourceFilter}
-            onValueChange={(v) => setSourceFilter(v as typeof sourceFilter)}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все заказы</SelectItem>
-              <SelectItem value="ecom">🛒 Интернет-магазин</SelectItem>
-              <SelectItem value="manual">👤 Менеджер</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={(v) => setSourceFilter(v as typeof sourceFilter)}
+            style={{ width: 176 }}
+            options={[
+              { value: "all", label: "Все заказы" },
+              { value: "ecom", label: "🛒 Интернет-магазин" },
+              { value: "manual", label: "👤 Менеджер" },
+            ]}
+          />
         ) : null,
       }}
     />

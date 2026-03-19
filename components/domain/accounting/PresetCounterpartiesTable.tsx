@@ -9,9 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { ExternalLink } from "lucide-react";
@@ -117,15 +115,17 @@ export function PresetCounterpartiesTable({ onCounterpartySelect }: PresetCounte
           placeholder: "Поиск по названию, ИНН, телефону...",
         },
         filters: mounted ? (
-          <Select value={typeFilter} onValueChange={handleTypeChange}>
-            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все контрагенты</SelectItem>
-              <SelectItem value="customer">Покупатели</SelectItem>
-              <SelectItem value="supplier">Поставщики</SelectItem>
-              <SelectItem value="both">Покупатель/Поставщик</SelectItem>
-            </SelectContent>
-          </Select>
+          <Select
+            value={typeFilter}
+            onChange={handleTypeChange}
+            style={{ width: 192 }}
+            options={[
+              { value: "all", label: "Все контрагенты" },
+              { value: "customer", label: "Покупатели" },
+              { value: "supplier", label: "Поставщики" },
+              { value: "both", label: "Покупатель/Поставщик" },
+            ]}
+          />
         ) : (
           <div className="w-48 h-9 border rounded-md bg-muted/50" />
         ),

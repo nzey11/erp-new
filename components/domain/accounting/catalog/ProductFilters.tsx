@@ -3,10 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "antd";
+import { Select, Checkbox } from "antd";
 import { Label } from "@/components/ui/label";
 import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -84,28 +81,28 @@ export function ProductFiltersBar({
           />
         </div>
 
-        <Select value={filters.categoryId} onValueChange={(v) => updateFilter("categoryId", v)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Все категории" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_VALUE}>Все категории</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Select
+          value={filters.categoryId}
+          onChange={(v) => updateFilter("categoryId", v)}
+          placeholder="Все категории"
+          style={{ width: 180 }}
+          options={[
+            { value: ALL_VALUE, label: "Все категории" },
+            ...categories.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
 
-        <Select value={filters.active} onValueChange={(v) => updateFilter("active", v)}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Все статусы" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_VALUE}>Все статусы</SelectItem>
-            <SelectItem value="true">Активные</SelectItem>
-            <SelectItem value="false">В архиве</SelectItem>
-          </SelectContent>
-        </Select>
+        <Select
+          value={filters.active}
+          onChange={(v) => updateFilter("active", v)}
+          placeholder="Все статусы"
+          style={{ width: 140 }}
+          options={[
+            { value: ALL_VALUE, label: "Все статусы" },
+            { value: "true", label: "Активные" },
+            { value: "false", label: "В архиве" },
+          ]}
+        />
 
         <Button
           variant="ghost"
@@ -130,28 +127,30 @@ export function ProductFiltersBar({
       {/* Extended filters */}
       {showMore && (
         <div className="flex items-center gap-4 pt-2 border-t flex-wrap">
-          <Select value={filters.published} onValueChange={(v) => updateFilter("published", v)}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Публикация" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_VALUE}>Любая публикация</SelectItem>
-              <SelectItem value="true">На сайте</SelectItem>
-              <SelectItem value="false">Не на сайте</SelectItem>
-            </SelectContent>
-          </Select>
+          <Select
+            value={filters.published}
+            onChange={(v) => updateFilter("published", v)}
+            placeholder="Публикация"
+            style={{ width: 160 }}
+            options={[
+              { value: ALL_VALUE, label: "Любая публикация" },
+              { value: "true", label: "На сайте" },
+              { value: "false", label: "Не на сайте" },
+            ]}
+          />
 
-          <Select value={filters.variantStatus} onValueChange={(v) => updateFilter("variantStatus", v)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Статус варианта" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_VALUE}>Все товары</SelectItem>
-              <SelectItem value="masters">Только мастер-товары</SelectItem>
-              <SelectItem value="variants">Только варианты</SelectItem>
-              <SelectItem value="unlinked">Несвязанные</SelectItem>
-            </SelectContent>
-          </Select>
+          <Select
+            value={filters.variantStatus}
+            onChange={(v) => updateFilter("variantStatus", v)}
+            placeholder="Статус варианта"
+            style={{ width: 180 }}
+            options={[
+              { value: ALL_VALUE, label: "Все товары" },
+              { value: "masters", label: "Только мастер-товары" },
+              { value: "variants", label: "Только варианты" },
+              { value: "unlinked", label: "Несвязанные" },
+            ]}
+          />
 
           <Checkbox
             checked={filters.hasDiscount}

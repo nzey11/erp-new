@@ -3,10 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { csrfFetch } from "@/lib/client/csrf";
-import { Modal } from "antd";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Modal, Select } from "antd";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { UserPlus } from "lucide-react";
@@ -168,30 +165,26 @@ export function CreateDocumentDialog({
           {/* Document type */}
           <div className="grid gap-2">
             <Label>Тип документа *</Label>
-            <Select value={createType} onValueChange={setCreateType}>
-              <SelectTrigger data-testid="doc-type-select">
-                <SelectValue placeholder="Выберите тип" />
-              </SelectTrigger>
-              <SelectContent>
-                {docTypes.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Select
+              value={createType}
+              onChange={setCreateType}
+              placeholder="Выберите тип"
+              style={{ width: "100%" }}
+              options={docTypes.map((t) => ({ value: t.value, label: t.label }))}
+            />
           </div>
 
           {/* Warehouse */}
           {showWarehouse && (
             <div className="grid gap-2">
               <Label>Склад{requireWarehouse ? " *" : ""}</Label>
-              <Select value={createWarehouseId} onValueChange={setCreateWarehouseId}>
-                <SelectTrigger><SelectValue placeholder="Выберите склад" /></SelectTrigger>
-                <SelectContent>
-                  {warehouses.map((wh) => (
-                    <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Select
+                value={createWarehouseId}
+                onChange={setCreateWarehouseId}
+                placeholder="Выберите склад"
+                style={{ width: "100%" }}
+                options={warehouses.map((wh) => ({ value: wh.id, label: wh.name }))}
+              />
             </div>
           )}
 
@@ -199,14 +192,13 @@ export function CreateDocumentDialog({
           {showTarget && (
             <div className="grid gap-2">
               <Label>Склад-получатель</Label>
-              <Select value={createTargetWarehouseId} onValueChange={setCreateTargetWarehouseId}>
-                <SelectTrigger><SelectValue placeholder="Выберите склад" /></SelectTrigger>
-                <SelectContent>
-                  {warehouses.map((wh) => (
-                    <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Select
+                value={createTargetWarehouseId}
+                onChange={setCreateTargetWarehouseId}
+                placeholder="Выберите склад"
+                style={{ width: "100%" }}
+                options={warehouses.map((wh) => ({ value: wh.id, label: wh.name }))}
+              />
             </div>
           )}
 
@@ -216,16 +208,13 @@ export function CreateDocumentDialog({
               <Label>Контрагент</Label>
               <div className="flex gap-2">
                 {counterparties.length > 0 ? (
-                  <Select value={createCounterpartyId} onValueChange={setCreateCounterpartyId}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Выберите контрагента" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {counterparties.map((cp) => (
-                        <SelectItem key={cp.id} value={cp.id}>{cp.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Select
+                    value={createCounterpartyId}
+                    onChange={setCreateCounterpartyId}
+                    placeholder="Выберите контрагента"
+                    style={{ width: "100%", flex: 1 }}
+                    options={counterparties.map((cp) => ({ value: cp.id, label: cp.name }))}
+                  />
                 ) : (
                   <div className="flex-1 flex items-center text-sm text-muted-foreground border rounded-md px-3">
                     Нет контрагентов

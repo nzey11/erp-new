@@ -9,7 +9,7 @@ import { Tag } from "antd";
 import { Table } from "antd";
 import type { TableColumnsType } from "antd";
 import { Modal } from "antd";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "antd";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -228,20 +228,24 @@ export default function CategoriesPage() {
   );
 
   const AccountSelect = ({ value, onChange, type }: { value: string; onChange: (v: string) => void; type: string }) => (
-    <Select value={value || "__none__"} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
-      <SelectTrigger>
-        <SelectValue placeholder="Не задан (авто)" />
-      </SelectTrigger>
-      <SelectContent className="max-h-72">
-        <SelectItem value="__none__">Не задан (авто)</SelectItem>
-        {filteredAccounts(type).map((acc) => (
-          <SelectItem key={acc.code} value={acc.code}>
-            <span className="font-mono text-xs mr-2">{acc.code}</span>
-            <span className="text-muted-foreground">{acc.name}</span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Select
+      value={value || "__none__"}
+      onChange={(v) => onChange(v === "__none__" ? "" : v)}
+      placeholder="Не задан (авто)"
+      style={{ width: "100%" }}
+      options={[
+        { value: "__none__", label: "Не задан (авто)" },
+        ...filteredAccounts(type).map((acc) => ({
+          value: acc.code,
+          label: (
+            <span>
+              <span className="font-mono text-xs mr-2">{acc.code}</span>
+              <span className="text-muted-foreground">{acc.name}</span>
+            </span>
+          ),
+        })),
+      ]}
+    />
   );
 
   return (
@@ -281,13 +285,15 @@ export default function CategoriesPage() {
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Тип *</Label>
-            <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v, defaultAccountCode: "" }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="income">Доход</SelectItem>
-                <SelectItem value="expense">Расход</SelectItem>
-              </SelectContent>
-            </Select>
+            <Select
+              value={form.type}
+              onChange={(v) => setForm((f) => ({ ...f, type: v, defaultAccountCode: "" }))}
+              style={{ width: "100%" }}
+              options={[
+                { value: "income", label: "Доход" },
+                { value: "expense", label: "Расход" },
+              ]}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Название *</Label>

@@ -11,13 +11,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import type { PartyListParams } from "../_lib";
 import { buildFilterQueryString, buildResetQueryString } from "../_lib";
 
@@ -89,17 +83,15 @@ export function PartyFilters({ initialParams }: PartyFiltersProps) {
       <div className="w-[180px]">
         <Select
           value={form.type}
-          onValueChange={(value) => setForm({ ...form, type: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Все типы" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Все типы</SelectItem>
-            <SelectItem value="person">Физ. лицо</SelectItem>
-            <SelectItem value="organization">Организация</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={(value) => setForm({ ...form, type: value })}
+          placeholder="Все типы"
+          style={{ width: "100%" }}
+          options={[
+            { value: "all", label: "Все типы" },
+            { value: "person", label: "Физ. лицо" },
+            { value: "organization", label: "Организация" },
+          ]}
+        />
       </div>
 
       <div className="flex gap-2">

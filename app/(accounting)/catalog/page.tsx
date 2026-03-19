@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { Tabs } from "antd";
 import Link from "next/link";
 
@@ -414,17 +412,18 @@ export default function CatalogPage() {
           </div>
           <div className="grid gap-2">
             <Label>Родительская категория</Label>
-            <Select value={catForm.parentId} onValueChange={(v) => setCatForm({ ...catForm, parentId: v === "none" ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="Без родительской" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Без родительской</SelectItem>
-                {flatCategories
+            <Select
+              value={catForm.parentId}
+              onChange={(v) => setCatForm({ ...catForm, parentId: v === "none" ? "" : v })}
+              placeholder="Без родительской"
+              style={{ width: "100%" }}
+              options={[
+                { value: "none", label: "Без родительской" },
+                ...flatCategories
                   .filter((c) => c.id !== editingCategory?.id)
-                  .map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+                  .map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
           </div>
         </div>
       </Modal>

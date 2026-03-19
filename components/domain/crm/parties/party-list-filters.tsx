@@ -9,7 +9,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "antd";
 import { Button } from "@/components/ui/button";
 
 interface PartyListFiltersProps {
@@ -55,31 +55,29 @@ export function PartyListFilters({ owners }: PartyListFiltersProps) {
         <Button onClick={handleSearch}>Search</Button>
       </div>
 
-      <Select value={currentType} onValueChange={(v) => applyFilters("type", v)}>
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="All types" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All types</SelectItem>
-          <SelectItem value="person">Person</SelectItem>
-          <SelectItem value="organization">Organization</SelectItem>
-        </SelectContent>
-      </Select>
+      <Select
+        value={currentType}
+        onChange={(v) => applyFilters("type", v)}
+        placeholder="All types"
+        style={{ width: 150 }}
+        options={[
+          { value: "all", label: "All types" },
+          { value: "person", label: "Person" },
+          { value: "organization", label: "Organization" },
+        ]}
+      />
 
-      <Select value={currentOwner} onValueChange={(v) => applyFilters("owner", v)}>
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="All owners" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All owners</SelectItem>
-          <SelectItem value="unassigned">Unassigned</SelectItem>
-          {owners.map((owner) => (
-            <SelectItem key={owner.id} value={owner.id}>
-              {owner.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Select
+        value={currentOwner}
+        onChange={(v) => applyFilters("owner", v)}
+        placeholder="All owners"
+        style={{ width: 180 }}
+        options={[
+          { value: "all", label: "All owners" },
+          { value: "unassigned", label: "Unassigned" },
+          ...owners.map((owner) => ({ value: owner.id, label: owner.name })),
+        ]}
+      />
 
       {(search || currentType || currentOwner) && (
         <Button variant="outline" onClick={clearFilters}>

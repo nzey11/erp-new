@@ -4,15 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "antd";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Drawer } from "antd";
+import { Card, Select, Drawer } from "antd";
 import { ProductCard, type ProductCardData } from "@/components/domain/ecommerce/ProductCard";
 
 type Category = {
@@ -156,17 +148,17 @@ export default function CatalogPage() {
           </Button>
         </div>
 
-        <Select value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name">По названию</SelectItem>
-            <SelectItem value="price_asc">Цена: по возрастанию</SelectItem>
-            <SelectItem value="price_desc">Цена: по убыванию</SelectItem>
-            <SelectItem value="newest">Новинки</SelectItem>
-          </SelectContent>
-        </Select>
+        <Select
+          value={sort}
+          onChange={setSort}
+          style={{ width: "100%", minWidth: 200 }}
+          options={[
+            { value: "name", label: "По названию" },
+            { value: "price_asc", label: "Цена: по возрастанию" },
+            { value: "price_desc", label: "Цена: по убыванию" },
+            { value: "newest", label: "Новинки" },
+          ]}
+        />
 
         {/* Mobile filter toggle */}
         <Button variant="outline" className="sm:hidden" onClick={() => setFiltersOpen(true)}>

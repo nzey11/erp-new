@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "antd";
 import { Table } from "antd";
 import type { TableColumnsType } from "antd";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { Checkbox } from "antd";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -198,19 +196,11 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
       render: (_, mapping) => (
         <Select
           value={mapping.productField}
-          onValueChange={(v) => updateMapping(mapping.csvColumn, v)}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Выберите поле" />
-          </SelectTrigger>
-          <SelectContent>
-            {PRODUCT_FIELDS.map((f) => (
-              <SelectItem key={f.key} value={f.key}>
-                {f.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={(v) => updateMapping(mapping.csvColumn, v)}
+          placeholder="Выберите поле"
+          style={{ width: 200 }}
+          options={PRODUCT_FIELDS.map((f) => ({ value: f.key, label: f.label }))}
+        />
       ),
     },
   ];

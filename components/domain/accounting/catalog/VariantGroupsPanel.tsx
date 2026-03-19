@@ -6,9 +6,7 @@ import { Tag } from "antd";
 import { Input } from "@/components/ui/input";
 import { Table } from "antd";
 import type { TableColumnsType } from "antd";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { Search, ImageIcon, Crown, ChevronRight, ChevronDown } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 
@@ -193,17 +191,16 @@ export function VariantGroupsPanel() {
           />
         </div>
 
-        <Select value={categoryId} onValueChange={(v) => { setCategoryId(v); setPage(1); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Все категории" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_VALUE}>Все категории</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Select
+          value={categoryId}
+          onChange={(v) => { setCategoryId(v); setPage(1); }}
+          placeholder="Все категории"
+          style={{ width: 180 }}
+          options={[
+            { value: ALL_VALUE, label: "Все категории" },
+            ...categories.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
       </div>
 
       {/* Stats */}

@@ -5,9 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Tag } from "antd";
 import { Card } from "antd";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select } from "antd";
 import { Table } from "antd";
 import type { TableColumnsType } from "antd";
 import { Star, Trash2, Eye, EyeOff } from "lucide-react";
@@ -253,16 +251,16 @@ export default function ReviewsPage() {
       {/* Filter */}
       <div className="flex items-center gap-4">
         <label className="text-sm font-medium">Показать:</label>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Все отзывы</SelectItem>
-            <SelectItem value="published">Опубликованные</SelectItem>
-            <SelectItem value="unpublished">Неопубликованные</SelectItem>
-          </SelectContent>
-        </Select>
+        <Select
+          value={filter}
+          onChange={setFilter}
+          style={{ width: 200 }}
+          options={[
+            { value: "all", label: "Все отзывы" },
+            { value: "published", label: "Опубликованные" },
+            { value: "unpublished", label: "Неопубликованные" },
+          ]}
+        />
       </div>
 
       {/* Reviews table */}

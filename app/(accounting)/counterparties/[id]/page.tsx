@@ -5,15 +5,12 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Tag } from "antd";
+import { Tag, Input as AntdInput, Select, Divider } from "antd";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Input as AntdInput } from "antd";
 const { TextArea } = AntdInput;
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Divider } from "antd";
+
+
 import { toast } from "sonner";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -302,14 +299,16 @@ function CounterpartyDetailPage() {
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label>Тип</Label>
-                  <Select value={form.type} onValueChange={(v) => setField("type", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="customer">Покупатель</SelectItem>
-                      <SelectItem value="supplier">Поставщик</SelectItem>
-                      <SelectItem value="both">Покупатель/Поставщик</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Select
+                    value={form.type}
+                    onChange={(v: string) => setField("type", v)}
+                    style={{ width: "100%" }}
+                    options={[
+                      { value: "customer", label: "Покупатель" },
+                      { value: "supplier", label: "Поставщик" },
+                      { value: "both", label: "Покупатель/Поставщик" },
+                    ]}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label>Название *</Label>

@@ -6,16 +6,9 @@ import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tag } from "antd";
-import { Card } from "antd";
-import { Table } from "antd";
+import { Tag, Card, Table, Modal, Dropdown, Tabs, Select } from "antd";
 import type { TableColumnsType } from "antd";
-import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Dropdown, Tabs } from "antd";
 import type { MenuProps } from "antd";
 import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, RefreshCw, Edit2, MinusCircle, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -1030,21 +1023,23 @@ export default function DocumentDetailPage() {
               onChange={(e) => setProductSearch(e.target.value)}
               className="mb-1"
             />
-            <Select value={itemProductId} onValueChange={handleProductSelect}>
-              <SelectTrigger><SelectValue placeholder="Выберите из списка" /></SelectTrigger>
-              <SelectContent>
-                {products.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    {productSearch ? "Ничего не найдено" : "Начните вводить название..."}
-                  </div>
-                )}
-                {products.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name} {p.sku ? `(${p.sku})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Select
+              value={itemProductId}
+              onChange={handleProductSelect}
+              placeholder="Выберите из списка"
+              style={{ width: "100%" }}
+              options={products.map((p) => ({
+                value: p.id,
+                label: `${p.name} ${p.sku ? `(${p.sku})` : ""}`,
+              }))}
+              notFoundContent={
+                products.length === 0
+                  ? productSearch
+                    ? "Ничего не найдено"
+                    : "Начните вводить название..."
+                  : null
+              }
+            />
           </div>
           {doc?.type === "inventory_count" ? (
             /* Inventory count: show По учёту + Факт fields */

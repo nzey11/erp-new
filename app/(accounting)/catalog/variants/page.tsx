@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tag } from "antd";
+import { Tag, Select } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { ImageIcon, Crown, ChevronRight, ChevronDown } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import Link from "next/link";
@@ -256,17 +253,16 @@ export default function VariantGroupsPage() {
             placeholder: "Поиск по названию, артикулу...",
           },
           filters: (
-            <Select value={grid.filters.categoryId || ALL_VALUE} onValueChange={(v) => grid.setFilter("categoryId", v === ALL_VALUE ? "" : v)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Все категории" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>Все категории</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Select
+              value={grid.filters.categoryId || ALL_VALUE}
+              onChange={(v: string) => grid.setFilter("categoryId", v === ALL_VALUE ? "" : v)}
+              placeholder="Все категории"
+              style={{ width: 180 }}
+              options={[
+                { value: ALL_VALUE, label: "Все категории" },
+                ...categories.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
           ),
         }}
         pagination={grid.gridProps.pagination}

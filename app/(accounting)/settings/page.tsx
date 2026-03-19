@@ -4,15 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tag } from "antd";
-import { Card } from "antd";
+import { Tag, Card, Modal, Select } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
-import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { Pencil, UserPlus, Save, Building2, Warehouse } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -211,18 +206,25 @@ export default function SettingsPage() {
             </div>
             <div className="grid gap-2">
               <Label>Начало фискального года (месяц)</Label>
-              <Select value={companyForm.fiscalYearStartMonth} onValueChange={(v) => setCompanyForm({ ...companyForm, fiscalYearStartMonth: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {[
-                    ["Январь", "1"], ["Февраль", "2"], ["Март", "3"], ["Апрель", "4"],
-                    ["Май", "5"], ["Июнь", "6"], ["Июль", "7"], ["Август", "8"],
-                    ["Сентябрь", "9"], ["Октябрь", "10"], ["Ноябрь", "11"], ["Декабрь", "12"],
-                  ].map(([label, value]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Select
+              value={companyForm.fiscalYearStartMonth}
+              onChange={(v: string) => setCompanyForm({ ...companyForm, fiscalYearStartMonth: v })}
+              style={{ width: "100%" }}
+              options={[
+                { value: "1", label: "Январь" },
+                { value: "2", label: "Февраль" },
+                { value: "3", label: "Март" },
+                { value: "4", label: "Апрель" },
+                { value: "5", label: "Май" },
+                { value: "6", label: "Июнь" },
+                { value: "7", label: "Июль" },
+                { value: "8", label: "Август" },
+                { value: "9", label: "Сентябрь" },
+                { value: "10", label: "Октябрь" },
+                { value: "11", label: "Ноябрь" },
+                { value: "12", label: "Декабрь" },
+              ]}
+            />
             </div>
           </div>
           <div className="mt-4">
@@ -291,15 +293,17 @@ export default function SettingsPage() {
           </div>
           <div className="grid gap-2">
             <Label>Роль</Label>
-            <Select value={userForm.role} onValueChange={(v) => setUserForm({ ...userForm, role: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Администратор</SelectItem>
-                <SelectItem value="manager">Менеджер</SelectItem>
-                <SelectItem value="accountant">Бухгалтер</SelectItem>
-                <SelectItem value="viewer">Наблюдатель</SelectItem>
-              </SelectContent>
-            </Select>
+            <Select
+              value={userForm.role}
+              onChange={(v: string) => setUserForm({ ...userForm, role: v })}
+              style={{ width: "100%" }}
+              options={[
+                { value: "admin", label: "Администратор" },
+                { value: "manager", label: "Менеджер" },
+                { value: "accountant", label: "Бухгалтер" },
+                { value: "viewer", label: "Наблюдатель" },
+              ]}
+            />
           </div>
         </div>
       </Modal>

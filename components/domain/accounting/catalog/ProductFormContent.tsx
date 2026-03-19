@@ -5,12 +5,8 @@ import Link from "next/link";
 import { csrfFetch } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tag } from "antd";
+import { Tag, Select, Tabs } from "antd";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Tabs } from "antd";
 import type { TabsProps } from "antd";
 import { Input as AntdInput } from "antd";
 const { TextArea } = AntdInput;
@@ -487,21 +483,23 @@ export function ProductFormContent({
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>Единица измерения *</Label>
-              <Select value={formUnitId} onValueChange={setFormUnitId}>
-                <SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
-                <SelectContent>
-                  {units.map((u) => (<SelectItem key={u.id} value={u.id}>{u.name} ({u.shortName})</SelectItem>))}
-                </SelectContent>
-              </Select>
+              <Select
+                value={formUnitId}
+                onChange={setFormUnitId}
+                placeholder="Выберите"
+                style={{ width: "100%" }}
+                options={units.map((u) => ({ value: u.id, label: `${u.name} (${u.shortName})` }))}
+              />
             </div>
             <div className="grid gap-2">
               <Label>Категория</Label>
-              <Select value={formCategoryId} onValueChange={setFormCategoryId}>
-                <SelectTrigger><SelectValue placeholder="Без категории" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
+              <Select
+                value={formCategoryId}
+                onChange={setFormCategoryId}
+                placeholder="Без категории"
+                style={{ width: "100%" }}
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -559,22 +557,24 @@ export function ProductFormContent({
                 </div>
               </div>
               {def.fieldType === "boolean" ? (
-                <Select value={customFieldValues[def.id] || ""} onValueChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Не задано" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Да</SelectItem>
-                    <SelectItem value="false">Нет</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Select
+                  value={customFieldValues[def.id] || ""}
+                  onChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}
+                  placeholder="Не задано"
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "true", label: "Да" },
+                    { value: "false", label: "Нет" },
+                  ]}
+                />
               ) : def.fieldType === "select" && def.options ? (
-                <Select value={customFieldValues[def.id] || ""} onValueChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
-                  <SelectContent>
-                    {(JSON.parse(def.options) as string[]).map((opt) => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Select
+                  value={customFieldValues[def.id] || ""}
+                  onChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}
+                  placeholder="Выберите"
+                  style={{ width: "100%" }}
+                  options={(JSON.parse(def.options) as string[]).map((opt) => ({ value: opt, label: opt }))}
+                />
               ) : (
                 <Input type={def.fieldType === "number" ? "number" : "text"}
                   value={customFieldValues[def.id] || ""}
@@ -587,15 +587,17 @@ export function ProductFormContent({
               <Label className="text-sm font-medium">Новая характеристика</Label>
               <Input placeholder="Название (напр. Материал, Вес...)" value={newCfName}
                 onChange={(e) => setNewCfName(e.target.value)} />
-              <Select value={newCfType} onValueChange={setNewCfType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">Текст</SelectItem>
-                  <SelectItem value="number">Число</SelectItem>
-                  <SelectItem value="select">Список (выбор)</SelectItem>
-                  <SelectItem value="boolean">Да / Нет</SelectItem>
-                </SelectContent>
-              </Select>
+              <Select
+                value={newCfType}
+                onChange={setNewCfType}
+                style={{ width: "100%" }}
+                options={[
+                  { value: "text", label: "Текст" },
+                  { value: "number", label: "Число" },
+                  { value: "select", label: "Список (выбор)" },
+                  { value: "boolean", label: "Да / Нет" },
+                ]}
+              />
               {newCfType === "select" && (
                 <Input placeholder="Варианты через запятую (Красный, Синий...)" value={newCfOptions}
                   onChange={(e) => setNewCfOptions(e.target.value)} />
@@ -840,13 +842,15 @@ export function ProductFormContent({
                 <Input placeholder="Название (напр. Летняя распродажа)" value={newDiscountName}
                   onChange={(e) => setNewDiscountName(e.target.value)} />
                 <div className="grid grid-cols-3 gap-2">
-                  <Select value={newDiscountType} onValueChange={(v) => setNewDiscountType(v as "percentage" | "fixed")}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="percentage">Процент (%)</SelectItem>
-                      <SelectItem value="fixed">Фикс. сумма</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Select
+                  value={newDiscountType}
+                  onChange={(v) => setNewDiscountType(v as "percentage" | "fixed")}
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "percentage", label: "Процент (%)" },
+                    { value: "fixed", label: "Фикс. сумма" },
+                  ]}
+                />
                   <Input type="number" min="0" step="0.01" placeholder={newDiscountType === "percentage" ? "10" : "500"}
                     value={newDiscountValue} onChange={(e) => setNewDiscountValue(e.target.value)} />
                   <Input type="date" value={newDiscountValidTo} onChange={(e) => setNewDiscountValidTo(e.target.value)} />

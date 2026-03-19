@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "antd";
 import { Modal } from "antd";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "antd";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import { ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -318,16 +318,16 @@ function JournalPageContent() {
             {/* Manual / Auto filter */}
             <div className="grid gap-1">
               <Label className="text-xs text-muted-foreground">Тип</Label>
-              <Select value={isManualFilter} onValueChange={setIsManualFilter}>
-                <SelectTrigger className="w-36 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все проводки</SelectItem>
-                  <SelectItem value="manual">Только ручные</SelectItem>
-                  <SelectItem value="auto">Только авто</SelectItem>
-                </SelectContent>
-              </Select>
+              <Select
+                value={isManualFilter}
+                onChange={setIsManualFilter}
+                style={{ width: 144 }}
+                options={[
+                  { value: "all", label: "Все проводки" },
+                  { value: "manual", label: "Только ручные" },
+                  { value: "auto", label: "Только авто" },
+                ]}
+              />
             </div>
 
             {/* Account code filter */}
