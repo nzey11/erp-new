@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Tabs, Tag } from "antd";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ExternalLink, Loader2 } from "lucide-react";
@@ -303,42 +303,30 @@ export default function ReportsPage() {
                 ) : profitLoss ? (
                   <div className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-4">
-                      <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Выручка</CardTitle></CardHeader>
-                        <CardContent><p className="text-2xl font-bold">{formatRub(profitLoss.netRevenue)}</p></CardContent>
+                      <Card title={<span className="text-sm text-muted-foreground">Выручка</span>}>
+                        <p className="text-2xl font-bold">{formatRub(profitLoss.netRevenue)}</p>
                       </Card>
-                      <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Валовая прибыль</CardTitle></CardHeader>
-                        <CardContent>
-                          <p className={`text-2xl font-bold ${profitLoss.grossProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                            {formatRub(profitLoss.grossProfit)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Маржа: {profitLoss.grossMarginPct.toFixed(1)}%</p>
-                        </CardContent>
+                      <Card title={<span className="text-sm text-muted-foreground">Валовая прибыль</span>}>
+                        <p className={`text-2xl font-bold ${profitLoss.grossProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {formatRub(profitLoss.grossProfit)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Маржа: {profitLoss.grossMarginPct.toFixed(1)}%</p>
                       </Card>
-                      <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Операц. прибыль</CardTitle></CardHeader>
-                        <CardContent>
-                          <p className={`text-2xl font-bold ${profitLoss.operatingProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                            {formatRub(profitLoss.operatingProfit)}
-                          </p>
-                        </CardContent>
+                      <Card title={<span className="text-sm text-muted-foreground">Операц. прибыль</span>}>
+                        <p className={`text-2xl font-bold ${profitLoss.operatingProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {formatRub(profitLoss.operatingProfit)}
+                        </p>
                       </Card>
-                      <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Чистая прибыль</CardTitle></CardHeader>
-                        <CardContent>
-                          <p className={`text-2xl font-bold ${profitLoss.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                            {formatRub(profitLoss.netProfit)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Маржа: {profitLoss.netMarginPct.toFixed(1)}%</p>
-                        </CardContent>
+                      <Card title={<span className="text-sm text-muted-foreground">Чистая прибыль</span>}>
+                        <p className={`text-2xl font-bold ${profitLoss.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {formatRub(profitLoss.netProfit)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Маржа: {profitLoss.netMarginPct.toFixed(1)}%</p>
                       </Card>
                     </div>
 
-                    <Card>
-                      <CardHeader><CardTitle>Отчёт о прибылях и убытках</CardTitle></CardHeader>
-                      <CardContent>
-                        <Table>
+                    <Card title="Отчёт о прибылях и убытках">
+                      <Table>
                           <TableBody>
                             <TableRow className="bg-muted/50"><TableCell className="font-bold">ВЫРУЧКА</TableCell><TableCell></TableCell></TableRow>
                             <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("grossRevenue")}><TableCell className="pl-6">Выручка от продаж</TableCell><TableCell className="text-right">{formatRub(profitLoss.revenue)}</TableCell></TableRow>
@@ -365,7 +353,6 @@ export default function ReportsPage() {
                             </TableRow>
                           </TableBody>
                         </Table>
-                      </CardContent>
                     </Card>
                   </div>
                 ) : (
@@ -396,10 +383,8 @@ export default function ReportsPage() {
                   </div>
                 ) : cashFlow ? (
                   <div className="space-y-4">
-                    <Card>
-                      <CardHeader><CardTitle>Отчёт о движении денежных средств</CardTitle></CardHeader>
-                      <CardContent>
-                        <Table>
+                    <Card title="Отчёт о движении денежных средств">
+                      <Table>
                           <TableBody>
                             <TableRow className="bg-muted/50">
                               <TableCell className="font-bold">Остаток на начало периода</TableCell>
@@ -428,7 +413,6 @@ export default function ReportsPage() {
                             </TableRow>
                           </TableBody>
                         </Table>
-                      </CardContent>
                     </Card>
                   </div>
                 ) : (
@@ -458,10 +442,8 @@ export default function ReportsPage() {
                   </div>
                 ) : balanceSheet ? (
                   <div className="grid gap-4 md:grid-cols-2">
-                    <Card>
-                      <CardHeader><CardTitle>АКТИВ</CardTitle></CardHeader>
-                      <CardContent>
-                        <Table>
+                    <Card title="АКТИВ">
+                      <Table>
                           <TableBody>
                             <TableRow className="bg-muted/30"><TableCell className="font-bold">Оборотные активы</TableCell><TableCell></TableCell></TableRow>
                             <TableRow><TableCell className="pl-6">Денежные средства (50+51+52)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.assets.current.cash)}</TableCell></TableRow>
@@ -480,15 +462,12 @@ export default function ReportsPage() {
                               <TableCell className="text-right font-bold text-lg">{formatRub(balanceSheet.assets.total)}</TableCell>
                             </TableRow>
                           </TableBody>
-                        </Table>
-                      </CardContent>
+                      </Table>
                     </Card>
 
-                    <Card>
-                      <CardHeader><CardTitle>ПАССИВ</CardTitle></CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableBody>
+                    <Card title="ПАССИВ">
+                      <Table>
+                        <TableBody>
                             <TableRow className="bg-muted/30"><TableCell className="font-bold">Краткосрочные обязательства</TableCell><TableCell></TableCell></TableRow>
                             <TableRow><TableCell className="pl-6">Кредиторская задолженность (60)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.liabilities.current.payables)}</TableCell></TableRow>
                             {balanceSheet.liabilities.current.customerAdvances > 0 && <TableRow><TableCell className="pl-6">Авансы покупателей (62)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.liabilities.current.customerAdvances)}</TableCell></TableRow>}
@@ -520,8 +499,7 @@ export default function ReportsPage() {
                               <TableCell className="text-right font-bold text-lg">{formatRub(balanceSheet.totalPassive)}</TableCell>
                             </TableRow>
                           </TableBody>
-                        </Table>
-                      </CardContent>
+                      </Table>
                     </Card>
                   </div>
                 ) : (

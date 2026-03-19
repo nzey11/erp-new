@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
@@ -177,58 +177,33 @@ export default function BalancesPage() {
         <>
           {/* Summary Cards */}
           <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Дебиторская задолженность</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-green-600">{formatRub(balances.totalReceivable)}</p>
-                <p className="text-xs text-muted-foreground mt-1">нам должны — {balances.receivable.length} контрагентов</p>
-              </CardContent>
+            <Card title={<span className="text-sm text-muted-foreground">Дебиторская задолженность</span>}>
+              <p className="text-2xl font-bold text-green-600">{formatRub(balances.totalReceivable)}</p>
+              <p className="text-xs text-muted-foreground mt-1">нам должны — {balances.receivable.length} контрагентов</p>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Кредиторская задолженность</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-red-600">{formatRub(Math.abs(balances.totalPayable))}</p>
-                <p className="text-xs text-muted-foreground mt-1">мы должны — {balances.payable.length} контрагентам</p>
-              </CardContent>
+            <Card title={<span className="text-sm text-muted-foreground">Кредиторская задолженность</span>}>
+              <p className="text-2xl font-bold text-red-600">{formatRub(Math.abs(balances.totalPayable))}</p>
+              <p className="text-xs text-muted-foreground mt-1">мы должны — {balances.payable.length} контрагентам</p>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Чистый баланс</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-2xl font-bold ${balances.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
-                  {formatRub(balances.netBalance)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">дебиторская − кредиторская</p>
-              </CardContent>
+            <Card title={<span className="text-sm text-muted-foreground">Чистый баланс</span>}>
+              <p className={`text-2xl font-bold ${balances.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {formatRub(balances.netBalance)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">дебиторская − кредиторская</p>
             </Card>
           </div>
 
           {/* Receivable Table */}
           {balances.receivable.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg text-green-700">Нам должны ({balances.receivable.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BalanceTable items={balances.receivable} colorClass="text-green-600" />
-              </CardContent>
+            <Card title={<span className="text-lg text-green-700">Нам должны ({balances.receivable.length})</span>}>
+              <BalanceTable items={balances.receivable} colorClass="text-green-600" />
             </Card>
           )}
 
           {/* Payable Table */}
           {balances.payable.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg text-red-700">Мы должны ({balances.payable.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BalanceTable items={balances.payable} colorClass="text-red-600" />
-              </CardContent>
+            <Card title={<span className="text-lg text-red-700">Мы должны ({balances.payable.length})</span>}>
+              <BalanceTable items={balances.payable} colorClass="text-red-600" />
             </Card>
           )}
 

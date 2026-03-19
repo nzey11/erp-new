@@ -238,15 +238,12 @@ export default function ReferencesPage() {
             key: "units",
             label: "Единицы измерения",
             children: (
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Единицы измерения ({units.length})</CardTitle>
-                  <Button size="sm" onClick={openCreateUnit}>
-                    <Plus className="h-4 w-4 mr-2" />Добавить
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <Table>
+              <Card title={`Единицы измерения (${units.length})`} extra={
+                <Button size="sm" onClick={openCreateUnit}>
+                  <Plus className="h-4 w-4 mr-2" />Добавить
+                </Button>
+              }>
+                <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Название</TableHead>
@@ -274,7 +271,6 @@ export default function ReferencesPage() {
                       )}
                     </TableBody>
                   </Table>
-                </CardContent>
               </Card>
             ),
           },
@@ -282,15 +278,12 @@ export default function ReferencesPage() {
             key: "pricelists",
             label: "Прайс-листы",
             children: (
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Прайс-листы ({priceLists.length})</CardTitle>
-                  <Button size="sm" onClick={openCreatePriceList}>
-                    <Plus className="h-4 w-4 mr-2" />Добавить
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <Table>
+              <Card title={`Прайс-листы (${priceLists.length})`} extra={
+                <Button size="sm" onClick={openCreatePriceList}>
+                  <Plus className="h-4 w-4 mr-2" />Добавить
+                </Button>
+              }>
+                <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Название</TableHead>
@@ -320,7 +313,6 @@ export default function ReferencesPage() {
                       )}
                     </TableBody>
                   </Table>
-                </CardContent>
               </Card>
             ),
           },
@@ -328,15 +320,12 @@ export default function ReferencesPage() {
             key: "customfields",
             label: "Характеристики",
             children: (
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Характеристики товаров ({customFields.length})</CardTitle>
-                  <Button size="sm" onClick={openCreateCf}>
-                    <Plus className="h-4 w-4 mr-2" />Добавить
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <Table>
+              <Card title={`Характеристики товаров (${customFields.length})`} extra={
+                <Button size="sm" onClick={openCreateCf}>
+                  <Plus className="h-4 w-4 mr-2" />Добавить
+                </Button>
+              }>
+                <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Название</TableHead>
@@ -375,7 +364,6 @@ export default function ReferencesPage() {
                       )}
                     </TableBody>
                   </Table>
-                </CardContent>
               </Card>
             ),
           },

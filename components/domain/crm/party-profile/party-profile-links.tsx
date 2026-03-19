@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { Tag } from "antd";
 import { PartyProfileDto } from "@/lib/domain/party/dto";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 
 interface PartyProfileLinksProps {
   party: PartyProfileDto;
@@ -18,23 +18,14 @@ interface PartyProfileLinksProps {
 export function PartyProfileLinks({ party }: PartyProfileLinksProps) {
   if (party.links.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Linked Entities</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">No linked entities</p>
-        </CardContent>
+      <Card title={<span className="text-lg">Linked Entities</span>}>
+        <p className="text-muted-foreground text-sm">No linked entities</p>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Linked Entities</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card title={<span className="text-lg">Linked Entities</span>}>
         <div className="space-y-2">
           {party.links.map((link) => (
             <div
@@ -60,7 +51,6 @@ export function PartyProfileLinks({ party }: PartyProfileLinksProps) {
             </div>
           ))}
         </div>
-      </CardContent>
     </Card>
   );
 }

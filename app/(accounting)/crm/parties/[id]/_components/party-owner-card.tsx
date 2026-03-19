@@ -8,7 +8,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 import type { PartyProfileOwnerDto } from "@/lib/domain/party";
@@ -42,21 +42,19 @@ export function PartyOwnerCard({
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <User className="h-4 w-4" />
-          Владелец
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <Card title={
+      <span className="text-sm font-medium flex items-center gap-2">
+        <User className="h-4 w-4" />
+        Владелец
+      </span>
+    }>
         {owner ? (
           <p className="font-medium">{owner.name}</p>
         ) : (
           <p className="text-muted-foreground text-sm">Не назначен</p>
         )}
 
-        <div className="space-y-1">
+        <div className="space-y-1 mt-3">
           <Button
             variant="outline"
             size="sm"
@@ -79,7 +77,6 @@ export function PartyOwnerCard({
             onOpenChange={setDialogOpen}
           />
         )}
-      </CardContent>
     </Card>
   );
 }

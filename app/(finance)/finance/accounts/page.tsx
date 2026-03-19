@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -141,27 +141,28 @@ export default function AccountsPage() {
         description="Рабочий план счетов бухгалтерского учёта (Приказ МФ №94н)"
       />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Счета ({grid.data.length})</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIncludeInactive(!includeInactive)}
-          >
-            {includeInactive ? "Скрыть неактивные" : "Показать неактивные"}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <DataGrid
-            {...grid.gridProps}
-            columns={columns}
-            emptyMessage="Нет счетов"
-            persistenceKey="chart-of-accounts"
-            stickyHeader={false}
-            onRowClick={(row) => router.push(`/finance/journal?accountCode=${row.code}`)}
-          />
-        </CardContent>
+      <Card
+        title={
+          <div className="flex flex-row items-center justify-between">
+            <span>Счета ({grid.data.length})</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIncludeInactive(!includeInactive)}
+            >
+              {includeInactive ? "Скрыть неактивные" : "Показать неактивные"}
+            </Button>
+          </div>
+        }
+      >
+        <DataGrid
+          {...grid.gridProps}
+          columns={columns}
+          emptyMessage="Нет счетов"
+          persistenceKey="chart-of-accounts"
+          stickyHeader={false}
+          onRowClick={(row) => router.push(`/finance/journal?accountCode=${row.code}`)}
+        />
       </Card>
     </div>
   );

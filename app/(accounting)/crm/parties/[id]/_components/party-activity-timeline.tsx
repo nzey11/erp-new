@@ -5,7 +5,7 @@
  * Shows up to 20 most recent events.
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import {
   ShoppingCart,
   CreditCard,
@@ -26,14 +26,12 @@ export function PartyActivityTimeline({ activities }: PartyActivityTimelineProps
   const recentActivities = activities.slice(0, RECENT_LIMIT);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          Активность
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card title={
+      <span className="text-lg flex items-center gap-2">
+        <Activity className="h-5 w-5" />
+        Активность
+      </span>
+    }>
         {recentActivities.length > 0 ? (
           <div className="relative">
             {/* Vertical line */}
@@ -51,7 +49,6 @@ export function PartyActivityTimeline({ activities }: PartyActivityTimelineProps
             <p className="text-muted-foreground">Нет записей об активности</p>
           </div>
         )}
-      </CardContent>
     </Card>
   );
 }

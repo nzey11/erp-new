@@ -1,7 +1,7 @@
 "use client";
 
 import { Tabs } from "antd";
-import { Card } from "@/components/ui/card";
+import { Card } from "antd";
 import { Star } from "lucide-react";
 import { cn, formatDate } from "@/lib/shared/utils";
 import { Tag } from "antd";

@@ -4,7 +4,7 @@
  * Displays entity links for a party (customer, counterparty).
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Tag } from "antd";
 import { Link2 } from "lucide-react";
 import type { PartyProfileLinkDto } from "@/lib/domain/party";
@@ -15,14 +15,12 @@ interface PartyLinksCardProps {
 
 export function PartyLinksCard({ links }: PartyLinksCardProps) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Link2 className="h-4 w-4" />
-          Связи
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card title={
+      <span className="text-sm font-medium flex items-center gap-2">
+        <Link2 className="h-4 w-4" />
+        Связи
+      </span>
+    }>
         {links.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {links.map((link, index) => (
@@ -34,7 +32,6 @@ export function PartyLinksCard({ links }: PartyLinksCardProps) {
         ) : (
           <p className="text-muted-foreground text-sm">Нет связей</p>
         )}
-      </CardContent>
     </Card>
   );
 }

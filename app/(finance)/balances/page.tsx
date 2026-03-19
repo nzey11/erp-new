@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
@@ -59,85 +59,60 @@ export default function BalancesPage() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Дебиторская задолженность</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">{formatRub(balances.totalReceivable)}</p>
-          </CardContent>
+        <Card title={<span className="text-sm text-muted-foreground">Дебиторская задолженность</span>}>
+          <p className="text-2xl font-bold text-green-600">{formatRub(balances.totalReceivable)}</p>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Кредиторская задолженность</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600">{formatRub(Math.abs(balances.totalPayable))}</p>
-          </CardContent>
+        <Card title={<span className="text-sm text-muted-foreground">Кредиторская задолженность</span>}>
+          <p className="text-2xl font-bold text-red-600">{formatRub(Math.abs(balances.totalPayable))}</p>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Чистый баланс</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${balances.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {formatRub(balances.netBalance)}
-            </p>
-          </CardContent>
+        <Card title={<span className="text-sm text-muted-foreground">Чистый баланс</span>}>
+          <p className={`text-2xl font-bold ${balances.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {formatRub(balances.netBalance)}
+          </p>
         </Card>
       </div>
 
       {/* Receivable Table */}
       {balances.receivable.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Нам должны</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Контрагент</TableHead>
-                  <TableHead className="text-right">Сумма</TableHead>
+        <Card title={<span className="text-lg">Нам должны</span>}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Контрагент</TableHead>
+                <TableHead className="text-right">Сумма</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {balances.receivable.map((b) => (
+                <TableRow key={b.id}>
+                  <TableCell>{b.counterparty.name}</TableCell>
+                  <TableCell className="text-right text-green-600">{formatRub(b.balanceRub)}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {balances.receivable.map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell>{b.counterparty.name}</TableCell>
-                    <TableCell className="text-right text-green-600">{formatRub(b.balanceRub)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
+              ))}
+            </TableBody>
+          </Table>
         </Card>
       )}
 
       {/* Payable Table */}
       {balances.payable.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Мы должны</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Контрагент</TableHead>
-                  <TableHead className="text-right">Сумма</TableHead>
+        <Card title={<span className="text-lg">Мы должны</span>}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Контрагент</TableHead>
+                <TableHead className="text-right">Сумма</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {balances.payable.map((b) => (
+                <TableRow key={b.id}>
+                  <TableCell>{b.counterparty.name}</TableCell>
+                  <TableCell className="text-right text-red-600">{formatRub(Math.abs(b.balanceRub))}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {balances.payable.map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell>{b.counterparty.name}</TableCell>
-                    <TableCell className="text-right text-red-600">{formatRub(Math.abs(b.balanceRub))}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
+              ))}
+            </TableBody>
+          </Table>
         </Card>
       )}
 

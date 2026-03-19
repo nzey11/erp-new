@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tag } from "antd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import {
@@ -188,14 +188,12 @@ export default function SettingsPage() {
       <PageHeader title="Настройки" description="Управление пользователями и системой" />
 
       {/* Company Settings */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Реквизиты компании
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card title={
+        <span className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Реквизиты компании
+        </span>
+      }>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label>Название *</Label>
@@ -235,46 +233,39 @@ export default function SettingsPage() {
               {savingCompany ? "Сохранение..." : "Сохранить"}
             </Button>
           </div>
-        </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Warehouse className="h-5 w-5" />
-            Склады
-          </CardTitle>
-          <Link href="/warehouses">
-            <Button size="sm" variant="outline">
-              Управлять складами
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Создание, редактирование и деактивация складов организации.
-            Склады используются во всех складских операциях, при создании документов и в отчётах об остатках.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Пользователи ({grid.data.length})</CardTitle>
-          <Button size="sm" onClick={openCreateUser}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Добавить
+      <Card title={
+        <span className="flex items-center gap-2">
+          <Warehouse className="h-5 w-5" />
+          Склады
+        </span>
+      } extra={
+        <Link href="/warehouses">
+          <Button size="sm" variant="outline">
+            Управлять складами
           </Button>
-        </CardHeader>
-        <CardContent>
-          <DataGrid
-            {...grid.gridProps}
-            columns={columns}
-            emptyMessage="Нет пользователей"
-            persistenceKey="settings-users"
-            stickyHeader={false}
-          />
-        </CardContent>
+        </Link>
+      }>
+        <p className="text-sm text-muted-foreground">
+          Создание, редактирование и деактивация складов организации.
+          Склады используются во всех складских операциях, при создании документов и в отчётах об остатках.
+        </p>
+      </Card>
+
+      <Card title={<span>Пользователи ({grid.data.length})</span>} extra={
+        <Button size="sm" onClick={openCreateUser}>
+          <UserPlus className="h-4 w-4 mr-2" />
+          Добавить
+        </Button>
+      }>
+        <DataGrid
+          {...grid.gridProps}
+          columns={columns}
+          emptyMessage="Нет пользователей"
+          persistenceKey="settings-users"
+          stickyHeader={false}
+        />
       </Card>
 
       {/* User Dialog */}

@@ -7,7 +7,7 @@ import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -293,60 +293,61 @@ function JournalPageContent() {
         description="Двойная запись — все хозяйственные операции"
       />
 
-      <Card>
-        <CardHeader className="flex flex-row flex-wrap items-end gap-3 pb-3">
-          <CardTitle className="mr-auto">Проводки ({grid.total})</CardTitle>
+      <Card
+        title={
+          <div className="flex flex-row flex-wrap items-end gap-3">
+            <span className="mr-auto">Проводки ({grid.total})</span>
 
-          {/* Date range */}
-          <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-38"
-            />
-            <span className="text-muted-foreground">—</span>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-38"
-            />
+            {/* Date range */}
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-38"
+              />
+              <span className="text-muted-foreground">—</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-38"
+              />
+            </div>
+
+            {/* Manual / Auto filter */}
+            <div className="grid gap-1">
+              <Label className="text-xs text-muted-foreground">Тип</Label>
+              <Select value={isManualFilter} onValueChange={setIsManualFilter}>
+                <SelectTrigger className="w-36 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все проводки</SelectItem>
+                  <SelectItem value="manual">Только ручные</SelectItem>
+                  <SelectItem value="auto">Только авто</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Account code filter */}
+            <div className="grid gap-1">
+              <Label className="text-xs text-muted-foreground">Счёт</Label>
+              <Input
+                placeholder="Например: 51"
+                value={accountCode}
+                onChange={(e) => setAccountCode(e.target.value)}
+                className="w-28 h-9"
+                onKeyDown={(e) => e.key === "Enter" && handleApply()}
+              />
+            </div>
+
+            <Button variant="outline" size="sm" onClick={handleApply}>
+              Применить
+            </Button>
           </div>
-
-          {/* Manual / Auto filter */}
-          <div className="grid gap-1">
-            <Label className="text-xs text-muted-foreground">Тип</Label>
-            <Select value={isManualFilter} onValueChange={setIsManualFilter}>
-              <SelectTrigger className="w-36 h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все проводки</SelectItem>
-                <SelectItem value="manual">Только ручные</SelectItem>
-                <SelectItem value="auto">Только авто</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Account code filter */}
-          <div className="grid gap-1">
-            <Label className="text-xs text-muted-foreground">Счёт</Label>
-            <Input
-              placeholder="Например: 51"
-              value={accountCode}
-              onChange={(e) => setAccountCode(e.target.value)}
-              className="w-28 h-9"
-              onKeyDown={(e) => e.key === "Enter" && handleApply()}
-            />
-          </div>
-
-          <Button variant="outline" size="sm" onClick={handleApply}>
-            Применить
-          </Button>
-        </CardHeader>
-
-        <CardContent>
+        }
+      >
           {grid.loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -377,7 +378,6 @@ function JournalPageContent() {
               </table>
             </div>
           )}
-        </CardContent>
       </Card>
 
       {/* Reverse Confirmation Dialog */}

@@ -7,7 +7,7 @@
 "use client";
 
 import { Tag } from "antd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { PartyListItemDto } from "@/lib/domain/party/dto";
 
 interface MergePreviewCardProps {
@@ -20,17 +20,14 @@ export function MergePreviewCard({ party, role }: MergePreviewCardProps) {
   const roleLabel = role === "survivor" ? "Will be kept" : "Will be merged";
 
   return (
-    <Card className={role === "victim" ? "border-destructive/50" : ""}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{party.displayName}</CardTitle>
-          <Tag>
-            {party.type === "person" ? "Person" : "Organization"}
-          </Tag>
-        </div>
-        <p className={`text-sm font-medium ${roleColor}`}>{roleLabel}</p>
-      </CardHeader>
-      <CardContent>
+    <Card className={role === "victim" ? "border-destructive/50" : ""} title={
+      <div className="flex items-center justify-between">
+        <span className="text-lg">{party.displayName}</span>
+        <Tag>
+          {party.type === "person" ? "Person" : "Organization"}
+        </Tag>
+      </div>
+    }>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Owner</span>
@@ -59,7 +56,7 @@ export function MergePreviewCard({ party, role }: MergePreviewCardProps) {
             </div>
           </div>
         </div>
-      </CardContent>
+        <p className={`text-sm font-medium ${roleColor} mt-2`}>{roleLabel}</p>
     </Card>
   );
 }

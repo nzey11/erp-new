@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { App, Button, Dropdown, Tabs } from "antd";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card } from "antd";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DownloadOutlined, PlusOutlined, MoreOutlined, CheckOutlined } from "@ant-design/icons";
@@ -452,41 +452,20 @@ export function PurchasesPageClient({
           {/* Summary cards */}
           {analyticsData && (
             <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">
-                    Всего закуплено
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {formatRub(analyticsData.totals.totalAmount)}
-                  </p>
-                </CardContent>
+              <Card title={<span className="text-sm text-muted-foreground">Всего закуплено</span>}>
+                <p className="text-2xl font-bold">
+                  {formatRub(analyticsData.totals.totalAmount)}
+                </p>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">
-                    Количество приёмок
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {analyticsData.totals.totalDocs}
-                  </p>
-                </CardContent>
+              <Card title={<span className="text-sm text-muted-foreground">Количество приёмок</span>}>
+                <p className="text-2xl font-bold">
+                  {analyticsData.totals.totalDocs}
+                </p>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">
-                    Средний чек
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {formatRub(analyticsData.totals.averageOrder)}
-                  </p>
-                </CardContent>
+              <Card title={<span className="text-sm text-muted-foreground">Средний чек</span>}>
+                <p className="text-2xl font-bold">
+                  {formatRub(analyticsData.totals.averageOrder)}
+                </p>
               </Card>
             </div>
           )}

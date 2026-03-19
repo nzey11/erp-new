@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Button } from "@/components/ui/button";
 import { formatRub } from "@/lib/shared/utils";
 import { TrendingUp, TrendingDown, Wallet, Users, Banknote, Calendar } from "lucide-react";
@@ -82,12 +82,12 @@ export default function FinanceDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {[...Array(5)].map((_, i) => (
             <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
+              <div className="pb-2">
                 <div className="h-4 bg-muted rounded w-24"></div>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div>
                 <div className="h-8 bg-muted rounded w-32"></div>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>
@@ -118,100 +118,82 @@ export default function FinanceDashboardPage() {
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {/* Cash Balance — #1 KPI for a CFO */}
-        <Card className="border-2 border-primary/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Banknote className="h-4 w-4 text-primary" />
-              Остаток денег (Касса+Счёт)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${cashFlow && cashFlow.closingBalance >= 0 ? "text-primary" : "text-red-600"}`}>
-              {cashFlow ? formatRub(cashFlow.closingBalance) : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">счета 50+51+52</p>
-          </CardContent>
+        <Card className="border-2 border-primary/20" title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Banknote className="h-4 w-4 text-primary" />
+            Остаток денег (Касса+Счёт)
+          </span>
+        }>
+          <p className={`text-2xl font-bold ${cashFlow && cashFlow.closingBalance >= 0 ? "text-primary" : "text-red-600"}`}>
+            {cashFlow ? formatRub(cashFlow.closingBalance) : "—"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">счета 50+51+52</p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" />
-              Поступления
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
-              {cashFlow?.inflows ? formatRub(cashFlow.inflows.total) : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
-          </CardContent>
+        <Card title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-green-500" />
+            Поступления
+          </span>
+        }>
+          <p className="text-2xl font-bold text-green-600">
+            {cashFlow?.inflows ? formatRub(cashFlow.inflows.total) : "—"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-500" />
-              Выплаты
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600">
-              {cashFlow?.outflows ? formatRub(cashFlow.outflows.total) : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
-          </CardContent>
+        <Card title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <TrendingDown className="h-4 w-4 text-red-500" />
+            Выплаты
+          </span>
+        }>
+          <p className="text-2xl font-bold text-red-600">
+            {cashFlow?.outflows ? formatRub(cashFlow.outflows.total) : "—"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-blue-500" />
-              Чистый поток
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${cashFlow && cashFlow.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {cashFlow ? formatRub(cashFlow.netCashFlow) : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
-          </CardContent>
+        <Card title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-blue-500" />
+            Чистый поток
+          </span>
+        }>
+          <p className={`text-2xl font-bold ${cashFlow && cashFlow.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {cashFlow ? formatRub(cashFlow.netCashFlow) : "—"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">{PERIOD_OPTIONS[selectedPeriod].label}</p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4 text-purple-500" />
-              Баланс с контрагентами
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${balances && balances.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {balances ? formatRub(balances.netBalance) : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">дебиторская − кредиторская</p>
-          </CardContent>
+        <Card title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Users className="h-4 w-4 text-purple-500" />
+            Баланс с контрагентами
+          </span>
+        }>
+          <p className={`text-2xl font-bold ${balances && balances.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {balances ? formatRub(balances.netBalance) : "—"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">дебиторская − кредиторская</p>
         </Card>
       </div>
 
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="hover:border-primary/40 transition-colors cursor-pointer">
+        <Card className="hover:border-primary/40 transition-colors cursor-pointer" title={<span className="text-base">Платежи</span>}>
           <Link href="/finance/payments">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Платежи</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">Зарегистрировать доходы и расходы, фильтровать по периоду и контрагенту.</CardContent>
+            <div className="text-sm text-muted-foreground">Зарегистрировать доходы и расходы, фильтровать по периоду и контрагенту.</div>
           </Link>
         </Card>
-        <Card className="hover:border-primary/40 transition-colors cursor-pointer">
+        <Card className="hover:border-primary/40 transition-colors cursor-pointer" title={<span className="text-base">Отчёты</span>}>
           <Link href="/finance/reports">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Отчёты</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">Прибыли и убытки, ДДС, Баланс активов и пассивов. Детализация по клику.</CardContent>
+            <div className="text-sm text-muted-foreground">Прибыли и убытки, ДДС, Баланс активов и пассивов. Детализация по клику.</div>
           </Link>
         </Card>
-        <Card className="hover:border-primary/40 transition-colors cursor-pointer">
+        <Card className="hover:border-primary/40 transition-colors cursor-pointer" title={<span className="text-base">Взаиморасчёты</span>}>
           <Link href="/finance/balances">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Взаиморасчёты</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">Дебиторская и кредиторская задолженность по каждому контрагенту.</CardContent>
+            <div className="text-sm text-muted-foreground">Дебиторская и кредиторская задолженность по каждому контрагенту.</div>
           </Link>
         </Card>
       </div>

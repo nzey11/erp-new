@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { PageHeader } from "@/components/shared/page-header";
 import { formatRub } from "@/lib/shared/utils";
 import {
@@ -76,18 +76,15 @@ export function DashboardPageClient({ summary }: DashboardPageClientProps) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {kpiCards.map((card) => (
           <Link key={card.title} href={card.href} className="block hover:opacity-80 transition-opacity">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {card.title}
-                </CardTitle>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" title={
+              <span className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                {card.title}
                 <card.icon className={`h-4 w-4 ${card.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${card.color}`}>
-                  {card.value}
-                </div>
-              </CardContent>
+              </span>
+            }>
+              <div className={`text-2xl font-bold ${card.color}`}>
+                {card.value}
+              </div>
             </Card>
           </Link>
         ))}
@@ -95,57 +92,44 @@ export function DashboardPageClient({ summary }: DashboardPageClientProps) {
 
       {/* Cash Flow Summary */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" />
-              Поступления (мес.)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
-              {formatRub(summary.cashFlow.cashIn)}
-            </p>
-          </CardContent>
+        <Card title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-green-500" />
+            Поступления (мес.)
+          </span>
+        }>
+          <p className="text-2xl font-bold text-green-600">
+            {formatRub(summary.cashFlow.cashIn)}
+          </p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-500" />
-              Выплаты (мес.)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600">
-              {formatRub(summary.cashFlow.cashOut)}
-            </p>
-          </CardContent>
+        <Card title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <TrendingDown className="h-4 w-4 text-red-500" />
+            Выплаты (мес.)
+          </span>
+        }>
+          <p className="text-2xl font-bold text-red-600">
+            {formatRub(summary.cashFlow.cashOut)}
+          </p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-blue-500" />
-              Чистый поток (мес.)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${summary.cashFlow.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {formatRub(summary.cashFlow.netCashFlow)}
-            </p>
-          </CardContent>
+        <Card title={
+          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-blue-500" />
+            Чистый поток (мес.)
+          </span>
+        }>
+          <p className={`text-2xl font-bold ${summary.cashFlow.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {formatRub(summary.cashFlow.netCashFlow)}
+          </p>
         </Card>
       </div>
 
       {/* Recent Documents */}
       {summary.recentDocuments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Последние документы</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+        <Card title={<span className="text-base">Последние документы</span>}>
+          <div className="space-y-2">
               {summary.recentDocuments.map((doc) => (
                 <div
                   key={doc.id}
@@ -171,34 +155,30 @@ export function DashboardPageClient({ summary }: DashboardPageClientProps) {
                 </div>
               ))}
             </div>
-          </CardContent>
         </Card>
       )}
 
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="hover:border-primary/40 transition-colors cursor-pointer">
+        <Card className="hover:border-primary/40 transition-colors cursor-pointer" title={<span className="text-base">Закупки</span>}>
           <Link href="/purchases">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Закупки</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               Создать поступление товаров, управлять поставщиками.
-            </CardContent>
+            </div>
           </Link>
         </Card>
-        <Card className="hover:border-primary/40 transition-colors cursor-pointer">
+        <Card className="hover:border-primary/40 transition-colors cursor-pointer" title={<span className="text-base">Платежи</span>}>
           <Link href="/finance/payments">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Платежи</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               Зарегистрировать доходы и расходы, отслеживать движение средств.
-            </CardContent>
+            </div>
           </Link>
         </Card>
-        <Card className="hover:border-primary/40 transition-colors cursor-pointer">
+        <Card className="hover:border-primary/40 transition-colors cursor-pointer" title={<span className="text-base">Отчёты</span>}>
           <Link href="/finance/reports">
-            <CardHeader className="pb-2"><CardTitle className="text-base">Отчёты</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground">
               Прибыли и убытки, ДДС, баланс активов и пассивов.
-            </CardContent>
+            </div>
           </Link>
         </Card>
       </div>

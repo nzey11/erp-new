@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Trash2, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 
 interface CartItemCardProps {

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 import { Label } from "@/components/ui/label";
 import { Switch } from "antd";
 import { Tabs } from "antd";
@@ -123,32 +123,24 @@ export default function IntegrationsPage() {
             ),
             children: (
               <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="flex items-center gap-2">
-                          <Bot className="h-5 w-5" />
-                          Telegram Bot
-                        </CardTitle>
-                        <CardDescription>
-                          Авторизация пользователей через Telegram Login Widget
-                        </CardDescription>
-                      </div>
-                      {telegram.isConfigured ? (
-                        <Tag color="green" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Подключен
-                        </Tag>
-                      ) : (
-                        <Tag color="default" className="gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          Не настроен
-                        </Tag>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
+                <Card title={
+                  <span className="flex items-center gap-2">
+                    <Bot className="h-5 w-5" />
+                    Telegram Bot
+                  </span>
+                } extra={
+                  telegram.isConfigured ? (
+                    <Tag color="green" className="gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Подключен
+                    </Tag>
+                  ) : (
+                    <Tag color="default" className="gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Не настроен
+                    </Tag>
+                  )
+                }>
                     <div className="rounded-lg border bg-muted/50 p-4">
                       <h4 className="font-medium mb-2">Как получить токен бота?</h4>
                       <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
@@ -240,7 +232,9 @@ export default function IntegrationsPage() {
                         {saving ? "Сохранение..." : "Сохранить настройки"}
                       </Button>
                     </div>
-                  </CardContent>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Авторизация пользователей через Telegram Login Widget
+                    </p>
                 </Card>
               </div>
             ),

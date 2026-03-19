@@ -726,11 +726,8 @@ export default function DocumentDetailPage() {
 
       {/* Linked Documents */}
       {(doc.linkedDocument || doc.linkedFrom.length > 0) && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Связанные документы</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
+        <Card title={<span className="text-sm text-muted-foreground">Связанные документы</span>}>
+          <div className="flex flex-wrap gap-2">
             {doc.linkedDocument && (
               <Link href={`/documents/${doc.linkedDocument.id}`}>
                 <Tag className="cursor-pointer hover:bg-accent">
@@ -745,67 +742,43 @@ export default function DocumentDetailPage() {
                 </Tag>
               </Link>
             ))}
-          </CardContent>
+          </div>
         </Card>
       )}
 
       {/* Document Info */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Статус</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tag color={STATUS_TAG_COLORS[doc.status] || "default"} className="text-sm">
-              {doc.statusName}
-            </Tag>
-          </CardContent>
+        <Card title={<span className="text-sm text-muted-foreground">Статус</span>}>
+          <Tag color={STATUS_TAG_COLORS[doc.status] || "default"} className="text-sm">
+            {doc.statusName}
+          </Tag>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Дата</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{formatDate(doc.date)}</p>
-            <p className="text-xs text-muted-foreground">Создан: {formatDateTime(doc.createdAt)}{doc.createdBy ? ` (${doc.createdBy})` : ""}</p>
-            {doc.confirmedAt && (
-              <p className="text-xs text-muted-foreground">Подтверждён: {formatDateTime(doc.confirmedAt)}{doc.confirmedBy ? ` (${doc.confirmedBy})` : ""}</p>
-            )}
-          </CardContent>
+        <Card title={<span className="text-sm text-muted-foreground">Дата</span>}>
+          <p className="font-medium">{formatDate(doc.date)}</p>
+          <p className="text-xs text-muted-foreground">Создан: {formatDateTime(doc.createdAt)}{doc.createdBy ? ` (${doc.createdBy})` : ""}</p>
+          {doc.confirmedAt && (
+            <p className="text-xs text-muted-foreground">Подтверждён: {formatDateTime(doc.confirmedAt)}{doc.confirmedBy ? ` (${doc.confirmedBy})` : ""}</p>
+          )}
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Сумма</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-bold">{formatRub(doc.totalAmount)}</p>
-          </CardContent>
+        <Card title={<span className="text-sm text-muted-foreground">Сумма</span>}>
+          <p className="text-xl font-bold">{formatRub(doc.totalAmount)}</p>
         </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {doc.warehouse && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Склад</CardTitle>
-            </CardHeader>
-            <CardContent><p className="font-medium">{doc.warehouse.name}</p></CardContent>
+          <Card title={<span className="text-sm text-muted-foreground">Склад</span>}>
+            <p className="font-medium">{doc.warehouse.name}</p>
           </Card>
         )}
         {doc.targetWarehouse && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Склад-получатель</CardTitle>
-            </CardHeader>
-            <CardContent><p className="font-medium">{doc.targetWarehouse.name}</p></CardContent>
+          <Card title={<span className="text-sm text-muted-foreground">Склад-получатель</span>}>
+            <p className="font-medium">{doc.targetWarehouse.name}</p>
           </Card>
         )}
         {doc.counterparty && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Контрагент</CardTitle>
-            </CardHeader>
-            <CardContent><p className="font-medium">{doc.counterparty.name}</p></CardContent>
+          <Card title={<span className="text-sm text-muted-foreground">Контрагент</span>}>
+            <p className="font-medium">{doc.counterparty.name}</p>
           </Card>
         )}
       </div>
@@ -819,8 +792,7 @@ export default function DocumentDetailPage() {
             label: `Позиции (${doc.items.length})`,
             children: (
               <Card>
-                <CardContent className="pt-4">
-                  <Table>
+                <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-8">#</TableHead>
@@ -1005,7 +977,6 @@ export default function DocumentDetailPage() {
                       )}
                     </TableBody>
                   </Table>
-                </CardContent>
               </Card>
             ),
           },
@@ -1019,7 +990,6 @@ export default function DocumentDetailPage() {
             ),
             children: (
               <Card>
-                <CardContent className="pt-4">
                   {journalLoading ? (
                     <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
                   ) : journalEntries.length === 0 ? (
@@ -1064,7 +1034,6 @@ export default function DocumentDetailPage() {
                       ))}
                     </div>
                   )}
-                </CardContent>
               </Card>
             ),
           },
@@ -1074,19 +1043,13 @@ export default function DocumentDetailPage() {
       {(doc.description || doc.notes) && (
         <div className="grid gap-4">
           {doc.description && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Описание</CardTitle>
-              </CardHeader>
-              <CardContent><p>{doc.description}</p></CardContent>
+            <Card title={<span className="text-sm text-muted-foreground">Описание</span>}>
+              <p>{doc.description}</p>
             </Card>
           )}
           {doc.notes && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Заметки</CardTitle>
-              </CardHeader>
-              <CardContent><p>{doc.notes}</p></CardContent>
+            <Card title={<span className="text-sm text-muted-foreground">Заметки</span>}>
+              <p>{doc.notes}</p>
             </Card>
           )}
         </div>

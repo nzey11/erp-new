@@ -7,7 +7,7 @@
 "use client";
 
 import { PartyProfileDto } from "@/lib/domain/party/dto";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 
 interface PartyActivityTimelineProps {
   party: PartyProfileDto;
@@ -24,23 +24,14 @@ const ACTIVITY_TYPE_LABELS: Record<string, string> = {
 export function PartyActivityTimeline({ party }: PartyActivityTimelineProps) {
   if (party.activities.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Activity Timeline</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">No activity recorded</p>
-        </CardContent>
+      <Card title={<span className="text-lg">Activity Timeline</span>}>
+        <p className="text-muted-foreground text-sm">No activity recorded</p>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Activity Timeline</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card title={<span className="text-lg">Activity Timeline</span>}>
         <div className="space-y-4">
           {party.activities.map((activity, index) => (
             <div
@@ -70,7 +61,6 @@ export function PartyActivityTimeline({ party }: PartyActivityTimelineProps) {
             </div>
           ))}
         </div>
-      </CardContent>
     </Card>
   );
 }

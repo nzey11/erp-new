@@ -7,7 +7,7 @@
 "use client";
 
 import { PartyProfileDto } from "@/lib/domain/party/dto";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "antd";
 
 interface PartyProfileSummaryProps {
   party: PartyProfileDto;
@@ -15,11 +15,8 @@ interface PartyProfileSummaryProps {
 
 export function PartyProfileSummary({ party }: PartyProfileSummaryProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Summary</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card title={<span className="text-lg">Summary</span>}>
+      <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Owner</p>
@@ -53,7 +50,7 @@ export function PartyProfileSummary({ party }: PartyProfileSummaryProps) {
             <p className="text-sm">{party.notes}</p>
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }
