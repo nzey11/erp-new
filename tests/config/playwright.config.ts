@@ -33,7 +33,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       DATABASE_URL: process.env.TEST_DATABASE_URL
-        ?? "postgresql://test:test@localhost:5434/listopt_erp_test",
+        ?? "postgresql://postgres:postgres@localhost:5432/listopt_erp_test",
       SESSION_SECRET: process.env.SESSION_SECRET
         ?? "ci-test-secret-key-do-not-use-in-production",
       NODE_ENV: "production",
