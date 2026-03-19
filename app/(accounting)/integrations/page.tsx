@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "antd";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Bot, Save, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -211,7 +211,7 @@ export default function IntegrationsPage() {
                   </div>
                   <Switch
                     checked={telegram.settings.enableStoreLogin}
-                    onCheckedChange={(v: boolean) => updateTelegramSetting("enableStoreLogin", v)}
+                    onChange={(v: boolean) => updateTelegramSetting("enableStoreLogin", v)}
                   />
                 </div>
 
@@ -224,7 +224,7 @@ export default function IntegrationsPage() {
                   </div>
                   <Switch
                     checked={telegram.settings.enableAdminLogin}
-                    onCheckedChange={(v: boolean) => updateTelegramSetting("enableAdminLogin", v)}
+                    onChange={(v: boolean) => updateTelegramSetting("enableAdminLogin", v)}
                   />
                 </div>
               </div>
