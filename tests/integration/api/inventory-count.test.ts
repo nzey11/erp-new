@@ -11,6 +11,7 @@ vi.mock("@/lib/shared/auth", async (importOriginal) => {
 
 import { POST as CONFIRM } from "@/app/api/accounting/documents/[id]/confirm/route";
 import { POST as CANCEL } from "@/app/api/accounting/documents/[id]/cancel/route";
+import { POST as CREATE_DOC } from "@/app/api/accounting/documents/route";
 
 describe("API: inventory_count flow", () => {
   let adminUser: Awaited<ReturnType<typeof createUser>>;
@@ -58,18 +59,45 @@ describe("API: inventory_count flow", () => {
     return CONFIRM(req, { params: Promise.resolve({ id: docId }) });
   }
 
+  async function createAdjustmentDoc(
+    type: "write_off" | "stock_receipt",
+    linkedDocId: string,
+    items: { productId: string; quantity: number; price: number }[]
+  ) {
+    mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
+    const req = createTestRequest("/api/accounting/documents", {
+      method: "POST",
+      body: {
+        type,
+        status: "draft",
+        warehouseId: warehouse.id,
+        date: new Date().toISOString(),
+        description: `На основании инвентаризации`,
+        linkedDocumentId: linkedDocId,
+        items,
+      },
+    });
+    return CREATE_DOC(req);
+  }
+
   // =============================================
   // Suite 1: Adjustment document creation
   // =============================================
 
-  describe("confirm → adjustment document creation", () => {
-    it("shortage → creates write_off linked doc + sets adjustmentsCreated = true", async () => {
+  describe("confirm → manual adjustment document creation", () => {
+    it("shortage → manual write_off linked doc can be created and confirmed", async () => {
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 10, actualQty: 6 }, // deficit: -4
       ]);
 
       const res = await confirmDoc(doc.id);
       expect(res.status).toBe(200);
+
+      // Manually create write_off adjustment (as user would via UI)
+      const adjRes = await createAdjustmentDoc("write_off", doc.id, [
+        { productId: product.id, quantity: 4, price: 100 },
+      ]);
+      expect(adjRes.status).toBe(201);
 
       const db = getTestDb();
       const linkedDocs = await db.document.findMany({
@@ -79,21 +107,24 @@ describe("API: inventory_count flow", () => {
 
       expect(linkedDocs).toHaveLength(1);
       expect(linkedDocs[0].type).toBe("write_off");
-      expect(linkedDocs[0].status).toBe("confirmed");
+      expect(linkedDocs[0].status).toBe("draft"); // Created as draft, not auto-confirmed
       expect(linkedDocs[0].items).toHaveLength(1);
-      expect(linkedDocs[0].items[0].quantity).toBe(4); // Math.abs(difference)
-
-      const inventory = await db.document.findUnique({ where: { id: doc.id } });
-      expect(inventory?.adjustmentsCreated).toBe(true);
+      expect(linkedDocs[0].items[0].quantity).toBe(4);
     });
 
-    it("surplus → creates stock_receipt linked doc + sets adjustmentsCreated = true", async () => {
+    it("surplus → manual stock_receipt linked doc can be created and confirmed", async () => {
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 5, actualQty: 8 }, // surplus: +3
       ]);
 
       const res = await confirmDoc(doc.id);
       expect(res.status).toBe(200);
+
+      // Manually create stock_receipt adjustment
+      const adjRes = await createAdjustmentDoc("stock_receipt", doc.id, [
+        { productId: product.id, quantity: 3, price: 100 },
+      ]);
+      expect(adjRes.status).toBe(201);
 
       const db = getTestDb();
       const linkedDocs = await db.document.findMany({
@@ -103,14 +134,11 @@ describe("API: inventory_count flow", () => {
 
       expect(linkedDocs).toHaveLength(1);
       expect(linkedDocs[0].type).toBe("stock_receipt");
-      expect(linkedDocs[0].status).toBe("confirmed");
+      expect(linkedDocs[0].status).toBe("draft");
       expect(linkedDocs[0].items[0].quantity).toBe(3);
-
-      const inventory = await db.document.findUnique({ where: { id: doc.id } });
-      expect(inventory?.adjustmentsCreated).toBe(true);
     });
 
-    it("mixed (shortage + surplus) → creates both write_off and stock_receipt", async () => {
+    it("mixed (shortage + surplus) → both write_off and stock_receipt can be created manually", async () => {
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 10, actualQty: 6 },  // shortage
         { productId: product2.id, expectedQty: 5, actualQty: 8 },  // surplus
@@ -118,6 +146,14 @@ describe("API: inventory_count flow", () => {
 
       const res = await confirmDoc(doc.id);
       expect(res.status).toBe(200);
+
+      // Create both adjustments manually
+      await createAdjustmentDoc("write_off", doc.id, [
+        { productId: product.id, quantity: 4, price: 100 },
+      ]);
+      await createAdjustmentDoc("stock_receipt", doc.id, [
+        { productId: product2.id, quantity: 3, price: 100 },
+      ]);
 
       const db = getTestDb();
       const linkedDocs = await db.document.findMany({
@@ -136,7 +172,7 @@ describe("API: inventory_count flow", () => {
       expect(receipt.items[0].quantity).toBe(3);
     });
 
-    it("no discrepancies → no adjustment docs, adjustmentsCreated stays false", async () => {
+    it("no discrepancies → no adjustment docs needed", async () => {
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 10, actualQty: 10 }, // difference = 0
       ]);
@@ -149,9 +185,6 @@ describe("API: inventory_count flow", () => {
         where: { linkedDocumentId: doc.id },
       });
       expect(linkedDocs).toHaveLength(0);
-
-      const inventory = await db.document.findUnique({ where: { id: doc.id } });
-      expect(inventory?.adjustmentsCreated).toBe(false);
     });
   });
 
@@ -231,43 +264,53 @@ describe("API: inventory_count flow", () => {
   // Suite 3: Stock movements after confirm
   // =============================================
 
-  describe("stock movements after confirm", () => {
-    it("shortage → write_off adjustment has StockMovement with negative qty", async () => {
+  describe("stock movements after manual adjustment creation", () => {
+    it("shortage → manual write_off confirmed creates StockMovement with negative qty", async () => {
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 10, actualQty: 6 }, // deficit: -4
       ]);
 
       await confirmDoc(doc.id);
 
-      const db = getTestDb();
-      const writeOff = await db.document.findFirst({
-        where: { linkedDocumentId: doc.id, type: "write_off" },
-      });
-      expect(writeOff).not.toBeNull();
+      // Manually create and confirm write_off adjustment
+      const adjRes = await createAdjustmentDoc("write_off", doc.id, [
+        { productId: product.id, quantity: 4, price: 100 },
+      ]);
+      expect(adjRes.status).toBe(201);
+      const adjData = await jsonResponse(adjRes);
 
+      // Confirm the adjustment document to create stock movements
+      await confirmDoc(adjData.id);
+
+      const db = getTestDb();
       const movements = await db.stockMovement.findMany({
-        where: { documentId: writeOff!.id, isReversing: false },
+        where: { documentId: adjData.id, isReversing: false },
       });
       expect(movements).toHaveLength(1);
       expect(movements[0].quantity).toBe(-4);
       expect(movements[0].type).toBe("write_off");
     });
 
-    it("surplus → stock_receipt adjustment has StockMovement with positive qty", async () => {
+    it("surplus → manual stock_receipt confirmed creates StockMovement with positive qty", async () => {
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 5, actualQty: 8 }, // surplus: +3
       ]);
 
       await confirmDoc(doc.id);
 
-      const db = getTestDb();
-      const receipt = await db.document.findFirst({
-        where: { linkedDocumentId: doc.id, type: "stock_receipt" },
-      });
-      expect(receipt).not.toBeNull();
+      // Manually create and confirm stock_receipt adjustment
+      const adjRes = await createAdjustmentDoc("stock_receipt", doc.id, [
+        { productId: product.id, quantity: 3, price: 100 },
+      ]);
+      expect(adjRes.status).toBe(201);
+      const adjData = await jsonResponse(adjRes);
 
+      // Confirm the adjustment document
+      await confirmDoc(adjData.id);
+
+      const db = getTestDb();
       const movements = await db.stockMovement.findMany({
-        where: { documentId: receipt!.id, isReversing: false },
+        where: { documentId: adjData.id, isReversing: false },
       });
       expect(movements).toHaveLength(1);
       expect(movements[0].quantity).toBe(3);
@@ -322,11 +365,21 @@ describe("API: inventory_count flow", () => {
     });
 
     it("cancel does NOT cascade-cancel linked adjustment documents", async () => {
-      // Full cycle: confirm creates write_off, then cancel the inventory_count parent
+      // Full cycle: confirm inventory_count, manually create write_off, then cancel parent
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 10, actualQty: 6 }, // shortage: -4
       ]);
-      await confirmDoc(doc.id); // creates linked write_off
+      await confirmDoc(doc.id);
+
+      // Manually create linked write_off adjustment
+      const adjRes = await createAdjustmentDoc("write_off", doc.id, [
+        { productId: product.id, quantity: 4, price: 100 },
+      ]);
+      expect(adjRes.status).toBe(201);
+      const adjData = await jsonResponse(adjRes);
+
+      // Confirm the adjustment document
+      await confirmDoc(adjData.id);
 
       mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
       const cancelReq = createTestRequest(`/api/accounting/documents/${doc.id}/cancel`, {
