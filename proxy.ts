@@ -42,7 +42,6 @@ const ECOMMERCE_CUSTOMER_API = ["/api/ecommerce/cart", "/api/ecommerce/checkout"
 
 // Redirects from old routes to new ones
 const REDIRECTS: Record<string, string> = {
-  "/documents": "/purchases",
   "/products": "/catalog",
   "/payments": "/finance/payments",
   "/reports": "/finance",
