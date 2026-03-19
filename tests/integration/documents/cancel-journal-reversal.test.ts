@@ -33,13 +33,18 @@ let accountIds: Record<string, string>;
 let tenantId: string;
 
 // =============================================
-// Setup: seed accounts + tenant settings once per suite
+// Setup: seed accounts once, re-create tenant before each test
+// (cleanDatabase() in global beforeEach wipes tenant rows, so tenant
+//  must be re-seeded here — not just in beforeAll)
 // =============================================
 
 beforeAll(async () => {
   accountIds = await seedTestAccounts();
-  const tenant = await createTenant({ id: "test-cancel-journal-tenant" });
-  tenantId = tenant.id;
+  tenantId = "test-cancel-journal-tenant";
+});
+
+beforeEach(async () => {
+  await createTenant({ id: tenantId });
   await seedTenantSettings(tenantId, accountIds);
 });
 

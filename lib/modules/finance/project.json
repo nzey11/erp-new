@@ -13,7 +13,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vitest run tests/integration/finance --passWithNoTests"
+        "command": "vitest run tests/integration/finance --config tests/config/vitest.integration.config.ts --passWithNoTests"
       }
     }
   },
