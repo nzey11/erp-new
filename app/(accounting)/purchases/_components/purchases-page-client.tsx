@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { App, Button, Dropdown } from "antd";
+import { App, Button, Dropdown, Tabs } from "antd";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DownloadOutlined, PlusOutlined, MoreOutlined, CheckOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/shared/page-header";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ERPTable } from "@/components/erp/erp-table";
 import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { ERPToolbar } from "@/components/erp/erp-toolbar";
@@ -152,10 +151,6 @@ export function PurchasesPageClient({
 
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
-
-  // Mounted guard for Radix UI Tabs
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
 
   // Selection state for bulk actions
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -388,18 +383,18 @@ export function PurchasesPageClient({
         }
       />
 
-      {/* Tab switcher */}
-      {mounted && (
-        <Tabs value={tab} onValueChange={handleTabChange}>
-          <TabsList>
-            <TabsTrigger value="all">Все закупки</TabsTrigger>
-            <TabsTrigger value="purchase_order">Заказы поставщикам</TabsTrigger>
-            <TabsTrigger value="incoming_shipment">Приёмки</TabsTrigger>
-            <TabsTrigger value="supplier_return">Возвраты поставщику</TabsTrigger>
-            <TabsTrigger value="analytics">Аналитика</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
+      {/* Tab switcher — antd Tabs, labels only (content rendered below) */}
+      <Tabs
+        activeKey={tab}
+        onChange={handleTabChange}
+        items={[
+          { key: "all",               label: "Все закупки" },
+          { key: "purchase_order",    label: "Заказы поставщикам" },
+          { key: "incoming_shipment", label: "Приёмки" },
+          { key: "supplier_return",   label: "Возвраты поставщику" },
+          { key: "analytics",         label: "Аналитика" },
+        ]}
+      />
 
       {/* Document tabs — new ERP architecture */}
       {tab !== "analytics" && (
@@ -527,18 +522,16 @@ export function PurchasesPageClient({
       )}
 
       {/* Create document dialog */}
-      {mounted && (
-        <CreateDocumentDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          title="Новый документ закупки"
-          docTypes={PURCHASE_TYPES}
-          warehouses={warehouses}
-          counterparties={counterparties}
-          onSuccess={() => router.refresh()}
-          counterpartyRedirect="purchases"
-        />
-      )}
+      <CreateDocumentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="Новый документ закупки"
+        docTypes={PURCHASE_TYPES}
+        warehouses={warehouses}
+        counterparties={counterparties}
+        onSuccess={() => router.refresh()}
+        counterpartyRedirect="purchases"
+      />
     </div>
   );
 }

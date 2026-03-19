@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "antd";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { CreateDocumentDialog } from "@/components/domain/accounting";
@@ -64,9 +64,7 @@ export function StockPageClient({
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(initialTab);
   const [createOpen, setCreateOpen] = useState(false);
-  // Radix UI SSR safety: prevent hydration mismatch from non-deterministic IDs
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  // Ant Design Tabs doesn't require mounted guard - handles SSR safely
 
   const isStockDocTab = tab in TAB_TO_DOC_TYPE;
   const showCreateButton = isStockDocTab;
@@ -85,6 +83,53 @@ export function StockPageClient({
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
+  const tabItems = [
+    {
+      key: "balances",
+      label: "Остатки",
+      children: (
+        <StockBalancesClient
+          initialData={initialData}
+          initialFilters={initialFilters}
+          warehouses={warehouses}
+        />
+      ),
+    },
+    {
+      key: "inventory",
+      label: "Инвентаризации",
+      children: (
+        <StockDocumentsClient
+          initialData={stockDocInitialData}
+          initialFilters={stockDocInitialFilters}
+          warehouses={warehouses}
+        />
+      ),
+    },
+    {
+      key: "write_off",
+      label: "Списания",
+      children: (
+        <StockDocumentsClient
+          initialData={stockDocInitialData}
+          initialFilters={stockDocInitialFilters}
+          warehouses={warehouses}
+        />
+      ),
+    },
+    {
+      key: "stock_receipt",
+      label: "Оприходования",
+      children: (
+        <StockDocumentsClient
+          initialData={stockDocInitialData}
+          initialFilters={stockDocInitialFilters}
+          warehouses={warehouses}
+        />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -100,51 +145,22 @@ export function StockPageClient({
         }
       />
 
-      {/* Tab switcher */}
-      {mounted && (
-        <Tabs value={tab} onValueChange={handleTabChange}>
-          <TabsList>
-            <TabsTrigger value="balances">Остатки</TabsTrigger>
-            <TabsTrigger value="inventory">Инвентаризации</TabsTrigger>
-            <TabsTrigger value="write_off">Списания</TabsTrigger>
-            <TabsTrigger value="stock_receipt">Оприходования</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
-      {/* Balances tab — ERP architecture */}
-      {tab === "balances" && (
-        <StockBalancesClient
-          initialData={initialData}
-          initialFilters={initialFilters}
-          warehouses={warehouses}
-        />
-      )}
-
-      {/* Document tabs — ERP architecture */}
-      {isStockDocTab && mounted && (
-        <StockDocumentsClient
-          initialData={stockDocInitialData}
-          initialFilters={stockDocInitialFilters}
-          warehouses={warehouses}
-        />
-      )}
+      {/* Tab switcher with content */}
+      <Tabs activeKey={tab} onChange={handleTabChange} items={tabItems} />
 
       {/* Create document dialog */}
-      {mounted && (
-        <CreateDocumentDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          title="Новый складской документ"
-          docTypes={STOCK_DOC_TYPES}
-          warehouses={warehouses}
-          counterparties={[]}
-          requireWarehouse
-          showTargetWarehouse
-          defaultType={TAB_TO_DOC_TYPE[tab]}
-          onSuccess={() => router.refresh()}
-        />
-      )}
+      <CreateDocumentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="Новый складской документ"
+        docTypes={STOCK_DOC_TYPES}
+        warehouses={warehouses}
+        counterparties={[]}
+        requireWarehouse
+        showTargetWarehouse
+        defaultType={TAB_TO_DOC_TYPE[tab]}
+        onSuccess={() => router.refresh()}
+      />
     </div>
   );
 }

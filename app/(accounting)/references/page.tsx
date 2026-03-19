@@ -15,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "antd";
 import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -223,160 +223,164 @@ export default function ReferencesPage() {
     <div className="space-y-6">
       <PageHeader title="Справочники" />
 
-      <Tabs defaultValue="units">
-        <TabsList>
-          <TabsTrigger value="units">Единицы измерения</TabsTrigger>
-          <TabsTrigger value="pricelists">Прайс-листы</TabsTrigger>
-          <TabsTrigger value="customfields">Характеристики</TabsTrigger>
-        </TabsList>
-        <div className="flex items-center gap-2 ml-auto">
+      <Tabs
+        defaultActiveKey="units"
+        tabBarExtraContent={
           <Link href="/settings">
             <Button variant="outline" size="sm" className="gap-1">
               Настройки
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
-        </div>
-
-        {/* ============== Units Tab ============== */}
-        <TabsContent value="units">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Единицы измерения ({units.length})</CardTitle>
-              <Button size="sm" onClick={openCreateUnit}>
-                <Plus className="h-4 w-4 mr-2" />Добавить
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Название</TableHead>
-                    <TableHead>Сокращение</TableHead>
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {units.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Нет единиц измерения</TableCell>
-                    </TableRow>
-                  ) : (
-                    units.map((unit) => (
-                      <TableRow key={unit.id}>
-                        <TableCell className="font-medium">{unit.name}</TableCell>
-                        <TableCell>{unit.shortName}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" onClick={() => openEditUnit(unit)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+        }
+        items={[
+          {
+            key: "units",
+            label: "Единицы измерения",
+            children: (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Единицы измерения ({units.length})</CardTitle>
+                  <Button size="sm" onClick={openCreateUnit}>
+                    <Plus className="h-4 w-4 mr-2" />Добавить
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Название</TableHead>
+                        <TableHead>Сокращение</TableHead>
+                        <TableHead className="w-12" />
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ============== Price Lists Tab ============== */}
-        <TabsContent value="pricelists">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Прайс-листы ({priceLists.length})</CardTitle>
-              <Button size="sm" onClick={openCreatePriceList}>
-                <Plus className="h-4 w-4 mr-2" />Добавить
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Название</TableHead>
-                    <TableHead>Описание</TableHead>
-                    <TableHead className="text-right">Кол-во цен</TableHead>
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {priceLists.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Нет прайс-листов</TableCell>
-                    </TableRow>
-                  ) : (
-                    priceLists.map((pl) => (
-                      <TableRow key={pl.id}>
-                        <TableCell className="font-medium">{pl.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{pl.description || "—"}</TableCell>
-                        <TableCell className="text-right">{pl._count?.prices ?? 0}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" onClick={() => openEditPriceList(pl)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+                    </TableHeader>
+                    <TableBody>
+                      {units.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Нет единиц измерения</TableCell>
+                        </TableRow>
+                      ) : (
+                        units.map((unit) => (
+                          <TableRow key={unit.id}>
+                            <TableCell className="font-medium">{unit.name}</TableCell>
+                            <TableCell>{unit.shortName}</TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" onClick={() => openEditUnit(unit)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ),
+          },
+          {
+            key: "pricelists",
+            label: "Прайс-листы",
+            children: (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Прайс-листы ({priceLists.length})</CardTitle>
+                  <Button size="sm" onClick={openCreatePriceList}>
+                    <Plus className="h-4 w-4 mr-2" />Добавить
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Название</TableHead>
+                        <TableHead>Описание</TableHead>
+                        <TableHead className="text-right">Кол-во цен</TableHead>
+                        <TableHead className="w-12" />
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ============== Custom Fields Tab ============== */}
-        <TabsContent value="customfields">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Характеристики товаров ({customFields.length})</CardTitle>
-              <Button size="sm" onClick={openCreateCf}>
-                <Plus className="h-4 w-4 mr-2" />Добавить
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Название</TableHead>
-                    <TableHead>Тип</TableHead>
-                    <TableHead>Опции</TableHead>
-                    <TableHead className="w-20" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customFields.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Нет характеристик</TableCell>
-                    </TableRow>
-                  ) : (
-                    customFields.map((cf) => (
-                      <TableRow key={cf.id}>
-                        <TableCell className="font-medium">{cf.name}</TableCell>
-                        <TableCell>{FIELD_TYPE_LABELS[cf.fieldType] || cf.fieldType}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {cf.fieldType === "select" && cf.options
-                            ? (JSON.parse(cf.options) as string[]).join(", ")
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openEditCf(cf)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => deleteCf(cf.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                    </TableHeader>
+                    <TableBody>
+                      {priceLists.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Нет прайс-листов</TableCell>
+                        </TableRow>
+                      ) : (
+                        priceLists.map((pl) => (
+                          <TableRow key={pl.id}>
+                            <TableCell className="font-medium">{pl.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{pl.description || "—"}</TableCell>
+                            <TableCell className="text-right">{pl._count?.prices ?? 0}</TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" onClick={() => openEditPriceList(pl)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ),
+          },
+          {
+            key: "customfields",
+            label: "Характеристики",
+            children: (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Характеристики товаров ({customFields.length})</CardTitle>
+                  <Button size="sm" onClick={openCreateCf}>
+                    <Plus className="h-4 w-4 mr-2" />Добавить
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Название</TableHead>
+                        <TableHead>Тип</TableHead>
+                        <TableHead>Опции</TableHead>
+                        <TableHead className="w-20" />
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    </TableHeader>
+                    <TableBody>
+                      {customFields.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Нет характеристик</TableCell>
+                        </TableRow>
+                      ) : (
+                        customFields.map((cf) => (
+                          <TableRow key={cf.id}>
+                            <TableCell className="font-medium">{cf.name}</TableCell>
+                            <TableCell>{FIELD_TYPE_LABELS[cf.fieldType] || cf.fieldType}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {cf.fieldType === "select" && cf.options
+                                ? (JSON.parse(cf.options) as string[]).join(", ")
+                                : "—"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => openEditCf(cf)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => deleteCf(cf.id)}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ),
+          },
+        ]}
+      />
 
       {/* Unit Dialog */}
       <Dialog open={unitDialogOpen} onOpenChange={setUnitDialogOpen}>

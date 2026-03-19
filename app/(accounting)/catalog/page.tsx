@@ -11,9 +11,10 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "antd";
+import Link from "next/link";
 
-import { Plus, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Trash2 } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Trash2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -136,7 +137,6 @@ function TreeNode({ category, level, selectedId, expanded, onSelect, onToggle, o
 }
 
 export default function CatalogPage() {
-  const [mounted, setMounted] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [flatCategories, setFlatCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -147,8 +147,6 @@ export default function CatalogPage() {
   // Main tabs state
   const [activeTab, setActiveTab] = useState("products");
 
-  useEffect(() => { setMounted(true); }, []);
-  
   // Price lists state
   const [selectedPriceList, setSelectedPriceList] = useState<{
     id: string;
@@ -287,103 +285,119 @@ export default function CatalogPage() {
     <div className="space-y-6">
       <PageHeader title="Каталог" />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="products">Товары</TabsTrigger>
-          <TabsTrigger value="variants">Группы вариантов</TabsTrigger>
-          <TabsTrigger value="pricelists">Прайс-листы</TabsTrigger>
-        </TabsList>
-
-        {mounted && (
-          <>
-        <TabsContent value="products" className="mt-6">
-          <div className="flex gap-6">
-            {/* Left: Category Tree */}
-            <div className="w-64 shrink-0">
-              <div className="border rounded-lg">
-                <div className="flex items-center justify-between p-3 border-b">
-                  <h3 className="text-sm font-medium">Категории</h3>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openCreateCategory} title="Добавить категорию">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="py-1 max-h-[calc(100vh-280px)] overflow-y-auto">
-                  {/* All Products */}
-                  <div
-                    className={cn(
-                      "flex items-center gap-2 py-1.5 px-3 rounded-md cursor-pointer text-sm mx-1",
-                      selectedCategoryId === null
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-accent"
-                    )}
-                    onClick={() => setSelectedCategoryId(null)}
-                  >
-                    <Folder className="h-4 w-4 shrink-0" />
-                    <span className="flex-1">Все товары</span>
-                    <span className={cn("text-xs", selectedCategoryId === null ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                      {totalProducts}
-                    </span>
-                  </div>
-
-                  {loading ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">Загрузка...</div>
-                  ) : categories.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">Нет категорий</div>
-                  ) : (
-                    <div className="mx-1">
-                      {categories.map((cat) => (
-                        <TreeNode
-                          key={cat.id}
-                          category={cat}
-                          level={0}
-                          selectedId={selectedCategoryId}
-                          expanded={expanded}
-                          onSelect={handleSelect}
-                          onToggle={handleToggle}
-                          onEdit={openEditCategory}
-                          onDelete={handleDeleteCategory}
-                        />
-                      ))}
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        tabBarExtraContent={
+          <Link href="/settings">
+            <Button variant="outline" size="sm" className="gap-1">
+              <Settings className="h-3.5 w-3.5" />
+              Настройки
+            </Button>
+          </Link>
+        }
+        items={[
+          {
+            key: "products",
+            label: "Товары",
+            children: (
+              <div className="flex gap-6 mt-6">
+                {/* Left: Category Tree */}
+                <div className="w-64 shrink-0">
+                  <div className="border rounded-lg">
+                    <div className="flex items-center justify-between p-3 border-b">
+                      <h3 className="text-sm font-medium">Категории</h3>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openCreateCategory} title="Добавить категорию">
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
+                    <div className="py-1 max-h-[calc(100vh-280px)] overflow-y-auto">
+                      {/* All Products */}
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 py-1.5 px-3 rounded-md cursor-pointer text-sm mx-1",
+                          selectedCategoryId === null
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-accent"
+                        )}
+                        onClick={() => setSelectedCategoryId(null)}
+                      >
+                        <Folder className="h-4 w-4 shrink-0" />
+                        <span className="flex-1">Все товары</span>
+                        <span className={cn("text-xs", selectedCategoryId === null ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                          {totalProducts}
+                        </span>
+                      </div>
+
+                      {loading ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">Загрузка...</div>
+                      ) : categories.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">Нет категорий</div>
+                      ) : (
+                        <div className="mx-1">
+                          {categories.map((cat) => (
+                            <TreeNode
+                              key={cat.id}
+                              category={cat}
+                              level={0}
+                              selectedId={selectedCategoryId}
+                              expanded={expanded}
+                              onSelect={handleSelect}
+                              onToggle={handleToggle}
+                              onEdit={openEditCategory}
+                              onDelete={handleDeleteCategory}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Products */}
+                <div className="flex-1 min-w-0">
+                  <div className="mb-4">
+                    <h2 className="text-lg font-semibold">{selectedCategoryName}</h2>
+                  </div>
+                  <ProductsTable
+                    categoryId={selectedCategoryId}
+                    flatCategories={flatCategories}
+                    onProductCreated={loadCategories}
+                  />
                 </div>
               </div>
-            </div>
-
-            {/* Right: Products */}
-            <div className="flex-1 min-w-0">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">{selectedCategoryName}</h2>
+            ),
+          },
+          {
+            key: "variants",
+            label: "Группы вариантов",
+            children: (
+              <div className="mt-6">
+                <VariantGroupsPanel />
               </div>
-              <ProductsTable
-                categoryId={selectedCategoryId}
-                flatCategories={flatCategories}
-                onProductCreated={loadCategories}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="variants" className="mt-6">
-          <VariantGroupsPanel />
-        </TabsContent>
-
-        <TabsContent value="pricelists" className="mt-6">
-          {selectedPriceList ? (
-            <PriceListDetail
-              priceList={selectedPriceList}
-              onBack={() => setSelectedPriceList(null)}
-            />
-          ) : (
-            <PriceListsPanel
-              onSelectPriceList={setSelectedPriceList}
-              selectedPriceListId={null}
-            />
-          )}
-        </TabsContent>
-          </>
-        )}
-      </Tabs>
+            ),
+          },
+          {
+            key: "pricelists",
+            label: "Прайс-листы",
+            children: (
+              <div className="mt-6">
+                {selectedPriceList ? (
+                  <PriceListDetail
+                    priceList={selectedPriceList}
+                    onBack={() => setSelectedPriceList(null)}
+                  />
+                ) : (
+                  <PriceListsPanel
+                    onSelectPriceList={setSelectedPriceList}
+                    selectedPriceListId={null}
+                  />
+                )}
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {/* Category Dialog */}
       <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>

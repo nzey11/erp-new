@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "antd";
+import type { TabsProps } from "antd";
 import { Input as AntdInput } from "antd";
 const { TextArea } = AntdInput;
 import { Search, Upload, Wand2, Plus, X, ImageIcon, ExternalLink, Link2 } from "lucide-react";
@@ -433,438 +434,447 @@ export function ProductFormContent({
     </div>
   );
 
-  return (
-    <div className={inDialog ? "" : "space-y-4"}>
-      <Tabs defaultValue="basic" value={activeTab} className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="basic">Основное</TabsTrigger>
-          <TabsTrigger value="characteristics">Характеристики</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
-          {editingProduct && <TabsTrigger value="stock">Склад</TabsTrigger>}
-          {editingProduct && <TabsTrigger value="variants">Модификации</TabsTrigger>}
-          {editingProduct && <TabsTrigger value="suggestions">Подсказки</TabsTrigger>}
-          {editingProduct && <TabsTrigger value="discounts">Скидки</TabsTrigger>}
-        </TabsList>
-
-        {/* === Basic Tab === */}
-        <TabsContent value="basic">
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Фото товара</Label>
-              <div className="flex items-center gap-4">
-                {formImageUrl ? (
-                  <div className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={formImageUrl} alt="Preview" className="h-20 w-20 rounded-lg object-cover border" />
-                    <button type="button" className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
-                      onClick={() => setFormImageUrl("")}><X className="h-3 w-3" /></button>
-                  </div>
-                ) : (
-                  <div className="h-20 w-20 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">
-                    <ImageIcon className="h-8 w-8" />
-                  </div>
-                )}
-                <div>
-                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden" onChange={handleUploadImage} />
-                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}>
-                    <Upload className="h-4 w-4 mr-2" />{uploadingImage ? "Загрузка..." : "Загрузить фото"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, WebP, GIF. Макс. 5 МБ</p>
+  const tabItems: TabsProps["items"] = [
+    {
+      key: "basic",
+      label: "Основное",
+      children: (
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Фото товара</Label>
+            <div className="flex items-center gap-4">
+              {formImageUrl ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={formImageUrl} alt="Preview" className="h-20 w-20 rounded-lg object-cover border" />
+                  <button type="button" className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                    onClick={() => setFormImageUrl("")}><X className="h-3 w-3" /></button>
                 </div>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="name">Название *</Label>
-              <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="sku">Артикул</Label>
-                <div className="flex gap-2">
-                  <Input id="sku" value={formSku} onChange={(e) => setFormSku(e.target.value)} placeholder="Авто" className="flex-1" />
-                  <Button variant="outline" size="icon" onClick={handleGenerateSku} disabled={generatingSku} title="Сгенерировать артикул">
-                    <Wand2 className="h-4 w-4" />
-                  </Button>
+              ) : (
+                <div className="h-20 w-20 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">
+                  <ImageIcon className="h-8 w-8" />
                 </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="barcode">Штрихкод</Label>
-                <Input id="barcode" value={formBarcode} onChange={(e) => setFormBarcode(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>Единица измерения *</Label>
-                <Select value={formUnitId} onValueChange={setFormUnitId}>
-                  <SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
-                  <SelectContent>
-                    {units.map((u) => (<SelectItem key={u.id} value={u.id}>{u.name} ({u.shortName})</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>Категория</Label>
-                <Select value={formCategoryId} onValueChange={setFormCategoryId}>
-                  <SelectTrigger><SelectValue placeholder="Без категории" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="purchasePrice">Цена закупки</Label>
-                <Input id="purchasePrice" type="number" min="0" step="0.01" placeholder="0.00"
-                  value={formPurchasePrice} onChange={(e) => setFormPurchasePrice(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="salePrice">Цена продажи</Label>
-                <Input id="salePrice" type="number" min="0" step="0.01" placeholder="0.00"
-                  value={formSalePrice} onChange={(e) => setFormSalePrice(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="desc">Описание</Label>
-              <TextArea id="desc" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
-            </div>
-            <div className="flex items-center gap-3 pt-2 border-t">
-              <button type="button" role="switch" aria-checked={formPublishedToStore}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${formPublishedToStore ? "bg-blue-500" : "bg-muted"}`}
-                onClick={() => setFormPublishedToStore(!formPublishedToStore)}>
-                <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${formPublishedToStore ? "translate-x-5" : "translate-x-0"}`} />
-              </button>
+              )}
               <div>
-                <Label className="cursor-pointer" onClick={() => setFormPublishedToStore(!formPublishedToStore)}>
-                  Размещать в интернет-магазине
-                </Label>
-                <p className="text-xs text-muted-foreground">Товар будет доступен на сайте для покупателей</p>
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden" onChange={handleUploadImage} />
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}>
+                  <Upload className="h-4 w-4 mr-2" />{uploadingImage ? "Загрузка..." : "Загрузить фото"}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, WebP, GIF. Макс. 5 МБ</p>
               </div>
             </div>
           </div>
-        </TabsContent>
-
-        {/* === Characteristics Tab === */}
-        <TabsContent value="characteristics">
-          <div className="grid gap-4 py-4">
-            {customFieldDefs.length > 0 && customFieldDefs.map((def) => (
-              <div key={def.id} className="grid gap-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm">{def.name} <span className="text-muted-foreground text-xs">({FIELD_TYPE_LABELS[def.fieldType] || def.fieldType})</span></Label>
-                  <div className="flex gap-1">
-                    {customFieldValues[def.id] && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" title="Очистить"
-                        onClick={() => setCustomFieldValues((prev) => { const next = { ...prev }; delete next[def.id]; return next; })}>
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" title="Удалить характеристику"
-                      onClick={() => handleDeleteCf(def.id)}>
+          <div className="grid gap-2">
+            <Label htmlFor="name">Название *</Label>
+            <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="sku">Артикул</Label>
+              <div className="flex gap-2">
+                <Input id="sku" value={formSku} onChange={(e) => setFormSku(e.target.value)} placeholder="Авто" className="flex-1" />
+                <Button variant="outline" size="icon" onClick={handleGenerateSku} disabled={generatingSku} title="Сгенерировать артикул">
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="barcode">Штрихкод</Label>
+              <Input id="barcode" value={formBarcode} onChange={(e) => setFormBarcode(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Единица измерения *</Label>
+              <Select value={formUnitId} onValueChange={setFormUnitId}>
+                <SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
+                <SelectContent>
+                  {units.map((u) => (<SelectItem key={u.id} value={u.id}>{u.name} ({u.shortName})</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Категория</Label>
+              <Select value={formCategoryId} onValueChange={setFormCategoryId}>
+                <SelectTrigger><SelectValue placeholder="Без категории" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="purchasePrice">Цена закупки</Label>
+              <Input id="purchasePrice" type="number" min="0" step="0.01" placeholder="0.00"
+                value={formPurchasePrice} onChange={(e) => setFormPurchasePrice(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="salePrice">Цена продажи</Label>
+              <Input id="salePrice" type="number" min="0" step="0.01" placeholder="0.00"
+                value={formSalePrice} onChange={(e) => setFormSalePrice(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="desc">Описание</Label>
+            <TextArea id="desc" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+          </div>
+          <div className="flex items-center gap-3 pt-2 border-t">
+            <button type="button" role="switch" aria-checked={formPublishedToStore}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${formPublishedToStore ? "bg-blue-500" : "bg-muted"}`}
+              onClick={() => setFormPublishedToStore(!formPublishedToStore)}>
+              <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${formPublishedToStore ? "translate-x-5" : "translate-x-0"}`} />
+            </button>
+            <div>
+              <Label className="cursor-pointer" onClick={() => setFormPublishedToStore(!formPublishedToStore)}>
+                Размещать в интернет-магазине
+              </Label>
+              <p className="text-xs text-muted-foreground">Товар будет доступен на сайте для покупателей</p>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "characteristics",
+      label: "Характеристики",
+      children: (
+        <div className="grid gap-4 py-4">
+          {customFieldDefs.length > 0 && customFieldDefs.map((def) => (
+            <div key={def.id} className="grid gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">{def.name} <span className="text-muted-foreground text-xs">({FIELD_TYPE_LABELS[def.fieldType] || def.fieldType})</span></Label>
+                <div className="flex gap-1">
+                  {customFieldValues[def.id] && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Очистить"
+                      onClick={() => setCustomFieldValues((prev) => { const next = { ...prev }; delete next[def.id]; return next; })}>
                       <X className="h-3 w-3" />
                     </Button>
-                  </div>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" title="Удалить характеристику"
+                    onClick={() => handleDeleteCf(def.id)}>
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
-                {def.fieldType === "boolean" ? (
-                  <Select value={customFieldValues[def.id] || ""} onValueChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Не задано" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Да</SelectItem>
-                      <SelectItem value="false">Нет</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : def.fieldType === "select" && def.options ? (
-                  <Select value={customFieldValues[def.id] || ""} onValueChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
-                    <SelectContent>
-                      {(JSON.parse(def.options) as string[]).map((opt) => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input type={def.fieldType === "number" ? "number" : "text"}
-                    value={customFieldValues[def.id] || ""}
-                    onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: e.target.value }))} />
-                )}
               </div>
-            ))}
-            {showNewCfForm ? (
-              <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-                <Label className="text-sm font-medium">Новая характеристика</Label>
-                <Input placeholder="Название (напр. Материал, Вес...)" value={newCfName}
-                  onChange={(e) => setNewCfName(e.target.value)} />
-                <Select value={newCfType} onValueChange={setNewCfType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+              {def.fieldType === "boolean" ? (
+                <Select value={customFieldValues[def.id] || ""} onValueChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Не задано" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="text">Текст</SelectItem>
-                    <SelectItem value="number">Число</SelectItem>
-                    <SelectItem value="select">Список (выбор)</SelectItem>
-                    <SelectItem value="boolean">Да / Нет</SelectItem>
+                    <SelectItem value="true">Да</SelectItem>
+                    <SelectItem value="false">Нет</SelectItem>
                   </SelectContent>
                 </Select>
-                {newCfType === "select" && (
-                  <Input placeholder="Варианты через запятую (Красный, Синий...)" value={newCfOptions}
-                    onChange={(e) => setNewCfOptions(e.target.value)} />
-                )}
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleCreateCf} disabled={!newCfName || savingCf}>
-                    {savingCf ? "Создание..." : "Создать"}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setShowNewCfForm(false)}>Отмена</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 pt-1">
-                <Button variant="outline" size="sm" onClick={() => setShowNewCfForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />Добавить характеристику
+              ) : def.fieldType === "select" && def.options ? (
+                <Select value={customFieldValues[def.id] || ""} onValueChange={(v) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Выберите" /></SelectTrigger>
+                  <SelectContent>
+                    {(JSON.parse(def.options) as string[]).map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input type={def.fieldType === "number" ? "number" : "text"}
+                  value={customFieldValues[def.id] || ""}
+                  onChange={(e) => setCustomFieldValues((prev) => ({ ...prev, [def.id]: e.target.value }))} />
+              )}
+            </div>
+          ))}
+          {showNewCfForm ? (
+            <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+              <Label className="text-sm font-medium">Новая характеристика</Label>
+              <Input placeholder="Название (напр. Материал, Вес...)" value={newCfName}
+                onChange={(e) => setNewCfName(e.target.value)} />
+              <Select value={newCfType} onValueChange={setNewCfType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Текст</SelectItem>
+                  <SelectItem value="number">Число</SelectItem>
+                  <SelectItem value="select">Список (выбор)</SelectItem>
+                  <SelectItem value="boolean">Да / Нет</SelectItem>
+                </SelectContent>
+              </Select>
+              {newCfType === "select" && (
+                <Input placeholder="Варианты через запятую (Красный, Синий...)" value={newCfOptions}
+                  onChange={(e) => setNewCfOptions(e.target.value)} />
+              )}
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleCreateCf} disabled={!newCfName || savingCf}>
+                  {savingCf ? "Создание..." : "Создать"}
                 </Button>
-                <Link href="/references?tab=customfields" onClick={onCancel}>
-                  <Button variant="link" size="sm" className="px-0 text-muted-foreground">
-                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Справочники
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="sm" onClick={() => setShowNewCfForm(false)}>Отмена</Button>
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 pt-1">
+              <Button variant="outline" size="sm" onClick={() => setShowNewCfForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />Добавить характеристику
+              </Button>
+              <Link href="/references?tab=customfields" onClick={onCancel}>
+                <Button variant="link" size="sm" className="px-0 text-muted-foreground">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Справочники
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "seo",
+      label: "SEO",
+      children: (
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="seoTitle">SEO заголовок</Label>
+            <Input id="seoTitle" value={formSeoTitle} onChange={(e) => setFormSeoTitle(e.target.value)}
+              placeholder={formName || "Название товара"} />
+            <p className="text-xs text-muted-foreground">{formSeoTitle.length}/60 символов</p>
           </div>
-        </TabsContent>
+          <div className="grid gap-2">
+            <Label htmlFor="seoDesc">SEO описание</Label>
+            <TextArea id="seoDesc" value={formSeoDescription} onChange={(e) => setFormSeoDescription(e.target.value)}
+              placeholder="Описание для поисковых систем" rows={3} />
+            <p className="text-xs text-muted-foreground">{formSeoDescription.length}/160 символов</p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="seoKeywords">SEO ключевые слова</Label>
+            <Input id="seoKeywords" value={formSeoKeywords} onChange={(e) => setFormSeoKeywords(e.target.value)}
+              placeholder="слово1, слово2, слово3" />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="slug">URL-slug</Label>
+            <Input id="slug" value={formSlug} onChange={(e) => setFormSlug(e.target.value)}
+              placeholder="auto-generated-from-name" />
+            <p className="text-xs text-muted-foreground">Оставьте пустым для автогенерации</p>
+          </div>
+        </div>
+      ),
+    },
+  ];
 
-        {/* === SEO Tab === */}
-        <TabsContent value="seo">
+  if (editingProduct) {
+    tabItems.push(
+      {
+        key: "stock",
+        label: "Склад",
+        children: (
+          <ProductStockTab productId={editingProduct.id} isActive={activeTab === "stock"} />
+        ),
+      },
+      {
+        key: "variants",
+        label: "Модификации",
+        children: (
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="seoTitle">SEO заголовок</Label>
-              <Input id="seoTitle" value={formSeoTitle} onChange={(e) => setFormSeoTitle(e.target.value)}
-                placeholder={formName || "Название товара"} />
-              <p className="text-xs text-muted-foreground">{formSeoTitle.length}/60 символов</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="seoDesc">SEO описание</Label>
-              <TextArea id="seoDesc" value={formSeoDescription} onChange={(e) => setFormSeoDescription(e.target.value)}
-                placeholder="Описание для поисковых систем" rows={3} />
-              <p className="text-xs text-muted-foreground">{formSeoDescription.length}/160 символов</p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="seoKeywords">SEO ключевые слова</Label>
-              <Input id="seoKeywords" value={formSeoKeywords} onChange={(e) => setFormSeoKeywords(e.target.value)}
-                placeholder="слово1, слово2, слово3" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="slug">URL-slug</Label>
-              <Input id="slug" value={formSlug} onChange={(e) => setFormSlug(e.target.value)}
-                placeholder="auto-generated-from-name" />
-              <p className="text-xs text-muted-foreground">Оставьте пустым для автогенерации</p>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* === Stock Tab === */}
-        {editingProduct && (
-          <TabsContent value="stock">
-            <ProductStockTab productId={editingProduct.id} isActive={activeTab === "stock"} />
-          </TabsContent>
-        )}
-
-        {/* === Variants Tab === */}
-        {editingProduct && (
-          <TabsContent value="variants">
-            <div className="grid gap-4 py-4">
-              <p className="text-xs text-muted-foreground">
-                Модификации связывают товары для отображения на сайте в одной карточке. Каждая модификация — отдельный товар со своей ценой, складом и скидками.
-              </p>
-              {variantLinks.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Привязанные товары</Label>
-                  <div className="border rounded-lg divide-y">
-                    {variantLinks.map((vl) => (
-                      <div key={vl.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs shrink-0">{vl.groupName}</Badge>
-                              <span className="font-medium truncate">{vl.linkedProduct.name}</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {vl.linkedProduct.sku && <span>Арт: {vl.linkedProduct.sku}</span>}
-                              {vl.linkedProduct.salePrice != null && <span className="ml-2">{formatRub(vl.linkedProduct.salePrice)}</span>}
-                            </div>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleRemoveVariantLink(vl.id)}>
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="space-y-3">
-                <Label>Привязать товар</Label>
-                <Input placeholder="Группа (напр. Цвет, Размер, Объём...)" value={newVariantGroupName}
-                  onChange={(e) => setNewVariantGroupName(e.target.value)} />
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Поиск товара по названию или артикулу..." value={variantSearchQuery}
-                    onChange={(e) => handleVariantSearch(e.target.value)} className="pl-10" />
-                </div>
-                {variantSearching && <p className="text-xs text-muted-foreground">Поиск...</p>}
-                {variantSearchResults.length > 0 && (
-                  <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
-                    {variantSearchResults.map((p) => (
-                      <button key={p.id} type="button"
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 text-left"
-                        onClick={() => handleAddVariantLink(p)}>
-                        <div className="min-w-0">
-                          <span className="font-medium">{p.name}</span>
-                          {p.sku && <span className="text-muted-foreground ml-2">({p.sku})</span>}
-                        </div>
-                        {p.salePrice != null && (
-                          <span className="text-muted-foreground shrink-0 ml-2">{formatRub(p.salePrice)}</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {variantSearchQuery.length >= 2 && !variantSearching && variantSearchResults.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Ничего не найдено</p>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-        )}
-
-        {/* === Suggestions Tab === */}
-        {editingProduct && (
-          <TabsContent value="suggestions">
-            <div className="grid gap-4 py-4">
-              <p className="text-xs text-muted-foreground">
-                Умные подсказки находят похожие товары по артикулу, названию и характеристикам.
-              </p>
-              {suggestionsLoading && <p className="text-sm text-muted-foreground">Загрузка подсказок...</p>}
-              {!suggestionsLoading && suggestions.filter((s) => !dismissedSuggestions.has(s.productId)).length === 0 && (
-                <p className="text-sm text-muted-foreground">Подсказок не найдено.</p>
-              )}
-              {suggestions.filter((s) => !dismissedSuggestions.has(s.productId) && s.confidence >= 80).length > 1 && (
-                <Button variant="outline" size="sm" onClick={handleAcceptAllHighConfidence}>
-                  Принять все с высокой уверенностью ({suggestions.filter((s) => s.confidence >= 80).length})
-                </Button>
-              )}
-              {suggestions.filter((s) => !dismissedSuggestions.has(s.productId)).length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Модификации связывают товары для отображения на сайте в одной карточке. Каждая модификация — отдельный товар со своей ценой, складом и скидками.
+            </p>
+            {variantLinks.length > 0 && (
+              <div className="space-y-2">
+                <Label>Привязанные товары</Label>
                 <div className="border rounded-lg divide-y">
-                  {suggestions.filter((s) => !dismissedSuggestions.has(s.productId)).map((s) => (
-                    <div key={s.productId} className="flex items-center justify-between px-3 py-2 text-sm">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        {s.product.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={s.product.imageUrl} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
-                        ) : (
-                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
-                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium truncate">{s.product.name}</span>
-                            <Badge variant={s.confidence >= 80 ? "default" : s.confidence >= 60 ? "secondary" : "outline"}
-                              className="text-[10px] px-1 py-0 shrink-0">{s.confidence}%</Badge>
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
-                              {s.matchType === "sku" ? "Артикул" : s.matchType === "name" ? "Название" : "Характеристики"}
-                            </Badge>
+                  {variantLinks.map((vl) => (
+                    <div key={vl.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs shrink-0">{vl.groupName}</Badge>
+                            <span className="font-medium truncate">{vl.linkedProduct.name}</span>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {s.product.sku && <span>Арт: {s.product.sku}</span>}
-                            {s.product.salePrice != null && <span className="ml-2">{formatRub(s.product.salePrice)}</span>}
-                            <span className="ml-2">→ {s.suggestedGroupName}</span>
+                            {vl.linkedProduct.sku && <span>Арт: {vl.linkedProduct.sku}</span>}
+                            {vl.linkedProduct.salePrice != null && <span className="ml-2">{formatRub(vl.linkedProduct.salePrice)}</span>}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="sm" className="h-7 text-green-600 hover:text-green-700"
-                          onClick={() => handleAcceptSuggestion(s)}>Принять</Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDismissSuggestion(s.productId)}>
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleRemoveVariantLink(vl.id)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          </TabsContent>
-        )}
-
-        {/* === Discounts Tab === */}
-        {editingProduct && (
-          <TabsContent value="discounts">
-            <div className="grid gap-4 py-4">
-              {productDiscounts.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Активные скидки</Label>
-                  <div className="border rounded-lg divide-y">
-                    {productDiscounts.map((d) => {
-                      const sp = formSalePrice ? parseFloat(formSalePrice) : null;
-                      let dp: number | null = null;
-                      if (sp != null) {
-                        dp = d.type === "percentage" ? Math.round(sp * (1 - d.value / 100) * 100) / 100 : Math.round((sp - d.value) * 100) / 100;
-                      }
-                      return (
-                        <div key={d.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                          <div>
-                            <span className="font-medium">{d.name}</span>
-                            <span className="text-muted-foreground ml-2">
-                              {d.type === "percentage" ? `${d.value}%` : formatRub(d.value)}
-                            </span>
-                            {dp != null && <span className="text-green-600 ml-2">{formatRub(dp)}</span>}
-                            {d.validTo && (
-                              <span className="text-xs text-muted-foreground ml-2">
-                                до {new Date(d.validTo).toLocaleDateString("ru")}
-                              </span>
-                            )}
-                          </div>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveDiscount(d.id)}>
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {calcDiscountedPrice() != null && (
-                    <p className="text-sm">Итого со скидкой: <span className="text-green-600 font-medium">{formatRub(calcDiscountedPrice()!)}</span></p>
-                  )}
-                </div>
-              )}
-              <div className="space-y-3">
-                <Label>Новая скидка</Label>
-                <div className="grid gap-3">
-                  <Input placeholder="Название (напр. Летняя распродажа)" value={newDiscountName}
-                    onChange={(e) => setNewDiscountName(e.target.value)} />
-                  <div className="grid grid-cols-3 gap-2">
-                    <Select value={newDiscountType} onValueChange={(v) => setNewDiscountType(v as "percentage" | "fixed")}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentage">Процент (%)</SelectItem>
-                        <SelectItem value="fixed">Фикс. сумма</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input type="number" min="0" step="0.01" placeholder={newDiscountType === "percentage" ? "10" : "500"}
-                      value={newDiscountValue} onChange={(e) => setNewDiscountValue(e.target.value)} />
-                    <Input type="date" value={newDiscountValidTo} onChange={(e) => setNewDiscountValidTo(e.target.value)} />
-                  </div>
-                  {formPurchasePrice && (
-                    <p className="text-xs text-muted-foreground">
-                      Себестоимость: {formatRub(parseFloat(formPurchasePrice))}. Скидка не может снизить цену ниже этого значения.
-                    </p>
-                  )}
-                </div>
-                <Button variant="outline" size="sm" onClick={handleAddDiscount} disabled={!newDiscountName || !newDiscountValue}>
-                  <Plus className="h-4 w-4 mr-2" /> Добавить скидку
-                </Button>
               </div>
+            )}
+            <div className="space-y-3">
+              <Label>Привязать товар</Label>
+              <Input placeholder="Группа (напр. Цвет, Размер, Объём...)" value={newVariantGroupName}
+                onChange={(e) => setNewVariantGroupName(e.target.value)} />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Поиск товара по названию или артикулу..." value={variantSearchQuery}
+                  onChange={(e) => handleVariantSearch(e.target.value)} className="pl-10" />
+              </div>
+              {variantSearching && <p className="text-xs text-muted-foreground">Поиск...</p>}
+              {variantSearchResults.length > 0 && (
+                <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+                  {variantSearchResults.map((p) => (
+                    <button key={p.id} type="button"
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 text-left"
+                      onClick={() => handleAddVariantLink(p)}>
+                      <div className="min-w-0">
+                        <span className="font-medium">{p.name}</span>
+                        {p.sku && <span className="text-muted-foreground ml-2">({p.sku})</span>}
+                      </div>
+                      {p.salePrice != null && (
+                        <span className="text-muted-foreground shrink-0 ml-2">{formatRub(p.salePrice)}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {variantSearchQuery.length >= 2 && !variantSearching && variantSearchResults.length === 0 && (
+                <p className="text-xs text-muted-foreground">Ничего не найдено</p>
+              )}
             </div>
-          </TabsContent>
-        )}
-      </Tabs>
+          </div>
+        ),
+      },
+      {
+        key: "suggestions",
+        label: "Подсказки",
+        children: (
+          <div className="grid gap-4 py-4">
+            <p className="text-xs text-muted-foreground">
+              Умные подсказки находят похожие товары по артикулу, названию и характеристикам.
+            </p>
+            {suggestionsLoading && <p className="text-sm text-muted-foreground">Загрузка подсказок...</p>}
+            {!suggestionsLoading && suggestions.filter((s) => !dismissedSuggestions.has(s.productId)).length === 0 && (
+              <p className="text-sm text-muted-foreground">Подсказок не найдено.</p>
+            )}
+            {suggestions.filter((s) => !dismissedSuggestions.has(s.productId) && s.confidence >= 80).length > 1 && (
+              <Button variant="outline" size="sm" onClick={handleAcceptAllHighConfidence}>
+                Принять все с высокой уверенностью ({suggestions.filter((s) => s.confidence >= 80).length})
+              </Button>
+            )}
+            {suggestions.filter((s) => !dismissedSuggestions.has(s.productId)).length > 0 && (
+              <div className="border rounded-lg divide-y">
+                {suggestions.filter((s) => !dismissedSuggestions.has(s.productId)).map((s) => (
+                  <div key={s.productId} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {s.product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={s.product.imageUrl} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium truncate">{s.product.name}</span>
+                          <Badge variant={s.confidence >= 80 ? "default" : s.confidence >= 60 ? "secondary" : "outline"}
+                            className="text-[10px] px-1 py-0 shrink-0">{s.confidence}%</Badge>
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+                            {s.matchType === "sku" ? "Артикул" : s.matchType === "name" ? "Название" : "Характеристики"}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {s.product.sku && <span>Арт: {s.product.sku}</span>}
+                          {s.product.salePrice != null && <span className="ml-2">{formatRub(s.product.salePrice)}</span>}
+                          <span className="ml-2">→ {s.suggestedGroupName}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" className="h-7 text-green-600 hover:text-green-700"
+                        onClick={() => handleAcceptSuggestion(s)}>Принять</Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDismissSuggestion(s.productId)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: "discounts",
+        label: "Скидки",
+        children: (
+          <div className="grid gap-4 py-4">
+            {productDiscounts.length > 0 && (
+              <div className="space-y-2">
+                <Label>Активные скидки</Label>
+                <div className="border rounded-lg divide-y">
+                  {productDiscounts.map((d) => {
+                    const sp = formSalePrice ? parseFloat(formSalePrice) : null;
+                    let dp: number | null = null;
+                    if (sp != null) {
+                      dp = d.type === "percentage" ? Math.round(sp * (1 - d.value / 100) * 100) / 100 : Math.round((sp - d.value) * 100) / 100;
+                    }
+                    return (
+                      <div key={d.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                        <div>
+                          <span className="font-medium">{d.name}</span>
+                          <span className="text-muted-foreground ml-2">
+                            {d.type === "percentage" ? `${d.value}%` : formatRub(d.value)}
+                          </span>
+                          {dp != null && <span className="text-green-600 ml-2">{formatRub(dp)}</span>}
+                          {d.validTo && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              до {new Date(d.validTo).toLocaleDateString("ru")}
+                            </span>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveDiscount(d.id)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                {calcDiscountedPrice() != null && (
+                  <p className="text-sm">Итого со скидкой: <span className="text-green-600 font-medium">{formatRub(calcDiscountedPrice()!)}</span></p>
+                )}
+              </div>
+            )}
+            <div className="space-y-3">
+              <Label>Новая скидка</Label>
+              <div className="grid gap-3">
+                <Input placeholder="Название (напр. Летняя распродажа)" value={newDiscountName}
+                  onChange={(e) => setNewDiscountName(e.target.value)} />
+                <div className="grid grid-cols-3 gap-2">
+                  <Select value={newDiscountType} onValueChange={(v) => setNewDiscountType(v as "percentage" | "fixed")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Процент (%)</SelectItem>
+                      <SelectItem value="fixed">Фикс. сумма</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input type="number" min="0" step="0.01" placeholder={newDiscountType === "percentage" ? "10" : "500"}
+                    value={newDiscountValue} onChange={(e) => setNewDiscountValue(e.target.value)} />
+                  <Input type="date" value={newDiscountValidTo} onChange={(e) => setNewDiscountValidTo(e.target.value)} />
+                </div>
+                {formPurchasePrice && (
+                  <p className="text-xs text-muted-foreground">
+                    Себестоимость: {formatRub(parseFloat(formPurchasePrice))}. Скидка не может снизить цену ниже этого значения.
+                  </p>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleAddDiscount} disabled={!newDiscountName || !newDiscountValue}>
+                <Plus className="h-4 w-4 mr-2" /> Добавить скидку
+              </Button>
+            </div>
+          </div>
+        ),
+      },
+    );
+  }
+
+  return (
+    <div className={inDialog ? "" : "space-y-4"}>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        className="w-full"
+        items={tabItems}
+      />
 
       {footer}
     </div>

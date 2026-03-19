@@ -25,7 +25,7 @@ import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, 
 import { toast } from "sonner";
 import { formatRub, formatDate, formatDateTime } from "@/lib/shared/utils";
 import Link from "next/link";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "antd";
 
 interface JournalLine {
   id: string;
@@ -812,260 +812,265 @@ export default function DocumentDetailPage() {
       </div>
 
       {/* Items + Journal Tabs */}
-      <Tabs defaultValue="items">
-        <TabsList>
-          <TabsTrigger value="items">Позиции ({doc.items.length})</TabsTrigger>
-          <TabsTrigger value="journal">
-            <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-            Проводки{journalEntries.length > 0 ? ` (${journalEntries.length})` : ""}
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Items tab */}
-        <TabsContent value="items">
-          <Card>
-            <CardContent className="pt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8">#</TableHead>
-                    <TableHead>Товар</TableHead>
-                    <TableHead>Артикул</TableHead>
-                    <TableHead>Ед.</TableHead>
-                    {doc.type === "inventory_count" ? (
-                      <>
-                        <TableHead className="text-right">По учёту</TableHead>
-                        <TableHead className="text-right">Факт</TableHead>
-                        <TableHead className="text-right">Отклонение</TableHead>
-                      </>
-                    ) : (
-                      <TableHead className="text-right">Кол-во</TableHead>
-                    )}
-                    <TableHead className="text-right">Цена</TableHead>
-                    {doc.type === "inventory_count" ? (
-                      <>
-                        <TableHead className="text-right">Сумма факта</TableHead>
-                        <TableHead className="text-right">Сумма отклонения</TableHead>
-                      </>
-                    ) : (
-                      <TableHead className="text-right">Сумма</TableHead>
-                    )}
-                    {doc.status === "draft" && <TableHead className="w-20" />}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {doc.items.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={doc.type === "inventory_count" ? (doc.status === "draft" ? 10 : 9) : (doc.status === "draft" ? 8 : 7)}
-                        className="text-center text-muted-foreground py-8"
-                      >
-                        {doc.type === "inventory_count" && doc.status === "draft"
-                          ? "Нет позиций. Используйте «Заполнить» или добавьте позиции вручную"
-                          : ["write_off", "stock_receipt"].includes(doc.type) && doc.status === "draft"
-                          ? "Нет позиций. Нажмите «Добавить позицию» для добавления товаров"
-                          : "Нет позиций"
-                        }
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    doc.items.map((item, i) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                        <TableCell className="font-medium">{item.product.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{item.product.sku || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{item.product.unit?.shortName || "—"}</TableCell>
-
+      <Tabs
+        defaultActiveKey="items"
+        items={[
+          {
+            key: "items",
+            label: `Позиции (${doc.items.length})`,
+            children: (
+              <Card>
+                <CardContent className="pt-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-8">#</TableHead>
+                        <TableHead>Товар</TableHead>
+                        <TableHead>Артикул</TableHead>
+                        <TableHead>Ед.</TableHead>
                         {doc.type === "inventory_count" ? (
                           <>
-                            {/* По учёту: expectedQty (read-only) */}
-                            <TableCell className="text-right text-muted-foreground">
-                              {item.expectedQty ?? 0}
-                            </TableCell>
+                            <TableHead className="text-right">По учёту</TableHead>
+                            <TableHead className="text-right">Факт</TableHead>
+                            <TableHead className="text-right">Отклонение</TableHead>
+                          </>
+                        ) : (
+                          <TableHead className="text-right">Кол-во</TableHead>
+                        )}
+                        <TableHead className="text-right">Цена</TableHead>
+                        {doc.type === "inventory_count" ? (
+                          <>
+                            <TableHead className="text-right">Сумма факта</TableHead>
+                            <TableHead className="text-right">Сумма отклонения</TableHead>
+                          </>
+                        ) : (
+                          <TableHead className="text-right">Сумма</TableHead>
+                        )}
+                        {doc.status === "draft" && <TableHead className="w-20" />}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {doc.items.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={doc.type === "inventory_count" ? (doc.status === "draft" ? 10 : 9) : (doc.status === "draft" ? 8 : 7)}
+                            className="text-center text-muted-foreground py-8"
+                          >
+                            {doc.type === "inventory_count" && doc.status === "draft"
+                              ? "Нет позиций. Используйте «Заполнить» или добавьте позиции вручную"
+                              : ["write_off", "stock_receipt"].includes(doc.type) && doc.status === "draft"
+                              ? "Нет позиций. Нажмите «Добавить позицию» для добавления товаров"
+                              : "Нет позиций"
+                            }
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        doc.items.map((item, i) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                            <TableCell className="font-medium">{item.product.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{item.product.sku || "—"}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs">{item.product.unit?.shortName || "—"}</TableCell>
 
-                            {/* Факт: actualQty (editable in draft) */}
+                            {doc.type === "inventory_count" ? (
+                              <>
+                                {/* По учёту: expectedQty (read-only) */}
+                                <TableCell className="text-right text-muted-foreground">
+                                  {item.expectedQty ?? 0}
+                                </TableCell>
+
+                                {/* Факт: actualQty (editable in draft) */}
+                                <TableCell className="text-right">
+                                  {doc.status === "draft" ? (
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.001"
+                                      className="w-24 h-7 text-right text-sm"
+                                      value={editingActualQty[i] ?? String(item.actualQty ?? 0)}
+                                      onChange={(e) =>
+                                        setEditingActualQty((prev) => ({ ...prev, [i]: e.target.value }))
+                                      }
+                                      onBlur={() => {
+                                        const raw = editingActualQty[i];
+                                        if (raw !== undefined) {
+                                          handleUpdateActualQty(i, parseFloat(raw) || 0);
+                                        }
+                                      }}
+                                    />
+                                  ) : (
+                                    <span>{item.actualQty ?? 0}</span>
+                                  )}
+                                </TableCell>
+
+                                {/* Отклонение: computed from actualQty - expectedQty */}
+                                <TableCell className="text-right">
+                                  {(() => {
+                                    const actual = doc.status === "draft" && editingActualQty[i] !== undefined
+                                      ? (parseFloat(editingActualQty[i]) || 0)
+                                      : (item.actualQty ?? 0);
+                                    const diff = actual - (item.expectedQty ?? 0);
+                                    return (
+                                      <span
+                                        className="font-medium"
+                                        style={{
+                                          color: diff < 0 ? "#ef4444" : diff > 0 ? "#22c55e" : undefined,
+                                        }}
+                                      >
+                                        {diff > 0 ? "+" : ""}{diff % 1 === 0 ? diff : diff.toFixed(3)}
+                                      </span>
+                                    );
+                                  })()}
+                                </TableCell>
+                              </>
+                            ) : (
+                              /* Standard quantity column for non-inventory docs */
+                              <TableCell className="text-right">
+                                {doc.status === "draft" ? (
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    className="w-20 h-7 text-right text-sm"
+                                    value={editingItems[i]?.quantity ?? String(item.quantity)}
+                                    onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: e.target.value, price: prev[i]?.price ?? String(item.price) } }))}
+                                    onBlur={() => {
+                                      const ed = editingItems[i];
+                                      if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
+                                    }}
+                                  />
+                                ) : item.quantity}
+                              </TableCell>
+                            )}
+
                             <TableCell className="text-right">
-                              {doc.status === "draft" ? (
+                              {doc.status === "draft" && doc.type !== "inventory_count" ? (
                                 <Input
                                   type="number"
                                   min="0"
-                                  step="0.001"
-                                  className="w-24 h-7 text-right text-sm"
-                                  value={editingActualQty[i] ?? String(item.actualQty ?? 0)}
-                                  onChange={(e) =>
-                                    setEditingActualQty((prev) => ({ ...prev, [i]: e.target.value }))
-                                  }
+                                  step="0.01"
+                                  className="w-28 h-7 text-right text-sm"
+                                  value={editingItems[i]?.price ?? String(item.price)}
+                                  onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: prev[i]?.quantity ?? String(item.quantity), price: e.target.value } }))}
                                   onBlur={() => {
-                                    const raw = editingActualQty[i];
-                                    if (raw !== undefined) {
-                                      handleUpdateActualQty(i, parseFloat(raw) || 0);
-                                    }
+                                    const ed = editingItems[i];
+                                    if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
                                   }}
                                 />
-                              ) : (
-                                <span>{item.actualQty ?? 0}</span>
-                              )}
+                              ) : formatRub(item.price)}
                             </TableCell>
-
-                            {/* Отклонение: computed from actualQty - expectedQty */}
-                            <TableCell className="text-right">
-                              {(() => {
-                                const actual = doc.status === "draft" && editingActualQty[i] !== undefined
-                                  ? (parseFloat(editingActualQty[i]) || 0)
-                                  : (item.actualQty ?? 0);
-                                const diff = actual - (item.expectedQty ?? 0);
-                                return (
-                                  <span
-                                    className="font-medium"
-                                    style={{
-                                      color: diff < 0 ? "#ef4444" : diff > 0 ? "#22c55e" : undefined,
-                                    }}
-                                  >
-                                    {diff > 0 ? "+" : ""}{diff % 1 === 0 ? diff : diff.toFixed(3)}
-                                  </span>
-                                );
-                              })()}
-                            </TableCell>
-                          </>
-                        ) : (
-                          /* Standard quantity column for non-inventory docs */
-                          <TableCell className="text-right">
-                            {doc.status === "draft" ? (
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="w-20 h-7 text-right text-sm"
-                                value={editingItems[i]?.quantity ?? String(item.quantity)}
-                                onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: e.target.value, price: prev[i]?.price ?? String(item.price) } }))}
-                                onBlur={() => {
-                                  const ed = editingItems[i];
-                                  if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
-                                }}
-                              />
-                            ) : item.quantity}
-                          </TableCell>
-                        )}
-
-                        <TableCell className="text-right">
-                          {doc.status === "draft" && doc.type !== "inventory_count" ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              className="w-28 h-7 text-right text-sm"
-                              value={editingItems[i]?.price ?? String(item.price)}
-                              onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: prev[i]?.quantity ?? String(item.quantity), price: e.target.value } }))}
-                              onBlur={() => {
-                                const ed = editingItems[i];
-                                if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
-                              }}
-                            />
-                          ) : formatRub(item.price)}
-                        </TableCell>
-                        {doc.type === "inventory_count" ? (
-                          <>
-                            {/* Сумма факта = actualQty * price */}
-                            <TableCell className="text-right font-medium">
-                              {(() => {
-                                const actual = doc.status === "draft" && editingActualQty[i] !== undefined
-                                  ? (parseFloat(editingActualQty[i]) || 0)
-                                  : (item.actualQty ?? 0);
-                                return formatRub(actual * Number(item.price));
-                              })()}
-                            </TableCell>
-                            {/* Сумма отклонения = |actualQty - expectedQty| * price */}
-                            <TableCell className="text-right font-medium">
-                              {(() => {
-                                const actual = doc.status === "draft" && editingActualQty[i] !== undefined
-                                  ? (parseFloat(editingActualQty[i]) || 0)
-                                  : (item.actualQty ?? 0);
-                                const diff = Math.abs(actual - (item.expectedQty ?? 0));
-                                return (
-                                  <span style={{ color: diff > 0 ? "#ef4444" : undefined }}>
-                                    {formatRub(diff * Number(item.price))}
-                                  </span>
-                                );
-                              })()}
-                            </TableCell>
-                          </>
-                        ) : (
-                          <TableCell className="text-right font-medium">
-                            {formatRub(Number(item.price) * Number(item.quantity))}
-                          </TableCell>
-                        )}
-                        {doc.status === "draft" && (
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveItem(i)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Journal entries tab */}
-        <TabsContent value="journal">
-          <Card>
-            <CardContent className="pt-4">
-              {journalLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
-              ) : journalEntries.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Проводки отсутствуют. Документ ещё не проведён в журнал.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {journalEntries.map((entry) => (
-                    <div key={entry.id}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-mono text-sm font-medium">{entry.number}</span>
-                        <span className="text-xs text-muted-foreground">{formatDate(entry.date)}</span>
-                        {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
-                        {entry.isReversed && <span className="text-xs text-destructive font-medium">СТОРНО</span>}
-                      </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Счёт</TableHead>
-                            <TableHead>Название</TableHead>
-                            <TableHead className="text-right">Дебет</TableHead>
-                            <TableHead className="text-right">Кредит</TableHead>
+                            {doc.type === "inventory_count" ? (
+                              <>
+                                {/* Сумма факта = actualQty * price */}
+                                <TableCell className="text-right font-medium">
+                                  {(() => {
+                                    const actual = doc.status === "draft" && editingActualQty[i] !== undefined
+                                      ? (parseFloat(editingActualQty[i]) || 0)
+                                      : (item.actualQty ?? 0);
+                                    return formatRub(actual * Number(item.price));
+                                  })()}
+                                </TableCell>
+                                {/* Сумма отклонения = |actualQty - expectedQty| * price */}
+                                <TableCell className="text-right font-medium">
+                                  {(() => {
+                                    const actual = doc.status === "draft" && editingActualQty[i] !== undefined
+                                      ? (parseFloat(editingActualQty[i]) || 0)
+                                      : (item.actualQty ?? 0);
+                                    const diff = Math.abs(actual - (item.expectedQty ?? 0));
+                                    return (
+                                      <span style={{ color: diff > 0 ? "#ef4444" : undefined }}>
+                                        {formatRub(diff * Number(item.price))}
+                                      </span>
+                                    );
+                                  })()}
+                                </TableCell>
+                              </>
+                            ) : (
+                              <TableCell className="text-right font-medium">
+                                {formatRub(Number(item.price) * Number(item.quantity))}
+                              </TableCell>
+                            )}
+                            {doc.status === "draft" && (
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRemoveItem(i)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </TableCell>
+                            )}
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {entry.lines.map((line) => (
-                            <TableRow key={line.id}>
-                              <TableCell className="font-mono text-sm">{line.accountCode}</TableCell>
-                              <TableCell className="text-sm">{line.accountName}</TableCell>
-                              <TableCell className="text-right text-sm">
-                                {line.debit > 0 ? formatRub(line.debit) : "—"}
-                              </TableCell>
-                              <TableCell className="text-right text-sm">
-                                {line.credit > 0 ? formatRub(line.credit) : "—"}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ),
+          },
+          {
+            key: "journal",
+            label: (
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="h-3.5 w-3.5" />
+                Проводки{journalEntries.length > 0 ? ` (${journalEntries.length})` : ""}
+              </span>
+            ),
+            children: (
+              <Card>
+                <CardContent className="pt-4">
+                  {journalLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
+                  ) : journalEntries.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Проводки отсутствуют. Документ ещё не проведён в журнал.
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                  ) : (
+                    <div className="space-y-4">
+                      {journalEntries.map((entry) => (
+                        <div key={entry.id}>
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="font-mono text-sm font-medium">{entry.number}</span>
+                            <span className="text-xs text-muted-foreground">{formatDate(entry.date)}</span>
+                            {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
+                            {entry.isReversed && <span className="text-xs text-destructive font-medium">СТОРНО</span>}
+                          </div>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Счёт</TableHead>
+                                <TableHead>Название</TableHead>
+                                <TableHead className="text-right">Дебет</TableHead>
+                                <TableHead className="text-right">Кредит</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {entry.lines.map((line) => (
+                                <TableRow key={line.id}>
+                                  <TableCell className="font-mono text-sm">{line.accountCode}</TableCell>
+                                  <TableCell className="text-sm">{line.accountName}</TableCell>
+                                  <TableCell className="text-right text-sm">
+                                    {line.debit > 0 ? formatRub(line.debit) : "—"}
+                                  </TableCell>
+                                  <TableCell className="text-right text-sm">
+                                    {line.credit > 0 ? formatRub(line.credit) : "—"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ),
+          },
+        ]}
+      />
 
       {(doc.description || doc.notes) && (
         <div className="grid gap-4">
