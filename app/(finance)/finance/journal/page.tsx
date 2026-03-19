@@ -3,9 +3,8 @@
 import { useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Tag, Card, Modal, Select, Input } from "antd";
+import { Tag, Card, Modal, Select, Input, Typography } from "antd";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import { ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -313,7 +312,7 @@ function JournalPageContent() {
 
             {/* Manual / Auto filter */}
             <div className="grid gap-1">
-              <Label className="text-xs text-muted-foreground">Тип</Label>
+              <Typography.Text strong className="text-xs text-muted-foreground">Тип</Typography.Text>
               <Select
                 value={isManualFilter}
                 onChange={setIsManualFilter}
@@ -328,7 +327,7 @@ function JournalPageContent() {
 
             {/* Account code filter */}
             <div className="grid gap-1">
-              <Label className="text-xs text-muted-foreground">Счёт</Label>
+              <Typography.Text strong className="text-xs text-muted-foreground">Счёт</Typography.Text>
               <Input
                 placeholder="Например: 51"
                 value={accountCode}

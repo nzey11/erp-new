@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, MapPin, Plus, Pencil, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, Input, Modal } from "antd";
-import { Label } from "@/components/ui/label";
+import { Card, Input, Modal, Typography } from "antd";
 import { toast } from "sonner";
 
 type Address = {
@@ -260,45 +259,40 @@ export default function AddressesPage() {
       >
         <div className="space-y-4">
             <div>
-              <Label htmlFor="label">Название адреса *</Label>
+              <Typography.Text strong>Название адреса *</Typography.Text>
               <Input
-                id="label"
                 placeholder="Дом, Работа, и т.д."
                 value={formData.label}
                 onChange={(e) => setFormData({ ...formData, label: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="recipientName">Получатель *</Label>
+              <Typography.Text strong>Получатель *</Typography.Text>
               <Input
-                id="recipientName"
                 placeholder="ФИО"
                 value={formData.recipientName}
                 onChange={(e) => setFormData({ ...formData, recipientName: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="phone">Телефон *</Label>
+              <Typography.Text strong>Телефон *</Typography.Text>
               <Input
-                id="phone"
                 placeholder="+7 (999) 123-45-67"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="city">Город *</Label>
+              <Typography.Text strong>Город *</Typography.Text>
               <Input
-                id="city"
                 placeholder="Москва"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="street">Улица *</Label>
+              <Typography.Text strong>Улица *</Typography.Text>
               <Input
-                id="street"
                 placeholder="Ленина"
                 value={formData.street}
                 onChange={(e) => setFormData({ ...formData, street: e.target.value })}
@@ -306,18 +300,16 @@ export default function AddressesPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="building">Дом *</Label>
+                <Typography.Text strong>Дом *</Typography.Text>
                 <Input
-                  id="building"
                   placeholder="10"
                   value={formData.building}
                   onChange={(e) => setFormData({ ...formData, building: e.target.value })}
                 />
               </div>
               <div>
-                <Label htmlFor="apartment">Квартира</Label>
+                <Typography.Text strong>Квартира</Typography.Text>
                 <Input
-                  id="apartment"
                   placeholder="25"
                   value={formData.apartment}
                   onChange={(e) => setFormData({ ...formData, apartment: e.target.value })}
@@ -325,9 +317,8 @@ export default function AddressesPage() {
               </div>
             </div>
             <div>
-              <Label htmlFor="postalCode">Индекс</Label>
+              <Typography.Text strong>Индекс</Typography.Text>
               <Input
-                id="postalCode"
                 placeholder="123456"
                 value={formData.postalCode}
                 onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
@@ -336,14 +327,13 @@ export default function AddressesPage() {
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="isDefault"
                 checked={formData.isDefault}
                 onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
                 className="h-4 w-4"
               />
-              <Label htmlFor="isDefault" className="cursor-pointer">
+              <Typography.Text strong className="cursor-pointer">
                 Использовать по умолчанию
-              </Label>
+              </Typography.Text>
             </div>
           </div>
       </Modal>

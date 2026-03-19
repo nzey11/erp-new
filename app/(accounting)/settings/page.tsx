@@ -3,15 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Tag, Card, Modal, Select, Input } from "antd";
-import { DataGrid } from "@/components/ui/data-grid";
+import { Tag, Card, Modal, Select, Input, Typography } from "antd";
 import type { DataGridColumn } from "@/components/ui/data-grid";
-import { Label } from "@/components/ui/label";
-import { Pencil, UserPlus, Save, Building2, Warehouse } from "lucide-react";
+import { DataGrid } from "@/components/ui/data-grid";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import Link from "next/link";
+import { Pencil, UserPlus, Save, Building2, Warehouse } from "lucide-react";
 
 interface User {
   id: string;
@@ -188,23 +187,23 @@ export default function SettingsPage() {
       }>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label>Название *</Label>
+              <Typography.Text strong>Название *</Typography.Text>
               <Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} placeholder="ООО Моя компания" />
             </div>
             <div className="grid gap-2">
-              <Label>ИНН</Label>
+              <Typography.Text strong>ИНН</Typography.Text>
               <Input value={companyForm.inn} onChange={(e) => setCompanyForm({ ...companyForm, inn: e.target.value })} placeholder="1234567890" />
             </div>
             <div className="grid gap-2">
-              <Label>КПП</Label>
+              <Typography.Text strong>КПП</Typography.Text>
               <Input value={companyForm.kpp} onChange={(e) => setCompanyForm({ ...companyForm, kpp: e.target.value })} placeholder="123456789" />
             </div>
             <div className="grid gap-2">
-              <Label>ОГРН</Label>
+              <Typography.Text strong>ОГРН</Typography.Text>
               <Input value={companyForm.ogrn} onChange={(e) => setCompanyForm({ ...companyForm, ogrn: e.target.value })} placeholder="1234567890123" />
             </div>
             <div className="grid gap-2">
-              <Label>Начало фискального года (месяц)</Label>
+              <Typography.Text strong>Начало фискального года (месяц)</Typography.Text>
               <Select
               value={companyForm.fiscalYearStartMonth}
               onChange={(v: string) => setCompanyForm({ ...companyForm, fiscalYearStartMonth: v })}
@@ -279,19 +278,19 @@ export default function SettingsPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Логин *</Label>
+            <Typography.Text strong>Логин *</Typography.Text>
             <Input value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} />
           </div>
           <div className="grid gap-2">
-            <Label>{editingUser ? "Новый пароль (оставьте пустым)" : "Пароль *"}</Label>
+            <Typography.Text strong>{editingUser ? "Новый пароль (оставьте пустым)" : "Пароль *"}</Typography.Text>
             <Input.Password value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
           </div>
           <div className="grid gap-2">
-            <Label>Email</Label>
+            <Typography.Text strong>Email</Typography.Text>
             <Input value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} />
           </div>
           <div className="grid gap-2">
-            <Label>Роль</Label>
+            <Typography.Text strong>Роль</Typography.Text>
             <Select
               value={userForm.role}
               onChange={(v: string) => setUserForm({ ...userForm, role: v })}

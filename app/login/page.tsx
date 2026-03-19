@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCsrfToken } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, Input } from "antd";
+import { Card, Input, Typography } from "antd";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,9 +56,8 @@ export default function LoginPage() {
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Логин</Label>
+              <Typography.Text strong>Логин</Typography.Text>
               <Input
-                id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -70,9 +68,8 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
+              <Typography.Text strong>Пароль</Typography.Text>
               <Input.Password
-                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="******"

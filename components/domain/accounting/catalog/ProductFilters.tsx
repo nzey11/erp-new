@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, Checkbox, Input } from "antd";
-import { Label } from "@/components/ui/label";
-import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
+import { SearchOutlined } from "@ant-design/icons";
+import { X, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Category {
   id: string;
@@ -70,13 +70,13 @@ export function ProductFiltersBar({
     <div className="space-y-3">
       {/* Main filter row */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="flex-1 min-w-[200px] max-w-sm">
           <Input
+            prefix={<SearchOutlined className="text-muted-foreground" />}
             placeholder="Поиск по названию, артикулу..."
             value={filters.search}
             onChange={(e) => updateFilter("search", e.target.value)}
-            className="pl-10"
+            allowClear
           />
         </div>
 

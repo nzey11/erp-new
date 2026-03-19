@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, Input } from "antd";
+import { Card, Input, Typography } from "antd";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
@@ -101,9 +100,8 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="email">Email *</Label>
+            <Typography.Text strong>Email *</Typography.Text>
             <Input
-              id="email"
               name="email"
               type="email"
               autoComplete="email"
@@ -119,9 +117,8 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="name">Имя (необязательно)</Label>
+            <Typography.Text strong>Имя (необязательно)</Typography.Text>
             <Input
-              id="name"
               name="name"
               type="text"
               autoComplete="name"
@@ -133,9 +130,8 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="password">Пароль *</Label>
+            <Typography.Text strong>Пароль *</Typography.Text>
             <Input.Password
-              id="password"
               name="password"
               autoComplete="new-password"
               placeholder="Минимум 6 символов"
@@ -150,9 +146,8 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="confirmPassword">Подтверждение пароля *</Label>
+            <Typography.Text strong>Подтверждение пароля *</Typography.Text>
             <Input.Password
-              id="confirmPassword"
               name="confirmPassword"
               autoComplete="new-password"
               placeholder="Повторите пароль"

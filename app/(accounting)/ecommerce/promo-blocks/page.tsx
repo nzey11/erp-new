@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tag, Card, Modal, Table, Input } from "antd";
+import { Tag, Card, Modal, Table, Input, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import { Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -295,45 +294,40 @@ export default function PromoBlocksPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Заголовок *</Label>
+            <Typography.Text strong>Заголовок *</Typography.Text>
             <Input
-              id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Летняя распродажа"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="subtitle">Подзаголовок</Label>
+            <Typography.Text strong>Подзаголовок</Typography.Text>
             <Input
-              id="subtitle"
               value={subtitle}
               onChange={(e) => setSubtitle(e.target.value)}
               placeholder="Скидки до 50%"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="imageUrl">URL изображения *</Label>
+            <Typography.Text strong>URL изображения *</Typography.Text>
             <Input
-              id="imageUrl"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://example.com/image.jpg"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="linkUrl">Ссылка</Label>
+            <Typography.Text strong>Ссылка</Typography.Text>
             <Input
-              id="linkUrl"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://example.com"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="order">Порядок сортировки</Label>
+            <Typography.Text strong>Порядок сортировки</Typography.Text>
             <Input
-              id="order"
               type="number"
               value={order}
               onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
@@ -347,9 +341,9 @@ export default function PromoBlocksPage() {
               onChange={(e) => setIsActive(e.target.checked)}
               className="h-4 w-4"
             />
-            <Label htmlFor="isActive" className="cursor-pointer">
+            <Typography.Text strong className="cursor-pointer">
               Активен
-            </Label>
+            </Typography.Text>
           </div>
         </div>
       </Modal>

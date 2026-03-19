@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Table, type TableColumnsType, Modal, Input } from "antd";
-import { Label } from "@/components/ui/label";
+import { Table, type TableColumnsType, Modal, Input, Typography } from "antd";
 import { ArrowLeft, Search, Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
@@ -354,7 +353,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
               </div>
             ) : (
               <div className="grid gap-2">
-                <Label>Поиск товара</Label>
+                <Typography.Text strong>Поиск товара</Typography.Text>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -398,7 +397,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Цена *</Label>
+                <Typography.Text strong>Цена *</Typography.Text>
                 <Input
                   type="number"
                   min="0"
@@ -409,7 +408,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Мин. количество</Label>
+                <Typography.Text strong>Мин. количество</Typography.Text>
                 <Input
                   type="number"
                   min="1"

@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { App, Button, Dropdown, Tabs, Card, Input } from "antd";
-import { Label } from "@/components/ui/label";
+import { App, Button, Dropdown, Tabs, Card, Input, Typography } from "antd";
 import { DownloadOutlined, PlusOutlined, MoreOutlined, CheckOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/shared/page-header";
 import { ERPTable } from "@/components/erp/erp-table";
@@ -428,7 +427,7 @@ export function PurchasesPageClient({
           {/* Date range */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Label>С</Label>
+              <Typography.Text strong>С</Typography.Text>
               <Input
                 type="date"
                 value={dateFrom}
@@ -437,7 +436,7 @@ export function PurchasesPageClient({
               />
             </div>
             <div className="flex items-center gap-2">
-              <Label>По</Label>
+              <Typography.Text strong>По</Typography.Text>
               <Input
                 type="date"
                 value={dateTo}

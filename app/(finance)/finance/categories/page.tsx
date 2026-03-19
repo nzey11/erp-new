@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tag, Table, type TableColumnsType, Modal, Select, Input } from "antd";
+import { Tag, Table, type TableColumnsType, Modal, Select, Input, Typography } from "antd";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -279,7 +278,7 @@ export default function CategoriesPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Тип *</Label>
+            <Typography.Text strong>Тип *</Typography.Text>
             <Select
               value={form.type}
               onChange={(v) => setForm((f) => ({ ...f, type: v, defaultAccountCode: "" }))}
@@ -291,7 +290,7 @@ export default function CategoriesPage() {
             />
           </div>
           <div className="grid gap-2">
-            <Label>Название *</Label>
+            <Typography.Text strong>Название *</Typography.Text>
             <Input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -300,7 +299,7 @@ export default function CategoriesPage() {
             />
           </div>
           <div className="grid gap-2">
-            <Label>Счёт по умолчанию</Label>
+            <Typography.Text strong>Счёт по умолчанию</Typography.Text>
             <p className="text-xs text-muted-foreground">
               При создании платежа с этой статьёй будет автоматически сформирована проводка на указанный счёт.
             </p>
@@ -322,7 +321,7 @@ export default function CategoriesPage() {
         <div className="grid gap-4 py-4">
           {!editTarget?.isSystem && (
             <div className="grid gap-2">
-              <Label>Название *</Label>
+              <Typography.Text strong>Название *</Typography.Text>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -331,7 +330,7 @@ export default function CategoriesPage() {
             </div>
           )}
           <div className="grid gap-2">
-            <Label>Счёт по умолчанию</Label>
+            <Typography.Text strong>Счёт по умолчанию</Typography.Text>
             <p className="text-xs text-muted-foreground">
               {editTarget?.type === "income"
                 ? "Типичные счета: 90.1 (выручка), 91.1 (прочие доходы)"

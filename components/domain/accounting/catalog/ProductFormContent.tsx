@@ -4,8 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { csrfFetch } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
-import { Tag, Select, Tabs, Input } from "antd";
-import { Label } from "@/components/ui/label";
+import { Tag, Select, Tabs, Input, Typography } from "antd";
 import type { TabsProps } from "antd";
 const { TextArea } = Input;
 import { Search, Upload, Wand2, Plus, X, ImageIcon, ExternalLink, Link2 } from "lucide-react";
@@ -435,7 +434,7 @@ export function ProductFormContent({
       children: (
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Фото товара</Label>
+            <Typography.Text strong>Фото товара</Typography.Text>
             <div className="flex items-center gap-4">
               {formImageUrl ? (
                 <div className="relative">
@@ -460,27 +459,27 @@ export function ProductFormContent({
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="name">Название *</Label>
-            <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} />
+            <Typography.Text strong>Название *</Typography.Text>
+            <Input value={formName} onChange={(e) => setFormName(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="sku">Артикул</Label>
+              <Typography.Text strong>Артикул</Typography.Text>
               <div className="flex gap-2">
-                <Input id="sku" value={formSku} onChange={(e) => setFormSku(e.target.value)} placeholder="Авто" className="flex-1" />
+                <Input value={formSku} onChange={(e) => setFormSku(e.target.value)} placeholder="Авто" className="flex-1" />
                 <Button variant="outline" size="icon" onClick={handleGenerateSku} disabled={generatingSku} title="Сгенерировать артикул">
                   <Wand2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="barcode">Штрихкод</Label>
-              <Input id="barcode" value={formBarcode} onChange={(e) => setFormBarcode(e.target.value)} />
+              <Typography.Text strong>Штрихкод</Typography.Text>
+              <Input value={formBarcode} onChange={(e) => setFormBarcode(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>Единица измерения *</Label>
+              <Typography.Text strong>Единица измерения *</Typography.Text>
               <Select
                 value={formUnitId}
                 onChange={setFormUnitId}
@@ -490,7 +489,7 @@ export function ProductFormContent({
               />
             </div>
             <div className="grid gap-2">
-              <Label>Категория</Label>
+              <Typography.Text strong>Категория</Typography.Text>
               <Select
                 value={formCategoryId}
                 onChange={setFormCategoryId}
@@ -502,19 +501,19 @@ export function ProductFormContent({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="purchasePrice">Цена закупки</Label>
-              <Input id="purchasePrice" type="number" min="0" step="0.01" placeholder="0.00"
+              <Typography.Text strong>Цена закупки</Typography.Text>
+              <Input type="number" min="0" step="0.01" placeholder="0.00"
                 value={formPurchasePrice} onChange={(e) => setFormPurchasePrice(e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="salePrice">Цена продажи</Label>
-              <Input id="salePrice" type="number" min="0" step="0.01" placeholder="0.00"
+              <Typography.Text strong>Цена продажи</Typography.Text>
+              <Input type="number" min="0" step="0.01" placeholder="0.00"
                 value={formSalePrice} onChange={(e) => setFormSalePrice(e.target.value)} />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="desc">Описание</Label>
-            <TextArea id="desc" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+            <Typography.Text strong>Описание</Typography.Text>
+            <TextArea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
           </div>
           <div className="flex items-center gap-3 pt-2 border-t">
             <button type="button" role="switch" aria-checked={formPublishedToStore}
@@ -523,9 +522,9 @@ export function ProductFormContent({
               <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${formPublishedToStore ? "translate-x-5" : "translate-x-0"}`} />
             </button>
             <div>
-              <Label className="cursor-pointer" onClick={() => setFormPublishedToStore(!formPublishedToStore)}>
+              <Typography.Text strong className="cursor-pointer" onClick={() => setFormPublishedToStore(!formPublishedToStore)}>
                 Размещать в интернет-магазине
-              </Label>
+              </Typography.Text>
               <p className="text-xs text-muted-foreground">Товар будет доступен на сайте для покупателей</p>
             </div>
           </div>
@@ -540,7 +539,7 @@ export function ProductFormContent({
           {customFieldDefs.length > 0 && customFieldDefs.map((def) => (
             <div key={def.id} className="grid gap-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-sm">{def.name} <span className="text-muted-foreground text-xs">({FIELD_TYPE_LABELS[def.fieldType] || def.fieldType})</span></Label>
+                <Typography.Text strong className="text-sm">{def.name} <span className="text-muted-foreground text-xs">({FIELD_TYPE_LABELS[def.fieldType] || def.fieldType})</span></Typography.Text>
                 <div className="flex gap-1">
                   {customFieldValues[def.id] && (
                     <Button variant="ghost" size="icon" className="h-6 w-6" title="Очистить"
@@ -582,7 +581,7 @@ export function ProductFormContent({
           ))}
           {showNewCfForm ? (
             <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-              <Label className="text-sm font-medium">Новая характеристика</Label>
+              <Typography.Text strong className="text-sm">Новая характеристика</Typography.Text>
               <Input placeholder="Название (напр. Материал, Вес...)" value={newCfName}
                 onChange={(e) => setNewCfName(e.target.value)} />
               <Select
@@ -628,25 +627,25 @@ export function ProductFormContent({
       children: (
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="seoTitle">SEO заголовок</Label>
-            <Input id="seoTitle" value={formSeoTitle} onChange={(e) => setFormSeoTitle(e.target.value)}
+            <Typography.Text strong>SEO заголовок</Typography.Text>
+            <Input value={formSeoTitle} onChange={(e) => setFormSeoTitle(e.target.value)}
               placeholder={formName || "Название товара"} />
             <p className="text-xs text-muted-foreground">{formSeoTitle.length}/60 символов</p>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="seoDesc">SEO описание</Label>
-            <TextArea id="seoDesc" value={formSeoDescription} onChange={(e) => setFormSeoDescription(e.target.value)}
+            <Typography.Text strong>SEO описание</Typography.Text>
+            <TextArea value={formSeoDescription} onChange={(e) => setFormSeoDescription(e.target.value)}
               placeholder="Описание для поисковых систем" rows={3} />
             <p className="text-xs text-muted-foreground">{formSeoDescription.length}/160 символов</p>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="seoKeywords">SEO ключевые слова</Label>
-            <Input id="seoKeywords" value={formSeoKeywords} onChange={(e) => setFormSeoKeywords(e.target.value)}
+            <Typography.Text strong>SEO ключевые слова</Typography.Text>
+            <Input value={formSeoKeywords} onChange={(e) => setFormSeoKeywords(e.target.value)}
               placeholder="слово1, слово2, слово3" />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="slug">URL-slug</Label>
-            <Input id="slug" value={formSlug} onChange={(e) => setFormSlug(e.target.value)}
+            <Typography.Text strong>URL-slug</Typography.Text>
+            <Input value={formSlug} onChange={(e) => setFormSlug(e.target.value)}
               placeholder="auto-generated-from-name" />
             <p className="text-xs text-muted-foreground">Оставьте пустым для автогенерации</p>
           </div>
@@ -674,7 +673,7 @@ export function ProductFormContent({
             </p>
             {variantLinks.length > 0 && (
               <div className="space-y-2">
-                <Label>Привязанные товары</Label>
+                <Typography.Text strong>Привязанные товары</Typography.Text>
                 <div className="border rounded-lg divide-y">
                   {variantLinks.map((vl) => (
                     <div key={vl.id} className="flex items-center justify-between px-3 py-2 text-sm">
@@ -700,7 +699,7 @@ export function ProductFormContent({
               </div>
             )}
             <div className="space-y-3">
-              <Label>Привязать товар</Label>
+              <Typography.Text strong>Привязать товар</Typography.Text>
               <Input placeholder="Группа (напр. Цвет, Размер, Объём...)" value={newVariantGroupName}
                 onChange={(e) => setNewVariantGroupName(e.target.value)} />
               <div className="relative">
@@ -800,7 +799,7 @@ export function ProductFormContent({
           <div className="grid gap-4 py-4">
             {productDiscounts.length > 0 && (
               <div className="space-y-2">
-                <Label>Активные скидки</Label>
+                <Typography.Text strong>Активные скидки</Typography.Text>
                 <div className="border rounded-lg divide-y">
                   {productDiscounts.map((d) => {
                     const sp = formSalePrice ? parseFloat(formSalePrice) : null;
@@ -835,7 +834,7 @@ export function ProductFormContent({
               </div>
             )}
             <div className="space-y-3">
-              <Label>Новая скидка</Label>
+              <Typography.Text strong>Новая скидка</Typography.Text>
               <div className="grid gap-3">
                 <Input placeholder="Название (напр. Летняя распродажа)" value={newDiscountName}
                   onChange={(e) => setNewDiscountName(e.target.value)} />

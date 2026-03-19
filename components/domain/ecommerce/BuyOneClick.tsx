@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Modal, Input } from "antd";
+import { Modal, Input, Typography } from "antd";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
 
@@ -128,18 +127,16 @@ export function BuyOneClick({
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="quick-name">Ваше имя *</Label>
+                  <Typography.Text strong>Ваше имя *</Typography.Text>
                   <Input
-                    id="quick-name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Иван Иванов"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="quick-phone">Телефон *</Label>
+                  <Typography.Text strong>Телефон *</Typography.Text>
                   <Input
-                    id="quick-phone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+7 (900) 123-45-67"

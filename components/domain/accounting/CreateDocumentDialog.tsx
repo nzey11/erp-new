@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { csrfFetch } from "@/lib/client/csrf";
-import { Modal, Select } from "antd";
+import { Modal, Select, Typography } from "antd";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import type { WarehouseRef, CounterpartyRef } from "@/lib/modules/accounting";
@@ -164,7 +163,7 @@ export function CreateDocumentDialog({
       <div className="grid gap-4 py-4">
           {/* Document type */}
           <div className="grid gap-2">
-            <Label>Тип документа *</Label>
+            <Typography.Text strong>Тип документа *</Typography.Text>
             <Select
               value={createType}
               onChange={setCreateType}
@@ -177,7 +176,7 @@ export function CreateDocumentDialog({
           {/* Warehouse */}
           {showWarehouse && (
             <div className="grid gap-2">
-              <Label>Склад{requireWarehouse ? " *" : ""}</Label>
+              <Typography.Text strong>Склад{requireWarehouse ? " *" : ""}</Typography.Text>
               <Select
                 value={createWarehouseId}
                 onChange={setCreateWarehouseId}
@@ -191,7 +190,7 @@ export function CreateDocumentDialog({
           {/* Target warehouse (stock_transfer) */}
           {showTarget && (
             <div className="grid gap-2">
-              <Label>Склад-получатель</Label>
+              <Typography.Text strong>Склад-получатель</Typography.Text>
               <Select
                 value={createTargetWarehouseId}
                 onChange={setCreateTargetWarehouseId}
@@ -205,7 +204,7 @@ export function CreateDocumentDialog({
           {/* Counterparty */}
           {showCounterparty && (
             <div className="grid gap-2">
-              <Label>Контрагент</Label>
+              <Typography.Text strong>Контрагент</Typography.Text>
               <div className="flex gap-2">
                 {counterparties.length > 0 ? (
                   <Select

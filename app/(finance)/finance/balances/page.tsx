@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, Table, type TableColumnsType, Tag, Modal, Input } from "antd";
+import { Card, Table, type TableColumnsType, Tag, Modal, Input, Typography } from "antd";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Loader2, FileText, ExternalLink } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
@@ -169,7 +168,7 @@ export default function BalancesPage() {
         title="Взаиморасчёты"
         actions={
           <div className="flex items-center gap-2">
-            <Label className="text-sm text-muted-foreground">На дату</Label>
+            <Typography.Text strong className="text-sm text-muted-foreground">На дату</Typography.Text>
             <Input
               type="date"
               value={asOfDate}

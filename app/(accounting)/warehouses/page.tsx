@@ -5,8 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
-import { Tag, Table, type TableColumnsType, Modal, Input } from "antd";
-import { Label } from "@/components/ui/label";
+import { Tag, Table, type TableColumnsType, Modal, Input, Typography } from "antd";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNumber, formatRub } from "@/lib/shared/utils";
@@ -248,15 +247,15 @@ export default function WarehousesPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Название *</Label>
+            <Typography.Text strong>Название *</Typography.Text>
             <Input value={formName} onChange={(e) => setFormName(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label>Адрес</Label>
+            <Typography.Text strong>Адрес</Typography.Text>
             <Input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label>Ответственный</Label>
+            <Typography.Text strong>Ответственный</Typography.Text>
             <Input value={formResponsible} onChange={(e) => setFormResponsible(e.target.value)} />
           </div>
         </div>

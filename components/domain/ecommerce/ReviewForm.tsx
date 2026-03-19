@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Modal } from "antd";
+import { Input, Modal, Typography } from "antd";
 const { TextArea } = Input;
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
 
@@ -137,7 +136,7 @@ export function ReviewForm({
 
               {/* Star Rating */}
               <div>
-                <Label className="mb-2 block">Оценка *</Label>
+                <Typography.Text strong className="mb-2 block">Оценка *</Typography.Text>
                 <div className="flex gap-1">
                   {Array.from({ length: 5 }).map((_, i) => {
                     const starValue = i + 1;
@@ -165,9 +164,8 @@ export function ReviewForm({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="review-title">Заголовок</Label>
+                <Typography.Text strong>Заголовок</Typography.Text>
                 <Input
-                  id="review-title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Коротко о товаре"
@@ -176,9 +174,8 @@ export function ReviewForm({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="review-comment">Комментарий</Label>
+                <Typography.Text strong>Комментарий</Typography.Text>
                 <TextArea
-                  id="review-comment"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Расскажите подробнее о вашем опыте"

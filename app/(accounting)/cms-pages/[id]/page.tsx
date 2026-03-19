@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, Switch, Input } from "antd";
+import { Card, Switch, Input, Typography } from "antd";
 import { RichTextEditor } from "@/components/domain/ecommerce/RichTextEditor";
 import { ChevronLeft, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -161,9 +160,8 @@ export default function CmsPageEditPage() {
           <Card className="p-6">
             <div className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="title">Заголовок страницы *</Label>
+                <Typography.Text strong>Заголовок страницы *</Typography.Text>
                 <Input
-                  id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="О компании"
@@ -171,14 +169,13 @@ export default function CmsPageEditPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="slug">URL (slug) *</Label>
+                <Typography.Text strong>URL (slug) *</Typography.Text>
                 <div className="flex gap-2">
                   <div className="flex-1 flex items-center gap-0">
                     <span className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-l-md border border-r-0">
                       /store/pages/
                     </span>
                     <Input
-                      id="slug"
                       value={slug}
                       onChange={(e) => setSlug(e.target.value)}
                       placeholder="o-kompanii"
@@ -200,7 +197,7 @@ export default function CmsPageEditPage() {
 
           {/* Content Editor */}
           <Card className="p-6">
-            <Label className="mb-3 block">Содержимое страницы</Label>
+            <Typography.Text strong className="mb-3 block">Содержимое страницы</Typography.Text>
             <RichTextEditor
               content={content}
               onChange={setContent}
@@ -213,18 +210,18 @@ export default function CmsPageEditPage() {
             <h3 className="font-semibold mb-4">SEO</h3>
             <div className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="seoTitle">SEO Заголовок</Label>
+                <Typography.Text strong>SEO Заголовок</Typography.Text>
                 <Input
-                  id="seoTitle"
+                id="seoTitle"
                   value={seoTitle}
                   onChange={(e) => setSeoTitle(e.target.value)}
                   placeholder="Заголовок для поисковых систем"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="seoDescription">SEO Описание</Label>
+                <Typography.Text strong>SEO Описание</Typography.Text>
                 <Input
-                  id="seoDescription"
+                id="seoDescription"
                   value={seoDescription}
                   onChange={(e) => setSeoDescription(e.target.value)}
                   placeholder="Краткое описание для поисковых систем"
@@ -241,7 +238,7 @@ export default function CmsPageEditPage() {
             <h3 className="font-semibold mb-4">Публикация</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="isPublished">Опубликовано</Label>
+                <Typography.Text strong>Опубликовано</Typography.Text>
                 <Switch
                   id="isPublished"
                   checked={isPublished}
@@ -249,9 +246,9 @@ export default function CmsPageEditPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="sortOrder">Порядок сортировки</Label>
+                <Typography.Text strong>Порядок сортировки</Typography.Text>
                 <Input
-                  id="sortOrder"
+                id="sortOrder"
                   type="number"
                   value={sortOrder}
                   onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
@@ -265,7 +262,7 @@ export default function CmsPageEditPage() {
             <h3 className="font-semibold mb-4">Навигация</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="showInFooter">Показывать в футере</Label>
+                <Typography.Text strong>Показывать в футере</Typography.Text>
                 <Switch
                   id="showInFooter"
                   checked={showInFooter}
@@ -273,7 +270,7 @@ export default function CmsPageEditPage() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="showInHeader">Показывать в шапке</Label>
+                <Typography.Text strong>Показывать в шапке</Typography.Text>
                 <Switch
                   id="showInHeader"
                   checked={showInHeader}

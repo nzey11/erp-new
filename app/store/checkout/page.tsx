@@ -6,8 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, Plus, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "antd";
-import { Label } from "@/components/ui/label";
+import { Card, Typography } from "antd";
 import { Input } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
@@ -277,9 +276,8 @@ export default function CheckoutPage() {
           {/* Notes */}
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Комментарий к заказу</h2>
-            <Label htmlFor="notes" className="sr-only">Примечания</Label>
+            <Typography.Text strong className="sr-only">Примечания</Typography.Text>
             <Input.TextArea
-              id="notes"
               placeholder="Добавьте комментарий к заказу (необязательно)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

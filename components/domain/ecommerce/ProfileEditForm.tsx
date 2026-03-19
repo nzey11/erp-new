@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, Input } from "antd";
+import { Card, Input, Typography } from "antd";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 
@@ -111,18 +110,16 @@ export function ProfileEditForm({ customer, onUpdate }: ProfileEditFormProps) {
       <h2 className="text-xl font-semibold mb-4">Редактирование профиля</h2>
       <div className="space-y-4">
         <div className="grid gap-2">
-          <Label htmlFor="profile-name">Имя *</Label>
+          <Typography.Text strong>Имя *</Typography.Text>
           <Input
-            id="profile-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ваше имя"
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="profile-phone">Телефон</Label>
+          <Typography.Text strong>Телефон</Typography.Text>
           <Input
-            id="profile-phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+7 (900) 123-45-67"
@@ -130,9 +127,8 @@ export function ProfileEditForm({ customer, onUpdate }: ProfileEditFormProps) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="profile-email">Email</Label>
+          <Typography.Text strong>Email</Typography.Text>
           <Input
-            id="profile-email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="email@example.com"

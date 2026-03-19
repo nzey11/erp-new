@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, Table, type TableColumnsType, Modal, Select, Input } from "antd";
-import { Label } from "@/components/ui/label";
+import { Card, Table, type TableColumnsType, Modal, Select, Input, Typography } from "antd";
 import { Tabs } from "antd";
 import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -356,11 +355,11 @@ export default function ReferencesPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Название *</Label>
+            <Typography.Text strong>Название *</Typography.Text>
             <Input value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })} placeholder="Килограмм" />
           </div>
           <div className="grid gap-2">
-            <Label>Сокращение *</Label>
+            <Typography.Text strong>Сокращение *</Typography.Text>
             <Input value={unitForm.shortName} onChange={(e) => setUnitForm({ ...unitForm, shortName: e.target.value })} placeholder="кг" />
           </div>
         </div>
@@ -380,11 +379,11 @@ export default function ReferencesPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Название *</Label>
+            <Typography.Text strong>Название *</Typography.Text>
             <Input value={plForm.name} onChange={(e) => setPlForm({ ...plForm, name: e.target.value })} />
           </div>
           <div className="grid gap-2">
-            <Label>Описание</Label>
+            <Typography.Text strong>Описание</Typography.Text>
             <Input value={plForm.description} onChange={(e) => setPlForm({ ...plForm, description: e.target.value })} />
           </div>
         </div>
@@ -402,11 +401,11 @@ export default function ReferencesPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Название *</Label>
+            <Typography.Text strong>Название *</Typography.Text>
             <Input value={cfForm.name} onChange={(e) => setCfForm({ ...cfForm, name: e.target.value })} placeholder="Материал, Цвет, Вес..." />
           </div>
           <div className="grid gap-2">
-            <Label>Тип поля</Label>
+            <Typography.Text strong>Тип поля</Typography.Text>
             <Select
               value={cfForm.fieldType}
               onChange={(v) => setCfForm({ ...cfForm, fieldType: v })}
@@ -421,7 +420,7 @@ export default function ReferencesPage() {
           </div>
           {cfForm.fieldType === "select" && (
             <div className="grid gap-2">
-              <Label>Варианты (через запятую)</Label>
+              <Typography.Text strong>Варианты (через запятую)</Typography.Text>
               <Input value={cfForm.options} onChange={(e) => setCfForm({ ...cfForm, options: e.target.value })} placeholder="Красный, Синий, Зелёный" />
             </div>
           )}

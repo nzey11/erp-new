@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, Switch, Tabs, Tag, Input } from "antd";
-import { Label } from "@/components/ui/label";
+import { Card, Switch, Tabs, Tag, Input, Typography } from "antd";
 import { Bot, Save, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -160,7 +159,7 @@ export default function IntegrationsPage() {
 
                     <div className="grid gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="botToken">Токен бота *</Label>
+                        <Typography.Text strong>Токен бота *</Typography.Text>
                         <Input.Password
                           id="botToken"
                           placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
@@ -173,13 +172,12 @@ export default function IntegrationsPage() {
                       </div>
 
                       <div className="grid gap-2">
-                        <Label htmlFor="botUsername">Имя бота (username) *</Label>
+                        <Typography.Text strong>Имя бота (username) *</Typography.Text>
                         <div className="flex">
                           <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 bg-muted text-muted-foreground text-sm">
                             @
                           </span>
                           <Input
-                            id="botUsername"
                             className="rounded-l-none"
                             placeholder="my_shop_bot"
                             value={telegram.settings.botUsername}
@@ -196,7 +194,7 @@ export default function IntegrationsPage() {
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label>Вход в магазин (для покупателей)</Label>
+                          <Typography.Text strong>Вход в магазин (для покупателей)</Typography.Text>
                           <p className="text-sm text-muted-foreground">
                             Покупатели смогут входить через Telegram
                           </p>
@@ -209,7 +207,7 @@ export default function IntegrationsPage() {
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label>Вход в админку (для сотрудников)</Label>
+                          <Typography.Text strong>Вход в админку (для сотрудников)</Typography.Text>
                           <p className="text-sm text-muted-foreground">
                             Сотрудники смогут входить через Telegram
                           </p>

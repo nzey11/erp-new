@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Modal, Table, type TableColumnsType, Input } from "antd";
-import { Label } from "@/components/ui/label";
+import { Modal, Table, type TableColumnsType, Input, Typography } from "antd";
 const { TextArea } = Input;
 import { Plus, Pencil, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -199,7 +198,7 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
       >
         <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Название *</Label>
+              <Typography.Text strong>Название *</Typography.Text>
               <Input
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
@@ -207,7 +206,7 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
               />
             </div>
             <div className="grid gap-2">
-              <Label>Описание</Label>
+              <Typography.Text strong>Описание</Typography.Text>
               <TextArea
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}

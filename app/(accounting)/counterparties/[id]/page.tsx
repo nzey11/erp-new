@@ -5,8 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Tag, Input, Select, Divider } from "antd";
-import { Label } from "@/components/ui/label";
+import { Tag, Input, Select, Divider, Typography } from "antd";
 const { TextArea } = Input;
 
 
@@ -297,7 +296,7 @@ function CounterpartyDetailPage() {
             {editing ? (
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label>Тип</Label>
+                  <Typography.Text strong>Тип</Typography.Text>
                   <Select
                     value={form.type}
                     onChange={(v: string) => setField("type", v)}
@@ -310,45 +309,45 @@ function CounterpartyDetailPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Название *</Label>
+                  <Typography.Text strong>Название *</Typography.Text>
                   <Input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="Название контрагента" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>Юридическое название</Label>
+                    <Typography.Text strong>Юридическое название</Typography.Text>
                     <Input value={form.legalName} onChange={(e) => setField("legalName", e.target.value)} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Адрес</Label>
+                    <Typography.Text strong>Адрес</Typography.Text>
                     <Input value={form.address} onChange={(e) => setField("address", e.target.value)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>ИНН</Label>
+                    <Typography.Text strong>ИНН</Typography.Text>
                     <Input value={form.inn} onChange={(e) => setField("inn", e.target.value)} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>КПП</Label>
+                    <Typography.Text strong>КПП</Typography.Text>
                     <Input value={form.kpp} onChange={(e) => setField("kpp", e.target.value)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>Телефон</Label>
+                    <Typography.Text strong>Телефон</Typography.Text>
                     <Input value={form.phone} onChange={(e) => setField("phone", e.target.value)} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Email</Label>
+                    <Typography.Text strong>Email</Typography.Text>
                     <Input value={form.email} onChange={(e) => setField("email", e.target.value)} />
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Контактное лицо</Label>
+                  <Typography.Text strong>Контактное лицо</Typography.Text>
                   <Input value={form.contactPerson} onChange={(e) => setField("contactPerson", e.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Заметки</Label>
+                  <Typography.Text strong>Заметки</Typography.Text>
                   <TextArea value={form.notes} onChange={(e) => setField("notes", e.target.value)} rows={3} />
                 </div>
               </div>
@@ -378,16 +377,16 @@ function CounterpartyDetailPage() {
             {editing ? (
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label>Расчётный счёт</Label>
+                  <Typography.Text strong>Расчётный счёт</Typography.Text>
                   <Input value={form.bankAccount} onChange={(e) => setField("bankAccount", e.target.value)} placeholder="40702810..." />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>Банк</Label>
+                    <Typography.Text strong>Банк</Typography.Text>
                     <Input value={form.bankName} onChange={(e) => setField("bankName", e.target.value)} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>БИК</Label>
+                    <Typography.Text strong>БИК</Typography.Text>
                     <Input value={form.bik} onChange={(e) => setField("bik", e.target.value)} />
                   </div>
                 </div>

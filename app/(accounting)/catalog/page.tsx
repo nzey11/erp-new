@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Modal } from "antd";
-import { Label } from "@/components/ui/label";
+import { Modal, Typography } from "antd";
 import { Input, Select, Tabs } from "antd";
 import Link from "next/link";
 
@@ -405,11 +404,11 @@ export default function CatalogPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Название *</Label>
+            <Typography.Text strong>Название *</Typography.Text>
             <Input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} />
           </div>
           <div className="grid gap-2">
-            <Label>Родительская категория</Label>
+            <Typography.Text strong>Родительская категория</Typography.Text>
             <Select
               value={catForm.parentId}
               onChange={(v) => setCatForm({ ...catForm, parentId: v === "none" ? "" : v })}

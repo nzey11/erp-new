@@ -5,9 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Tag, Card, Table, Modal, Dropdown, Tabs, Select, Input } from "antd";
+import { Tag, Card, Table, Modal, Dropdown, Tabs, Select, Input, Typography } from "antd";
 import type { TableColumnsType } from "antd";
-import { Label } from "@/components/ui/label";
 import type { MenuProps } from "antd";
 import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, RefreshCw, Edit2, MinusCircle, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -1015,7 +1014,7 @@ export default function DocumentDetailPage() {
       >
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Товар *</Label>
+            <Typography.Text strong>Товар *</Typography.Text>
             <Input
               placeholder="Поиск товара..."
               value={productSearch}
@@ -1044,7 +1043,7 @@ export default function DocumentDetailPage() {
             /* Inventory count: show По учёту + Факт fields */
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>По учёту</Label>
+                <Typography.Text strong>По учёту</Typography.Text>
                 <Input
                   type="number"
                   readOnly
@@ -1053,7 +1052,7 @@ export default function DocumentDetailPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Фактическое кол-во</Label>
+                <Typography.Text strong>Фактическое кол-во</Typography.Text>
                 <Input
                   type="number"
                   min="0"
@@ -1066,7 +1065,7 @@ export default function DocumentDetailPage() {
           ) : (
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Количество</Label>
+                <Typography.Text strong>Количество</Typography.Text>
                 <Input
                   type="number"
                   min="0"
@@ -1076,7 +1075,7 @@ export default function DocumentDetailPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Цена {products.find(p => p.id === itemProductId)?.purchasePrice != null && doc && ["incoming_shipment","purchase_order","supplier_return","stock_receipt"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(закупочная)</span> : products.find(p => p.id === itemProductId)?.salePrice != null && doc && ["outgoing_shipment","sales_order","customer_return"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(продажная)</span> : null}</Label>
+                <Typography.Text strong>Цена {products.find(p => p.id === itemProductId)?.purchasePrice != null && doc && ["incoming_shipment","purchase_order","supplier_return","stock_receipt"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(закупочная)</span> : products.find(p => p.id === itemProductId)?.salePrice != null && doc && ["outgoing_shipment","sales_order","customer_return"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(продажная)</span> : null}</Typography.Text>
                 <Input
                   type="number"
                   min="0"
