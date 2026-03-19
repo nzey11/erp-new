@@ -578,11 +578,12 @@ model SalePrice {
 
 model Customer {
   id               String            @id @default(cuid())
-  telegramId       String            @unique
+  telegramId       String?           @unique
   telegramUsername String?
   name             String?
   phone            String?
-  email            String?
+  email            String?           @unique
+  passwordHash     String?
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt

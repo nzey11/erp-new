@@ -108,7 +108,7 @@ describe("Party Resolver", () => {
       const first = await resolveParty({ customerId: customer.id });
 
       // Find via telegramId
-      const second = await resolveParty({ telegramId: customer.telegramId });
+      const second = await resolveParty({ telegramId: customer.telegramId ?? undefined });
       expect(second.isNew).toBe(false);
       expect(second.partyId).toBe(first.partyId);
     });

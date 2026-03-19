@@ -236,6 +236,15 @@ export async function autoPostDocument(
     },
   ]);
 
+  // Invariant: debit total must equal credit total
+  const totalDebit = ledgerLinesData.reduce((s, l) => s + l.debit, 0);
+  const totalCredit = ledgerLinesData.reduce((s, l) => s + l.credit, 0);
+  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    throw new Error(
+      `autoPostDocument: unbalanced entry for document ${documentNumber}: debit=${totalDebit}, credit=${totalCredit}`
+    );
+  }
+
   await db.journalEntry.create({
     data: {
       number,

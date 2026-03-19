@@ -1,5 +1,6 @@
 import 'server-only'
 import { db, toNumber } from '@/lib/shared/db'
+import { compare, hash } from 'bcryptjs'
 
 export const CustomerService = {
   async findByTelegramId(telegramId: string) {
@@ -10,7 +11,7 @@ export const CustomerService = {
     return db.customer.update({ where: { id }, data })
   },
 
-  async create(data: { telegramId: string; telegramUsername?: string; name?: string }) {
+  async create(data: { telegramId?: string; telegramUsername?: string; name?: string }) {
     return db.customer.create({ data })
   },
 
@@ -18,8 +19,28 @@ export const CustomerService = {
     return db.customer.findFirst({ where: { phone } })
   },
 
-  async createGuest(data: { telegramId: string; name: string; phone: string }) {
+  async createGuest(data: { telegramId?: string; name: string; phone: string }) {
     return db.customer.create({ data })
+  },
+
+  async findByEmail(email: string) {
+    return db.customer.findUnique({ where: { email } })
+  },
+
+  async createWithPassword(data: { email: string; password: string; name?: string }) {
+    const passwordHash = await hash(data.password, 10)
+    return db.customer.create({
+      data: {
+        email: data.email,
+        passwordHash,
+        name: data.name || null,
+      },
+    })
+  },
+
+  async verifyPassword(customer: { passwordHash: string | null }, password: string): Promise<boolean> {
+    if (!customer.passwordHash) return false
+    return compare(password, customer.passwordHash)
   },
 
   async findProductVariant(variantId: string) {

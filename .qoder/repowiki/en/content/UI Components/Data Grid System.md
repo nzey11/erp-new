@@ -10,12 +10,29 @@
 - [data-grid-bulk-bar.tsx](file://components/ui/data-grid/data-grid-bulk-bar.tsx)
 - [data-grid-persist.ts](file://components/ui/data-grid/data-grid-persist.ts)
 - [index.ts](file://components/ui/data-grid/index.ts)
+- [preset-adapter.tsx](file://components/ui/data-grid/preset-adapter.tsx)
 - [use-data-grid.ts](file://lib/hooks/use-data-grid/use-data-grid.ts)
 - [types.ts](file://lib/hooks/use-data-grid/types.ts)
 - [cache.ts](file://lib/hooks/use-data-grid/cache.ts)
 - [DocumentsTable.tsx](file://components/accounting/DocumentsTable.tsx)
 - [ProductsTable.tsx](file://components/accounting/ProductsTable.tsx)
+- [PresetCounterpartiesTable.tsx](file://components/domain/accounting/PresetCounterpartiesTable.tsx)
+- [counterparty-preset.ts](file://lib/table-system/presets/counterparty-preset.ts)
+- [party-preset.ts](file://lib/table-system/presets/party-preset.ts)
+- [list-table-preset.ts](file://lib/table-system/types/list-table-preset.ts)
+- [column-preset.ts](file://lib/table-system/types/column-preset.ts)
+- [erp-table.tsx](file://components/erp/erp-table.tsx)
+- [erp-table.types.ts](file://components/erp/erp-table.types.ts)
+- [erp-toolbar.tsx](file://components/erp/erp-toolbar.tsx)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive documentation for the new preset adapter system
+- Documented specialized table presets for counterparties, parties, and other domain entities
+- Updated architecture diagrams to reflect the new preset-based approach
+- Added documentation for the standardized ERP table system
+- Enhanced integration examples showing preset-based table implementations
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -23,31 +40,47 @@
 3. [Core Components](#core-components)
 4. [Architecture Overview](#architecture-overview)
 5. [Detailed Component Analysis](#detailed-component-analysis)
-6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Accessibility and UX](#accessibility-and-ux)
-9. [Extensibility Guidelines](#extensibility-guidelines)
-10. [Troubleshooting Guide](#troubleshooting-guide)
-11. [Conclusion](#conclusion)
+6. [Preset System Architecture](#preset-system-architecture)
+7. [Standardized ERP Table System](#standardized-erp-table-system)
+8. [Dependency Analysis](#dependency-analysis)
+9. [Performance Considerations](#performance-considerations)
+10. [Accessibility and UX](#accessibility-and-ux)
+11. [Extensibility Guidelines](#extensibility-guidelines)
+12. [Troubleshooting Guide](#troubleshooting-guide)
+13. [Conclusion](#conclusion)
 
 ## Introduction
-This document describes the advanced data grid system powering ListOpt ERP’s accounting and product catalogs. It covers the main DataGrid component, cell rendering pipeline, toolbar and pagination controls, bulk operation bar, state management, persistence, filtering and sorting, integration with accounting modules, and guidance for extending the grid with custom columns, filters, and actions. It also includes performance, accessibility, and troubleshooting insights.
+This document describes the advanced data grid system powering ListOpt ERP's accounting and product catalogs. The system has evolved to include a comprehensive preset-based architecture that standardizes table configurations across the application. It covers the main DataGrid component, cell rendering pipeline, toolbar and pagination controls, bulk operation bar, state management, persistence, filtering and sorting, integration with accounting modules, and guidance for extending the grid with custom columns, filters, and actions. The system now includes specialized presets for counterparties, products, sales orders, purchases, and stock documents, along with a standardized ERP table system for consistent data presentation.
 
 ## Project Structure
-The grid system is organized as a cohesive set of UI components and a powerful data hook:
+The grid system is organized around three main layers: the traditional DataGrid components, a new preset adapter system, and a standardized ERP table system:
 - UI components: DataGrid, DataGridCell, DataGridToolbar, DataGridPaginationBar, DataGridBulkBar, persistence utilities
+- Preset system: Preset adapter, table presets, column definitions, and behavior configurations
+- ERP system: Standardized table components with framework-agnostic contracts
 - Hook: useDataGrid orchestrates fetching, caching, URL synchronization, and mutations
-- Accounting integrations: DocumentsTable and ProductsTable demonstrate real-world usage
+- Accounting integrations: DocumentsTable, ProductsTable, and PresetCounterpartiesTable demonstrate real-world usage
 
 ```mermaid
 graph TB
-subgraph "UI Components"
+subgraph "Traditional DataGrid Layer"
 DG["DataGrid<br/>components/ui/data-grid/data-grid.tsx"]
 DGC["DataGridCell<br/>components/ui/data-grid/data-grid-cell.tsx"]
 DGT["DataGridToolbar<br/>components/ui/data-grid/data-grid-toolbar.tsx"]
 DGP["DataGridPaginationBar<br/>components/ui/data-grid/data-grid-pagination.tsx"]
 DGB["DataGridBulkBar<br/>components/ui/data-grid/data-grid-bulk-bar.tsx"]
 PERSIST["Persistence<br/>components/ui/data-grid/data-grid-persist.ts"]
+end
+subgraph "Preset System Layer"
+PA["Preset Adapter<br/>components/ui/data-grid/preset-adapter.tsx"]
+CP["Counterparty Preset<br/>lib/table-system/presets/counterparty-preset.ts"]
+PP["Party Preset<br/>lib/table-system/presets/party-preset.ts"]
+LTP["ListTablePreset Types<br/>lib/table-system/types/list-table-preset.ts"]
+CPRESET["Column Preset Types<br/>lib/table-system/types/column-preset.ts"]
+end
+subgraph "ERP System Layer"
+ERT["ERPTable<br/>components/erp/erp-table.tsx"]
+ERTT["ERPTable Types<br/>components/erp/erp-table.types.ts"]
+ERTB["ERPToolbar<br/>components/erp/erp-toolbar.tsx"]
 end
 subgraph "Hook"
 UDG["useDataGrid<br/>lib/hooks/use-data-grid/use-data-grid.ts"]
@@ -57,97 +90,89 @@ end
 subgraph "Integrations"
 DT["DocumentsTable<br/>components/accounting/DocumentsTable.tsx"]
 PT["ProductsTable<br/>components/accounting/ProductsTable.tsx"]
+PCPT["PresetCounterpartiesTable<br/>components/domain/accounting/PresetCounterpartiesTable.tsx"]
 end
 DG --> DGC
 DG --> DGT
 DG --> DGP
 DG --> DGB
 DG --> PERSIST
+PA --> CP
+PA --> PP
+PA --> LTP
+PA --> CPRESET
+PCPT --> PA
 DT --> DG
 PT --> DG
 DT --> UDG
 PT --> UDG
-UDG --> CACHE
-UDG --> TYPES
+PCPT --> UDG
+ERT --> ERTT
+ERT --> ERTB
 ```
 
 **Diagram sources**
 - [data-grid.tsx:1-370](file://components/ui/data-grid/data-grid.tsx#L1-L370)
-- [data-grid-cell.tsx:1-162](file://components/ui/data-grid/data-grid-cell.tsx#L1-L162)
-- [data-grid-toolbar.tsx:1-122](file://components/ui/data-grid/data-grid-toolbar.tsx#L1-L122)
-- [data-grid-pagination.tsx:1-165](file://components/ui/data-grid/data-grid-pagination.tsx#L1-L165)
-- [data-grid-bulk-bar.tsx:1-29](file://components/ui/data-grid/data-grid-bulk-bar.tsx#L1-L29)
-- [data-grid-persist.ts:1-36](file://components/ui/data-grid/data-grid-persist.ts#L1-L36)
+- [preset-adapter.tsx:1-197](file://components/ui/data-grid/preset-adapter.tsx#L1-L197)
+- [counterparty-preset.ts:1-161](file://lib/table-system/presets/counterparty-preset.ts#L1-L161)
+- [party-preset.ts:1-147](file://lib/table-system/presets/party-preset.ts#L1-L147)
+- [erp-table.tsx:1-166](file://components/erp/erp-table.tsx#L1-L166)
 - [use-data-grid.ts:1-302](file://lib/hooks/use-data-grid/use-data-grid.ts#L1-L302)
-- [types.ts:1-74](file://lib/hooks/use-data-grid/types.ts#L1-L74)
-- [cache.ts:1-40](file://lib/hooks/use-data-grid/cache.ts#L1-L40)
-- [DocumentsTable.tsx:1-361](file://components/accounting/DocumentsTable.tsx#L1-L361)
-- [ProductsTable.tsx:1-495](file://components/accounting/ProductsTable.tsx#L1-L495)
 
 **Section sources**
 - [data-grid.tsx:1-370](file://components/ui/data-grid/data-grid.tsx#L1-L370)
+- [preset-adapter.tsx:1-197](file://components/ui/data-grid/preset-adapter.tsx#L1-L197)
+- [erp-table.tsx:1-166](file://components/erp/erp-table.tsx#L1-L166)
 - [use-data-grid.ts:1-302](file://lib/hooks/use-data-grid/use-data-grid.ts#L1-L302)
 
 ## Core Components
 - DataGrid: Central table renderer built on TanStack React Table, with selection, resizing, sticky header, density, and inline-editing support.
 - DataGridCell: Inline editor for text, number, select, and date fields with validation and save callbacks.
 - DataGridToolbar: Search input, custom filters/actions, and column visibility menu.
-- DataGridPaginationBar: Page navigation, page size selector, and “jump to page”.
+- DataGridPaginationBar: Page navigation, page size selector, and "jump to page".
 - DataGridBulkBar: Selected count and bulk action buttons.
 - Persistence: LocalStorage-backed column sizing and visibility.
+- Preset Adapter: Transforms declarative table presets into DataGrid props with standardized column definitions.
+- ERPTable: Framework-agnostic table component with antd implementation wrapper.
 - useDataGrid: Declarative grid state management with caching, URL sync, and mutations.
 
 **Section sources**
 - [data-grid.tsx:27-370](file://components/ui/data-grid/data-grid.tsx#L27-L370)
-- [data-grid-types.ts:1-74](file://components/ui/data-grid/data-grid-types.ts#L1-L74)
-- [data-grid-cell.tsx:21-162](file://components/ui/data-grid/data-grid-cell.tsx#L21-L162)
-- [data-grid-toolbar.tsx:24-122](file://components/ui/data-grid/data-grid-toolbar.tsx#L24-L122)
-- [data-grid-pagination.tsx:26-165](file://components/ui/data-grid/data-grid-pagination.tsx#L26-L165)
-- [data-grid-bulk-bar.tsx:13-29](file://components/ui/data-grid/data-grid-bulk-bar.tsx#L13-L29)
-- [data-grid-persist.ts:3-36](file://components/ui/data-grid/data-grid-persist.ts#L3-L36)
+- [preset-adapter.tsx:25-197](file://components/ui/data-grid/preset-adapter.tsx#L25-L197)
+- [erp-table.tsx:83-166](file://components/erp/erp-table.tsx#L83-L166)
 - [use-data-grid.ts:17-302](file://lib/hooks/use-data-grid/use-data-grid.ts#L17-L302)
-- [types.ts:1-74](file://lib/hooks/use-data-grid/types.ts#L1-L74)
-- [cache.ts:1-40](file://lib/hooks/use-data-grid/cache.ts#L1-L40)
 
 ## Architecture Overview
-The grid architecture separates concerns:
-- UI renders data and user interactions
-- useDataGrid encapsulates data fetching, caching, URL sync, and mutations
-- Persistence stores user preferences locally
-- Integrations (DocumentsTable, ProductsTable) compose the grid with domain-specific columns, filters, and actions
+The grid architecture now features three distinct layers working together:
+- Traditional DataGrid layer: Direct table rendering with full customization
+- Preset system layer: Declarative table configurations with standardized column definitions
+- ERP system layer: Framework-agnostic contracts with antd implementation wrappers
 
 ```mermaid
 sequenceDiagram
 participant User as "User"
-participant Grid as "DataGrid"
+participant Grid as "DataGrid/Preset Grid"
+participant Adapter as "Preset Adapter"
+participant ERP as "ERPTable"
 participant Hook as "useDataGrid"
-participant Cache as "Cache"
 participant API as "API Endpoint"
 User->>Grid : Interact (sort, resize, select, paginate)
 Grid->>Hook : Update state (filters, sort, page)
-Hook->>Cache : Check cache
-alt Cache hit
-Cache-->>Hook : {data,total,fresh}
-Hook-->>Grid : Render cached data
-else Cache miss
 Hook->>API : Fetch with params
 API-->>Hook : {data,total}
-Hook->>Cache : Store cache
-Hook-->>Grid : Render fetched data
-end
+Hook-->>Grid : Render data
 User->>Grid : Bulk actions / Inline edit
 Grid->>Hook : Mutations (refresh/update/delete)
 Hook->>API : Apply mutation
 API-->>Hook : Result
-Hook->>Cache : Invalidate cache
 Hook-->>Grid : Refreshed data
+Note over Grid,ERP : Preset Grid uses Adapter<br/>ERP Grid uses ERPTable
 ```
 
 **Diagram sources**
+- [preset-adapter.tsx:139-180](file://components/ui/data-grid/preset-adapter.tsx#L139-L180)
+- [erp-table.tsx:96-165](file://components/erp/erp-table.tsx#L96-L165)
 - [use-data-grid.ts:137-182](file://lib/hooks/use-data-grid/use-data-grid.ts#L137-L182)
-- [cache.ts:17-31](file://lib/hooks/use-data-grid/cache.ts#L17-L31)
-- [DocumentsTable.tsx:168-188](file://components/accounting/DocumentsTable.tsx#L168-L188)
-- [ProductsTable.tsx:215-265](file://components/accounting/ProductsTable.tsx#L215-L265)
 
 ## Detailed Component Analysis
 
@@ -161,150 +186,91 @@ Hook-->>Grid : Refreshed data
 - Density: compact vs normal spacing classes.
 - Footer: optional footer row.
 
-```mermaid
-flowchart TD
-Start(["Render DataGrid"]) --> CheckSelection{"selection.enabled?"}
-CheckSelection --> |Yes| BuildSelection["Build selection column"]
-CheckSelection --> |No| SkipSelection["Skip selection column"]
-BuildSelection --> MergeCols["Merge selection + user columns"]
-SkipSelection --> MergeCols
-MergeCols --> InitTable["Initialize TanStack table"]
-InitTable --> RenderHeader["Render headers<br/>with resize handles"]
-InitTable --> RenderBody["Render rows<br/>with inline editing"]
-RenderBody --> EditCell{"editable & not editing?"}
-EditCell --> |Yes| ClickToEdit["onClick -> setEditingCell"]
-EditCell --> |No| RenderCell["Render cell content"]
-ClickToEdit --> RenderCell
-RenderCell --> SaveOrCancel["Enter/Escape -> save/cancel"]
-SaveOrCancel --> UpdateState["Call onSave -> persist"]
-UpdateState --> Refresh["Refresh grid via hook"]
-Refresh --> End(["Done"])
-```
-
-**Diagram sources**
-- [data-grid.tsx:87-159](file://components/ui/data-grid/data-grid.tsx#L87-L159)
-- [data-grid-cell.tsx:41-86](file://components/ui/data-grid/data-grid-cell.tsx#L41-L86)
-
 **Section sources**
 - [data-grid.tsx:27-370](file://components/ui/data-grid/data-grid.tsx#L27-L370)
-- [data-grid-types.ts:39-73](file://components/ui/data-grid/data-grid-types.ts#L39-L73)
 
-### DataGridCell (Inline Editor)
-- Normalizes date values to YYYY-MM-DD for HTML input.
-- Type-specific editors: text, number, select, date.
-- Validation: optional validator returning boolean or error string.
-- Keyboard shortcuts: Enter to save, Escape to cancel.
-- Error feedback and saving state.
-
-**Section sources**
-- [data-grid-cell.tsx:21-162](file://components/ui/data-grid/data-grid-cell.tsx#L21-L162)
-
-### DataGridToolbar
-- Search input with clear button and debounce.
-- Custom filters/actions slots.
-- Column visibility menu: mounts conditionally and resolves display names from meta.label/header/id.
-
-**Section sources**
-- [data-grid-toolbar.tsx:24-122](file://components/ui/data-grid/data-grid-toolbar.tsx#L24-L122)
-
-### DataGridPaginationBar
-- Computes bounds and total pages.
-- Navigation: first, prev, next, last.
-- Page size selector (optional).
-- “Jump to page” input with validation.
-
-**Section sources**
-- [data-grid-pagination.tsx:26-165](file://components/ui/data-grid/data-grid-pagination.tsx#L26-L165)
-
-### DataGridBulkBar
-- Shows selected count and renders provided actions.
-- Clear selection button.
-
-**Section sources**
-- [data-grid-bulk-bar.tsx:13-29](file://components/ui/data-grid/data-grid-bulk-bar.tsx#L13-L29)
-
-### Persistence (LocalStorage)
-- Column sizing: debounced save after resize.
-- Column visibility: immediate save on toggle.
-- Keys are namespaced by persistenceKey.
-
-**Section sources**
-- [data-grid-persist.ts:3-36](file://components/ui/data-grid/data-grid-persist.ts#L3-L36)
-
-### useDataGrid Hook
-- Manages page, pageSize, search, filters, sort.
-- Builds URL params and syncs to URL (optional).
-- Debounced search, stale-while-revalidate caching, LRU eviction.
-- Mutations: create, update, delete, refresh.
-- Exposes gridProps to spread directly into DataGrid.
+### Preset Adapter System
+The Preset Adapter serves as the single integration point between the declarative preset system and DataGrid components. It transforms ListTablePreset configurations into DataGrid-compatible column definitions while maintaining consistency across the application.
 
 ```mermaid
-classDiagram
-class UseDataGridConfig {
-+endpoint : string
-+pageSize? : number
-+enablePagination? : boolean
-+enableSearch? : boolean
-+sortable? : boolean
-+defaultSort? : Sort
-+enablePageSizeChange? : boolean
-+syncUrl? : boolean
-+defaultFilters? : Record
-+filterToParam? : fn
-+responseAdapter? : fn
-+dependencies? : unknown[]
-}
-class UseDataGridReturn {
-+data : TData[]
-+total : number
-+loading : boolean
-+page : number
-+pageSize : number
-+search : string
-+filters : Record
-+sort : Sort|null
-+mutate
-+gridProps
-}
-UseDataGridConfig --> UseDataGridReturn : "produces"
+flowchart TD
+Start(["Adapt Preset"]) --> TransformCols["Transform Columns"]
+TransformCols --> AddActions["Add Actions Column"]
+AddActions --> ExtractDefaults["Extract Behavior Defaults"]
+ExtractDefaults --> ReturnProps["Return Adapted Props"]
+TransformCols --> ApplyFormat["Apply Value Formatting"]
+TransformCols --> ApplyRenderer["Apply Cell Renderers"]
+ApplyFormat --> ReturnProps
+ApplyRenderer --> ReturnProps
 ```
 
 **Diagram sources**
-- [types.ts:3-74](file://lib/hooks/use-data-grid/types.ts#L3-L74)
-- [use-data-grid.ts:17-302](file://lib/hooks/use-data-grid/use-data-grid.ts#L17-L302)
+- [preset-adapter.tsx:139-180](file://components/ui/data-grid/preset-adapter.tsx#L139-L180)
+- [preset-adapter.tsx:53-116](file://components/ui/data-grid/preset-adapter.tsx#L53-L116)
 
 **Section sources**
-- [use-data-grid.ts:17-302](file://lib/hooks/use-data-grid/use-data-grid.ts#L17-L302)
-- [types.ts:1-74](file://lib/hooks/use-data-grid/types.ts#L1-L74)
-- [cache.ts:1-40](file://lib/hooks/use-data-grid/cache.ts#L1-L40)
+- [preset-adapter.tsx:1-197](file://components/ui/data-grid/preset-adapter.tsx#L1-L197)
 
-### Accounting Integrations
-
-#### DocumentsTable
-- Uses useDataGrid with endpoint /api/accounting/documents.
-- Columns: number, type, date, warehouse, counterparty, amount, status, actions.
-- Filters: type, status, date range; grouped by document groups.
-- Bulk confirm action; individual confirm/cancel actions.
-- Persistence key scoped by group.
+### ERP Table System
+The ERPTable provides a framework-agnostic contract for table components, ensuring consistency across different implementations while allowing flexibility for specific use cases.
 
 **Section sources**
-- [DocumentsTable.tsx:64-361](file://components/accounting/DocumentsTable.tsx#L64-L361)
+- [erp-table.tsx:1-166](file://components/erp/erp-table.tsx#L1-L166)
+- [erp-table.types.ts:1-174](file://components/erp/erp-table.types.ts#L1-L174)
 
-#### ProductsTable
-- Uses useDataGrid with endpoint /api/accounting/products.
-- Columns: image, name, SKU, category, unit, purchase/sale/discounted price, discount validity, actions.
-- Filters: category, activity, publication status, variant status, discount flag.
-- Bulk archive/restore/delete actions; export to CSV; import wizard.
-- Custom row click handler; row class customization.
+## Preset System Architecture
+The preset system introduces a declarative approach to table configuration, enabling consistent column definitions, behavior settings, and toolbar configurations across the application.
+
+### Preset Structure
+Each preset defines:
+- **Identity**: Unique table identifier and persistence key
+- **Columns**: Declarative column definitions with stable IDs
+- **Behavior**: Sorting, pagination, selection, and URL synchronization settings
+- **Toolbar**: Search, filters, and action configurations
+- **Actions**: Row and bulk action descriptors
+- **Summary**: Optional summary/footer configuration
+
+### Column Preset Features
+- **Stable Identity**: Required column IDs for persistence and sorting
+- **Framework-Agnostic**: No React dependencies, supports nested data paths
+- **Formatting Options**: Pure value formatters or shared cell renderers
+- **Visibility Control**: Default visibility and required column flags
+- **Customization**: Column overrides for page-level modifications
 
 **Section sources**
-- [ProductsTable.tsx:59-495](file://components/accounting/ProductsTable.tsx#L59-L495)
+- [list-table-preset.ts:19-113](file://lib/table-system/types/list-table-preset.ts#L19-L113)
+- [column-preset.ts:22-143](file://lib/table-system/types/column-preset.ts#L22-L143)
+
+## Standardized ERP Table System
+The ERP table system provides framework-agnostic contracts that separate presentation concerns from domain logic, enabling consistent table behavior across different components.
+
+### ERPTable Contract
+The ERPTable interface defines:
+- **Column Definitions**: Framework-agnostic column specifications
+- **Pagination State**: Standard pagination configuration
+- **Selection Handling**: Multi-row selection with preservation
+- **Sorting Support**: Field-based sorting with order indicators
+- **Row Actions**: Flexible action column rendering
+- **Empty States**: Configurable empty content messages
+
+### ERPToolbar Features
+The ERPToolbar provides:
+- **Bulk Mode Detection**: Automatic switching between create and bulk actions
+- **Flexible Layout**: Left/right positioning for different action types
+- **Selection Integration**: Real-time selected count display
+- **Create Button**: Primary action with customizable labels
+
+**Section sources**
+- [erp-table.types.ts:83-154](file://components/erp/erp-table.types.ts#L83-L154)
+- [erp-toolbar.tsx:21-60](file://components/erp/erp-toolbar.tsx#L21-L60)
 
 ## Dependency Analysis
-- DataGrid depends on TanStack React Table for core rendering and state.
-- DataGridCell depends on form primitives for inline editing.
-- useDataGrid depends on Next.js router/searchParams for URL sync and caching utilities.
-- Integrations depend on useDataGrid and pass gridProps to DataGrid.
+The enhanced grid system maintains clear separation of concerns across three layers:
+- Traditional DataGrid depends on TanStack React Table for core rendering and state
+- Preset Adapter depends on the table system types and renderer registry
+- ERPTable depends on antd for implementation while maintaining framework-agnostic contracts
+- useDataGrid depends on Next.js router/searchParams for URL sync and caching utilities
+- Integrations depend on useDataGrid and pass gridProps to DataGrid
 
 ```mermaid
 graph LR
@@ -314,9 +280,16 @@ DG --> DGT["DataGridToolbar"]
 DG --> DGP["DataGridPaginationBar"]
 DG --> DGB["DataGridBulkBar"]
 DG --> PERSIST["Persistence"]
+PA["Preset Adapter"] --> LTP["ListTablePreset Types"]
+PA --> CPRESET["Column Preset Types"]
+PA --> RENDERERS["Cell Renderers"]
+ERT["ERPTable"] --> ERTT["ERPTable Types"]
+ERT --> ANT["antd Table"]
 DT["DocumentsTable"] --> DG
 PT["ProductsTable"] --> DG
-DT --> UDG["useDataGrid"]
+PCPT["PresetCounterpartiesTable"] --> PA
+PCPT --> UDG["useDataGrid"]
+DT --> UDG
 PT --> UDG
 UDG --> CACHE["Cache"]
 UDG --> TYPES["Types"]
@@ -324,32 +297,32 @@ UDG --> TYPES["Types"]
 
 **Diagram sources**
 - [data-grid.tsx:3-25](file://components/ui/data-grid/data-grid.tsx#L3-L25)
-- [data-grid-cell.tsx:3-12](file://components/ui/data-grid/data-grid-cell.tsx#L3-L12)
-- [use-data-grid.ts:3-7](file://lib/hooks/use-data-grid/use-data-grid.ts#L3-L7)
-- [DocumentsTable.tsx:7-17](file://components/accounting/DocumentsTable.tsx#L7-L17)
-- [ProductsTable.tsx:15-17](file://components/accounting/ProductsTable.tsx#L15-L17)
+- [preset-adapter.tsx:13-21](file://components/ui/data-grid/preset-adapter.tsx#L13-L21)
+- [erp-table.tsx:3-10](file://components/erp/erp-table.tsx#L3-L10)
 
 **Section sources**
 - [data-grid.tsx:3-25](file://components/ui/data-grid/data-grid.tsx#L3-L25)
-- [use-data-grid.ts:3-7](file://lib/hooks/use-data-grid/use-data-grid.ts#L3-L7)
+- [preset-adapter.tsx:13-21](file://components/ui/data-grid/preset-adapter.tsx#L13-L21)
+- [erp-table.tsx:3-10](file://components/erp/erp-table.tsx#L3-L10)
 
 ## Performance Considerations
-- Virtualization: Not implemented in the current DataGrid. For very large datasets, consider enabling virtualization via TanStack React Table’s virtualization features and adjusting row count accordingly.
+- Virtualization: Not implemented in the current DataGrid. For very large datasets, consider enabling virtualization via TanStack React Table's virtualization features and adjusting row count accordingly.
 - Caching: useDataGrid caches responses with freshness window and LRU eviction; reduces network load and improves perceived performance.
 - Debouncing: Search input is debounced to avoid excessive requests.
 - Abort controller: Cancels stale requests to prevent race conditions.
 - Rendering: Skeleton rows during loading; compact density option reduces per-row height.
 - Persistence: Debounced column sizing saves reduce storage churn.
+- Preset Optimization: Preset adapter caches transformed column definitions to avoid repeated processing.
 
 Recommendations:
 - Enable TanStack virtualization for >1000 rows.
 - Consider server-side pagination and sorting for large datasets.
 - Batch mutations and refresh to minimize re-renders.
+- Use preset system for consistent column definitions across similar tables.
 
 **Section sources**
 - [use-data-grid.ts:137-182](file://lib/hooks/use-data-grid/use-data-grid.ts#L137-L182)
-- [cache.ts:17-31](file://lib/hooks/use-data-grid/cache.ts#L17-L31)
-- [data-grid.tsx:268-278](file://components/ui/data-grid/data-grid.tsx#L268-L278)
+- [preset-adapter.tsx:139-180](file://components/ui/data-grid/preset-adapter.tsx#L139-L180)
 
 ## Accessibility and UX
 - Keyboard navigation:
@@ -362,11 +335,13 @@ Recommendations:
   - Inline editors focus input on mount; selects text for quick overwrite.
 - Visual feedback:
   - Hover states, sticky header shadow, density options, and error tooltips.
+- Preset-based consistency:
+  - Standardized column widths and alignments across similar table types.
+  - Consistent action button placement and labeling.
 
 **Section sources**
 - [data-grid.tsx:108-126](file://components/ui/data-grid/data-grid.tsx#L108-L126)
-- [data-grid-toolbar.tsx:44-46](file://components/ui/data-grid/data-grid-toolbar.tsx#L44-L46)
-- [data-grid-cell.tsx:36-39](file://components/ui/data-grid/data-grid-cell.tsx#L36-L39)
+- [preset-adapter.tsx:67-116](file://components/ui/data-grid/preset-adapter.tsx#L67-L116)
 
 ## Extensibility Guidelines
 - Custom columns:
@@ -383,16 +358,20 @@ Recommendations:
   - Set persistenceKey to enable column sizing/visibility persistence.
 - URL sync:
   - Toggle syncUrl to disable URL syncing for embedded grids.
+- Preset-based extensions:
+  - Create new ListTablePreset with stable IDs for consistent column definitions.
+  - Use columnOverrides for page-specific customizations.
+  - Leverage shared cell renderers for consistent formatting.
 
 Examples in code:
 - DocumentsTable demonstrates grouped filters, bulk confirm, and persistence key scoping.
 - ProductsTable demonstrates custom filters, export/import, and bulk archive/restore/delete.
+- PresetCounterpartiesTable shows integration with the new preset adapter system.
 
 **Section sources**
 - [data-grid-types.ts:4-22](file://components/ui/data-grid/data-grid-types.ts#L4-L22)
-- [DocumentsTable.tsx:79-120](file://components/accounting/DocumentsTable.tsx#L79-L120)
-- [ProductsTable.tsx:102-126](file://components/accounting/ProductsTable.tsx#L102-L126)
-- [data-grid.tsx:87-131](file://components/ui/data-grid/data-grid.tsx#L87-L131)
+- [list-table-preset.ts:121-167](file://lib/table-system/types/list-table-preset.ts#L121-L167)
+- [column-preset.ts:149-171](file://lib/table-system/types/column-preset.ts#L149-L171)
 
 ## Troubleshooting Guide
 - Grid not updating after mutation:
@@ -408,11 +387,18 @@ Examples in code:
   - Confirm editable.type matches expected value shape.
 - Column visibility not persisting:
   - Ensure persistenceKey is set and localStorage is available.
+- Preset not rendering correctly:
+  - Verify preset id and persistenceKey are unique and stable.
+  - Check column IDs match accessorKey paths.
+  - Ensure cell renderer names exist in the renderer registry.
+- ERPTable not displaying actions:
+  - Verify rowActions prop is provided and not null.
+  - Check that action column is properly configured in column definitions.
 
 **Section sources**
 - [use-data-grid.ts:223-270](file://lib/hooks/use-data-grid/use-data-grid.ts#L223-L270)
-- [data-grid-persist.ts:16-35](file://components/ui/data-grid/data-grid-persist.ts#L16-L35)
-- [data-grid-cell.tsx:56-76](file://components/ui/data-grid/data-grid-cell.tsx#L56-L76)
+- [preset-adapter.tsx:139-180](file://components/ui/data-grid/preset-adapter.tsx#L139-L180)
+- [erp-table.tsx:96-165](file://components/erp/erp-table.tsx#L96-L165)
 
 ## Conclusion
-The Data Grid system combines a flexible UI layer with a robust data management hook to deliver responsive, accessible, and extensible table experiences across ListOpt ERP. Its modular design enables quick integration with accounting domains while maintaining strong defaults for persistence, caching, and user experience.
+The enhanced Data Grid system combines a flexible UI layer with a robust preset-based architecture and standardized ERP table components to deliver responsive, accessible, and extensible table experiences across ListOpt ERP. The new preset adapter system provides a single integration point for declarative table configurations, while the ERP table system ensures consistent behavior across different implementations. This modular design enables quick integration with accounting domains while maintaining strong defaults for persistence, caching, and user experience, with specialized presets for counterparties, products, sales orders, purchases, and stock documents.

@@ -14,10 +14,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNumber, formatRub } from "@/lib/shared/utils";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
+import { csrfFetch } from "@/lib/client/csrf";
 
 interface StockRecord {
   id: string;
@@ -50,6 +51,9 @@ export default function WarehousesPage() {
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
   const [stockRecords, setStockRecords] = useState<StockRecord[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingWarehouse, setDeletingWarehouse] = useState<Warehouse | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [formName, setFormName] = useState("");
   const [formAddress, setFormAddress] = useState("");
@@ -69,6 +73,33 @@ export default function WarehousesPage() {
     setFormAddress(wh.address || "");
     setFormResponsible(wh.responsibleName || "");
     setDialogOpen(true);
+  };
+
+  const openDelete = (wh: Warehouse) => {
+    setDeletingWarehouse(wh);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingWarehouse) return;
+    setDeleting(true);
+    try {
+      const res = await csrfFetch(`/api/accounting/warehouses/${deletingWarehouse.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Ошибка удаления");
+      }
+      toast.success(`Склад «${deletingWarehouse.name}» деактивирован`);
+      setDeleteDialogOpen(false);
+      setDeletingWarehouse(null);
+      grid.mutate.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка удаления");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const viewStock = async (wh: Warehouse) => {
@@ -96,12 +127,12 @@ export default function WarehousesPage() {
         responsibleName: formResponsible || null,
       };
       const res = editing
-        ? await fetch(`/api/accounting/warehouses/${editing.id}`, {
+        ? await csrfFetch(`/api/accounting/warehouses/${editing.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           })
-        : await fetch("/api/accounting/warehouses", {
+        : await csrfFetch("/api/accounting/warehouses", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -157,13 +188,23 @@ export default function WarehousesPage() {
     },
     {
       id: "actions",
-      size: 60,
+      size: 100,
       enableResizing: false,
       meta: { canHide: false },
       cell: ({ row }) => (
-        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}>
-          <Pencil className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive"
+            onClick={(e) => { e.stopPropagation(); openDelete(row.original); }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -213,6 +254,27 @@ export default function WarehousesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Отмена</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Сохранение..." : "Сохранить"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { if (!deleting) setDeleteDialogOpen(open); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Деактивировать склад?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Склад <span className="font-medium text-foreground">«{deletingWarehouse?.name}»</span> будет
+            деактивирован. Документы и остатки сохранятся.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Деактивация..." : "Деактивировать"}
             </Button>
           </DialogFooter>
         </DialogContent>

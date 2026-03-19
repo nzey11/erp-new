@@ -168,9 +168,13 @@ export const DocumentService = {
     // Calculate total from items.
     // For payment-type documents (incoming_payment / outgoing_payment) that have no items,
     // fall back to presetTotal supplied by the caller (e.g. copied from parent document).
+    // For inventory_count: total = |actualQty - expectedQty| * price (discrepancy value).
+    const isInventoryCreate = type === 'inventory_count'
     let totalAmount = 0
     const itemsData = (items || []).map((item) => {
-      const total = (item.quantity || 0) * (item.price || 0)
+      const total = isInventoryCreate
+        ? Math.abs((item.actualQty ?? 0) - (item.expectedQty ?? 0)) * (item.price || 0)
+        : (item.quantity || 0) * (item.price || 0)
       totalAmount += total
       return {
         productId: item.productId,
@@ -266,16 +270,21 @@ export const DocumentService = {
     if (items !== undefined) {
       await db.documentItem.deleteMany({ where: { documentId: id } })
 
+      const isInventory = existing.type === 'inventory_count'
       totalAmount = 0
       const itemsData = (items || []).map((item) => {
-        const total = (item.quantity || 0) * (item.price || 0)
-        totalAmount += total
+        // For inventory_count: total = |actualQty - expectedQty| * price (discrepancy value)
+        // For all other docs:   total = quantity * price
+        const itemTotal = isInventory
+          ? Math.abs((item.actualQty ?? 0) - (item.expectedQty ?? 0)) * (item.price || 0)
+          : (item.quantity || 0) * (item.price || 0)
+        totalAmount += itemTotal
         return {
           documentId: id,
           productId: item.productId,
           quantity: item.quantity || 0,
           price: item.price || 0,
-          total,
+          total: itemTotal,
           expectedQty: item.expectedQty ?? null,
           actualQty: item.actualQty ?? null,
           difference:

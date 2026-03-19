@@ -61,7 +61,7 @@ export default function AccountPage() {
         ]);
 
         if (!customerRes.ok) {
-          router.push("/store/auth/telegram");
+          router.push("/store/register");
           return;
         }
 

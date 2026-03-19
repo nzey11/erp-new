@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Divider } from "antd";
 import { toast } from "sonner";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -450,7 +450,7 @@ function CounterpartyDetailPage() {
                       </div>
                       {item.subject && <p className="mt-1 font-medium">{item.subject}</p>}
                       {item.description && <p className="text-muted-foreground">{item.description}</p>}
-                      <Separator className="mt-3" />
+                      <Divider className="mt-3" />
                     </div>
                   ))}
                 </div>

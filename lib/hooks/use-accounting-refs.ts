@@ -8,7 +8,7 @@ export function useAccountingRefs(counterpartyLimit = 500) {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/accounting/warehouses").then((r) => r.json()),
+      fetch("/api/accounting/warehouses?active=true").then((r) => r.json()),
       fetch(`/api/accounting/counterparties?limit=${counterpartyLimit}`).then((r) => r.json()),
     ]).then(([wh, cp]) => {
       setWarehouses(Array.isArray(wh) ? wh : []);

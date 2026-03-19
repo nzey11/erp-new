@@ -29,8 +29,6 @@ import {
   ClipboardList,
   Merge,
   ClipboardCheck,
-  MinusCircle,
-  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,8 +57,6 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: "Каталог", href: "/catalog", icon: Package },
     { name: "Склад", href: "/stock", icon: Boxes },
     { name: "Инвентаризации", href: "/stock?tab=inventory", icon: ClipboardCheck },
-    { name: "Списания", href: "/stock?tab=write_off", icon: MinusCircle },
-    { name: "Оприходования", href: "/stock?tab=stock_receipt", icon: PlusCircle },
     { name: "Закупки", href: "/purchases", icon: ShoppingCart },
     { name: "Продажи", href: "/sales", icon: TrendingUp },
     { name: "Контрагенты", href: "/counterparties", icon: Users },
@@ -296,7 +292,7 @@ export function AppSidebar() {
           onClick={() => setMobileOpen(false)}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-            pathname.startsWith("/settings") || pathname === "/warehouses"
+            pathname.startsWith("/settings") || pathname.startsWith("/warehouses")
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           )}
@@ -304,20 +300,6 @@ export function AppSidebar() {
         >
           <Settings className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Настройки</span>}
-        </Link>
-        <Link
-          href="/warehouses"
-          onClick={() => setMobileOpen(false)}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-            pathname === "/warehouses"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          )}
-          title={collapsed ? "Склады" : undefined}
-        >
-          <Boxes className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Склады</span>}
         </Link>
         <button
           onClick={handleLogout}

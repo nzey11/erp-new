@@ -90,7 +90,7 @@ export default function OrdersPage() {
           const data = await res.json();
           setOrders(data.orders || []);
         } else if (res.status === 401) {
-          router.push("/store/auth/telegram");
+          router.push("/store/register");
         } else {
           toast.error("Не удалось загрузить заказы");
         }

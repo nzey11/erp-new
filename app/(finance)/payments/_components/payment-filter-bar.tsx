@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Space, Select, DatePicker, Input, Button } from "antd";
 import type { Dayjs } from "dayjs";
@@ -30,6 +30,13 @@ export function PaymentFilterBar({ initialFilters }: PaymentFilterBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Stable primitives extracted from the (potentially new-reference) initialFilters prop.
+  // Using primitive values avoids including the whole object in useCallback/useEffect deps
+  // which would cause infinite re-render when the parent creates a new object each render.
+  const initialPageSize = initialFilters.pageSize;
+  const initialSort = initialFilters.sort;
+  const initialOrder = initialFilters.order;
+
   // Local state for immediate UI feedback
   const [type, setType] = useState<"income" | "expense" | undefined>(initialFilters.type);
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(
@@ -49,7 +56,8 @@ export function PaymentFilterBar({ initialFilters }: PaymentFilterBarProps) {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Update URL when filters change
+  // Update URL when filters change.
+  // Depends only on primitive values — NOT on the initialFilters object reference.
   const updateUrl = useCallback(
     (updates: Partial<PaymentFilters>) => {
       const current: PaymentFilters = {
@@ -58,9 +66,9 @@ export function PaymentFilterBar({ initialFilters }: PaymentFilterBarProps) {
         dateFrom: dateRange?.[0]?.format("YYYY-MM-DD"),
         dateTo: dateRange?.[1]?.format("YYYY-MM-DD"),
         page: 1, // Reset to first page on filter change
-        pageSize: initialFilters.pageSize,
-        sort: initialFilters.sort,
-        order: initialFilters.order,
+        pageSize: initialPageSize,
+        sort: initialSort,
+        order: initialOrder,
       };
 
       const next = { ...current, ...updates };
@@ -75,13 +83,20 @@ export function PaymentFilterBar({ initialFilters }: PaymentFilterBarProps) {
 
       router.replace(`?${params.toString()}`, { scroll: false });
     },
-    [router, searchParams, type, dateRange, debouncedSearch, initialFilters]
+    // Primitive deps only — no object references that change every render
+    [router, searchParams, type, dateRange, debouncedSearch, initialPageSize, initialSort, initialOrder]
   );
 
-  // Trigger URL update on debounced search change
+  // Trigger URL update on debounced search change.
+  // Guard: only push to URL when debouncedSearch actually changed (avoids firing on mount).
+  const isFirstSearchRender = useRef(true);
   useEffect(() => {
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false;
+      return;
+    }
     updateUrl({ search: debouncedSearch || undefined });
-  }, [debouncedSearch, updateUrl]);
+  }, [debouncedSearch]); // intentionally omit updateUrl — we only want this on debouncedSearch change
 
   const handleTypeChange = (value: "income" | "expense" | null) => {
     setType(value || undefined);

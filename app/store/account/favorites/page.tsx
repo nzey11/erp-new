@@ -39,7 +39,7 @@ export default function FavoritesPage() {
           const data = await res.json();
           setItems(data.items || []);
         } else if (res.status === 401) {
-          router.push("/store/auth/telegram");
+          router.push("/store/register");
         } else {
           toast.error("Не удалось загрузить избранное");
         }

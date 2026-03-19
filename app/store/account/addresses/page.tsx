@@ -57,7 +57,7 @@ export default function AddressesPage() {
         const data = await res.json();
         setAddresses(data.addresses || []);
       } else if (res.status === 401) {
-        router.push("/store/auth/telegram");
+        router.push("/store/register");
       } else {
         toast.error("Не удалось загрузить адреса");
       }

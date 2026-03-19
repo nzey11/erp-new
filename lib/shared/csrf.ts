@@ -176,6 +176,7 @@ export function requiresCsrfProtection(method: string): boolean {
 export function isCsrfExemptPath(pathname: string): boolean {
   const exemptPatterns = [
     /^\/api\/auth\/login/,        // Login doesn't have CSRF yet
+    /^\/api\/auth\/logout/,       // Logout must always work (cookie cleared server-side)
     /^\/api\/auth\/csrf/,         // CSRF token endpoint
     /^\/api\/webhooks/,           // Webhooks use other auth
     /^\/api\/ecommerce\/checkout/, // Checkout uses customer auth

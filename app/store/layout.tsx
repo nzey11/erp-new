@@ -114,12 +114,19 @@ function StoreContent({
                 </Button>
               </Link>
             ) : (
-              <Link href="/store/account">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:block">Войти</span>
-                </Button>
-              </Link>
+              <div className="flex items-center gap-1">
+                <Link href="/store/account">
+                  <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:block">Войти</span>
+                  </Button>
+                </Link>
+                <Link href="/store/register" className="hidden sm:block">
+                  <Button variant="outline" size="sm">
+                    Регистрация
+                  </Button>
+                </Link>
+              </div>
             )}
 
             {/* Mobile menu toggle */}

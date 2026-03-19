@@ -2,29 +2,37 @@
 
 <cite>
 **Referenced Files in This Document**
-- [layout.tsx](file://app/(crm)/layout.tsx)
-- [page.tsx](file://app/(crm)/crm/parties/page.tsx)
-- [page.tsx](file://app/(crm)/crm/admin/merge/page.tsx)
-- [index.ts](file://components/crm/index.ts)
-- [index.ts](file://components/crm/parties/index.ts)
-- [party-list-table.tsx](file://components/crm/parties/party-list-table.tsx)
-- [party-list-filters.tsx](file://components/crm/parties/party-list-filters.tsx)
-- [index.ts](file://components/crm/merge/index.ts)
-- [merge-party-picker.tsx](file://components/crm/merge/merge-party-picker.tsx)
-- [merge-preview-card.tsx](file://components/crm/merge/merge-preview-card.tsx)
-- [merge-confirm-dialog.tsx](file://components/crm/merge/merge-confirm-dialog.tsx)
-- [index.ts](file://components/crm/party-profile/index.ts)
-- [party-profile-header.tsx](file://components/crm/party-profile/party-profile-header.tsx)
-- [party-profile-summary.tsx](file://components/crm/party-profile/party-profile-summary.tsx)
-- [party-profile-links.tsx](file://components/crm/party-profile/party-profile-links.tsx)
-- [party-activity-timeline.tsx](file://components/crm/party-profile/party-activity-timeline.tsx)
+- [layout.tsx](file://app/(accounting)/layout.tsx)
+- [page.tsx](file://app/(accounting)/crm/parties/page.tsx)
+- [page.tsx](file://app/(accounting)/crm/admin/merge/page.tsx)
+- [index.ts](file://components/domain/crm/index.ts)
+- [index.ts](file://components/domain/crm/parties/index.ts)
+- [party-list-table.tsx](file://components/domain/crm/parties/party-list-table.tsx)
+- [party-list-filters.tsx](file://components/domain/crm/parties/party-list-filters.tsx)
+- [index.ts](file://components/domain/crm/merge/index.ts)
+- [merge-party-picker.tsx](file://components/domain/crm/merge/merge-party-picker.tsx)
+- [merge-preview-card.tsx](file://components/domain/crm/merge/merge-preview-card.tsx)
+- [merge-confirm-dialog.tsx](file://components/domain/crm/merge/merge-confirm-dialog.tsx)
+- [index.ts](file://components/domain/crm/party-profile/index.ts)
+- [party-profile-header.tsx](file://components/domain/crm/party-profile/party-profile-header.tsx)
+- [party-profile-summary.tsx](file://components/domain/crm/party-profile/party-profile-summary.tsx)
+- [party-profile-links.tsx](file://components/domain/crm/party-profile/party-profile-links.tsx)
+- [party-activity-timeline.tsx](file://components/domain/crm/party-profile/party-activity-timeline.tsx)
 - [route.ts](file://app/api/crm/parties/merge/route.ts)
 - [route.ts](file://app/api/crm/parties/search/route.ts)
-- [index.ts](file://lib/party/dto/index.ts)
-- [index.ts](file://lib/party/queries/index.ts)
-- [party-owner.ts](file://lib/party/services/party-owner.ts)
+- [index.ts](file://lib/domain/party/dto/index.ts)
+- [index.ts](file://lib/domain/party/queries/index.ts)
+- [party-owner.ts](file://lib/domain/party/services/party-owner.ts)
 - [schema.prisma](file://prisma/schema.prisma)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated CRM module location from `app/(crm)/` to `app/(accounting)/crm/`
+- Updated component references from `components/crm/` to `components/domain/crm/`
+- Updated layout structure to reflect accounting domain consolidation
+- Updated API route references to reflect new path structure
+- Updated all file paths and references throughout the documentation
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -45,18 +53,29 @@ The CRM Module is a comprehensive customer relationship management system built 
 
 The module follows modern React patterns with Next.js App Router architecture, implementing server-side rendering for optimal performance and SEO. It leverages TypeScript for type safety and Prisma ORM for database operations, ensuring robust data management and maintainable code structure.
 
+**Updated** The CRM module has been restructured and moved from the standalone `(crm)` route group to the consolidated `(accounting)` domain, reflecting its integration into the unified party management system.
+
 ## Project Structure
 
-The CRM module is organized using Next.js App Router conventions with clear separation between UI components, API routes, and business logic:
+The CRM module is now organized under the accounting domain with clear separation between UI components, API routes, and business logic:
 
 ```mermaid
 graph TB
 subgraph "App Router Structure"
-CRM[app/(crm)/]
+ACCOUNTING[app/(accounting)/]
 LAYOUT[layout.tsx]
-subgraph "Pages"
-PARTIES[crm/parties/page.tsx]
-MERGE[crm/admin/merge/page.tsx]
+subgraph "CRM Module"
+CRM[crm/]
+subgraph "Parties"
+PARTIES_PAGE[parties/page.tsx]
+PARTIES_COMPONENTS[parties/_components/]
+PARTIES_LIB[parties/_lib/]
+end
+subgraph "Admin"
+MERGE_PAGE[admin/merge/page.tsx]
+MERGE_COMPONENTS[admin/merge/_components/]
+MERGE_LIB[admin/merge/_lib/]
+end
 end
 subgraph "API Routes"
 API[app/api/crm/]
@@ -65,7 +84,7 @@ SEARCH_API[parties/search/route.ts]
 end
 end
 subgraph "Components"
-COMPONENTS[components/crm/]
+DOMAIN[components/domain/crm/]
 subgraph "Parties"
 P_LIST[parties/]
 P_TABLE[party-list-table.tsx]
@@ -86,33 +105,34 @@ TIMELINE[party-activity-timeline.tsx]
 end
 end
 subgraph "Libraries"
-LIB[lib/]
+LIB[lib/domain/party/]
 DTO[dto/]
 QUERIES[queries/]
 SERVICES[services/]
 end
-CRM --> LAYOUT
-CRM --> PARTIES
-CRM --> MERGE
+ACCOUNTING --> LAYOUT
+ACCOUNTING --> CRM
+CRM --> PARTIES_PAGE
+CRM --> MERGE_PAGE
 CRM --> API
 API --> MERGE_API
 API --> SEARCH_API
-COMPONENTS --> P_LIST
-COMPONENTS --> MERGE_COMP
-COMPONENTS --> PROFILE
-COMPONENTS --> DTO
-COMPONENTS --> QUERIES
-COMPONENTS --> SERVICES
+DOMAIN --> P_LIST
+DOMAIN --> MERGE_COMP
+DOMAIN --> PROFILE
+DOMAIN --> DTO
+DOMAIN --> QUERIES
+DOMAIN --> SERVICES
 ```
 
 **Diagram sources**
-- [layout.tsx](file://app/(crm)/layout.tsx#L1-L13)
-- [page.tsx](file://app/(crm)/crm/parties/page.tsx#L1-L87)
-- [page.tsx](file://app/(crm)/crm/admin/merge/page.tsx#L1-L168)
+- [layout.tsx](file://app/(accounting)/layout.tsx#L1-L20)
+- [page.tsx](file://app/(accounting)/crm/parties/page.tsx#L1-L36)
+- [page.tsx](file://app/(accounting)/crm/admin/merge/page.tsx#L1-L15)
 
 **Section sources**
-- [layout.tsx](file://app/(crm)/layout.tsx#L1-L13)
-- [index.ts:1-10](file://components/crm/index.ts#L1-L10)
+- [layout.tsx](file://app/(accounting)/layout.tsx#L1-L20)
+- [index.ts:1-10](file://components/domain/crm/index.ts#L1-L10)
 
 ## Core Components
 
@@ -128,10 +148,10 @@ The Party Merge system allows administrators to consolidate duplicate customer r
 The Party Profile system delivers detailed insights into individual customer relationships, combining historical data, activity timelines, and linked entity information for comprehensive customer understanding.
 
 **Section sources**
-- [index.ts:1-10](file://components/crm/index.ts#L1-L10)
-- [index.ts:1-7](file://components/crm/parties/index.ts#L1-L7)
-- [index.ts:1-8](file://components/crm/merge/index.ts#L1-L8)
-- [index.ts:1-9](file://components/crm/party-profile/index.ts#L1-L9)
+- [index.ts:1-10](file://components/domain/crm/index.ts#L1-L10)
+- [index.ts:1-7](file://components/domain/crm/parties/index.ts#L1-L7)
+- [index.ts:1-8](file://components/domain/crm/merge/index.ts#L1-L8)
+- [index.ts:1-9](file://components/domain/crm/party-profile/index.ts#L1-L9)
 
 ## Architecture Overview
 
@@ -142,21 +162,21 @@ graph TB
 subgraph "Presentation Layer"
 UI[React Components]
 PAGES[Next.js Pages]
-LAYOUT[CRM Layout]
-end
+LAYOUT[Accounting Layout]
+END
 subgraph "Business Logic Layer"
 SERVICES[Party Services]
 QUERIES[Data Access Layer]
 VALIDATION[Input Validation]
-end
+END
 subgraph "Data Layer"
 PRISMA[Prisma ORM]
 DATABASE[(PostgreSQL)]
-end
+END
 subgraph "External Integrations"
 AUTH[Authorization]
 EVENTS[Event System]
-end
+END
 PAGES --> UI
 UI --> SERVICES
 SERVICES --> QUERIES
@@ -168,15 +188,15 @@ subgraph "API Layer"
 API_ROUTES[API Routes]
 MERGE_ROUTE[Party Merge Route]
 SEARCH_ROUTE[Party Search Route]
-end
+END
 API_ROUTES --> SERVICES
 MERGE_ROUTE --> SERVICES
 SEARCH_ROUTE --> SERVICES
 ```
 
 **Diagram sources**
-- [page.tsx](file://app/(crm)/crm/parties/page.tsx#L8-L12)
-- [page.tsx](file://app/(crm)/crm/admin/merge/page.tsx#L9-L15)
+- [page.tsx](file://app/(accounting)/crm/parties/page.tsx#L8-L12)
+- [page.tsx](file://app/(accounting)/crm/admin/merge/page.tsx#L7-L12)
 - [route.ts:7-9](file://app/api/crm/parties/merge/route.ts#L7-L9)
 
 The architecture emphasizes:
@@ -221,16 +241,16 @@ PartyListFilters --> Owner : filters by
 ```
 
 **Diagram sources**
-- [page.tsx](file://app/(crm)/crm/parties/page.tsx#L15-L36)
-- [party-list-table.tsx:13-15](file://components/crm/parties/party-list-table.tsx#L13-L15)
-- [party-list-filters.tsx:15-17](file://components/crm/parties/party-list-filters.tsx#L15-L17)
+- [page.tsx](file://app/(accounting)/crm/parties/page.tsx#L15-L36)
+- [party-list-table.tsx:13-15](file://components/domain/crm/parties/party-list-table.tsx#L13-L15)
+- [party-list-filters.tsx:15-17](file://components/domain/crm/parties/party-list-filters.tsx#L15-L17)
 
 The Party List system implements sophisticated filtering mechanisms with real-time search capabilities and pagination support. Users can filter parties by type (person/organization), owner assignment, and search terms, with results updating dynamically as filters change.
 
 **Section sources**
-- [page.tsx](file://app/(crm)/crm/parties/page.tsx#L1-L87)
-- [party-list-table.tsx:1-83](file://components/crm/parties/party-list-table.tsx#L1-L83)
-- [party-list-filters.tsx:1-92](file://components/crm/parties/party-list-filters.tsx#L1-L92)
+- [page.tsx](file://app/(accounting)/crm/parties/page.tsx#L1-L36)
+- [party-list-table.tsx:1-83](file://components/domain/crm/parties/party-list-table.tsx#L1-L83)
+- [party-list-filters.tsx:1-92](file://components/domain/crm/parties/party-list-filters.tsx#L1-L92)
 
 ### Party Merge System
 
@@ -262,8 +282,8 @@ Dialog-->>User : Show success message
 ```
 
 **Diagram sources**
-- [merge-party-picker.tsx:32-54](file://components/crm/merge/merge-party-picker.tsx#L32-L54)
-- [merge-confirm-dialog.tsx:39-50](file://components/crm/merge/merge-confirm-dialog.tsx#L39-L50)
+- [merge-party-picker.tsx:32-54](file://components/domain/crm/merge/merge-party-picker.tsx#L32-L54)
+- [merge-confirm-dialog.tsx:39-50](file://components/domain/crm/merge/merge-confirm-dialog.tsx#L39-L50)
 - [route.ts:11-32](file://app/api/crm/parties/merge/route.ts#L11-L32)
 
 The merge system implements several critical safeguards:
@@ -273,10 +293,10 @@ The merge system implements several critical safeguards:
 - **User Confirmation**: Requires explicit confirmation before executing merges
 
 **Section sources**
-- [page.tsx](file://app/(crm)/crm/admin/merge/page.tsx#L1-L168)
-- [merge-party-picker.tsx:1-136](file://components/crm/merge/merge-party-picker.tsx#L1-L136)
-- [merge-preview-card.tsx:1-66](file://components/crm/merge/merge-preview-card.tsx#L1-L66)
-- [merge-confirm-dialog.tsx:1-112](file://components/crm/merge/merge-confirm-dialog.tsx#L1-L112)
+- [page.tsx](file://app/(accounting)/crm/admin/merge/page.tsx#L1-L15)
+- [merge-party-picker.tsx:1-136](file://components/domain/crm/merge/merge-party-picker.tsx#L1-L136)
+- [merge-preview-card.tsx:1-66](file://components/domain/crm/merge/merge-preview-card.tsx#L1-L66)
+- [merge-confirm-dialog.tsx:1-112](file://components/domain/crm/merge/merge-confirm-dialog.tsx#L1-L112)
 
 ### Party Profile Dashboard
 
@@ -307,10 +327,10 @@ PartyActivityTimeline --> PartyProfileDto : displays
 ```
 
 **Diagram sources**
-- [party-profile-header.tsx:12-14](file://components/crm/party-profile/party-profile-header.tsx#L12-L14)
-- [party-profile-summary.tsx:12-14](file://components/crm/party-profile/party-profile-summary.tsx#L12-L14)
-- [party-profile-links.tsx:14-16](file://components/crm/party-profile/party-profile-links.tsx#L14-L16)
-- [party-activity-timeline.tsx:12-14](file://components/crm/party-profile/party-activity-timeline.tsx#L12-L14)
+- [party-profile-header.tsx:12-14](file://components/domain/crm/party-profile/party-profile-header.tsx#L12-L14)
+- [party-profile-summary.tsx:12-14](file://components/domain/crm/party-profile/party-profile-summary.tsx#L12-L14)
+- [party-profile-links.tsx:14-16](file://components/domain/crm/party-profile/party-profile-links.tsx#L14-L16)
+- [party-activity-timeline.tsx:12-14](file://components/domain/crm/party-profile/party-activity-timeline.tsx#L12-L14)
 
 The profile dashboard presents information in a structured, hierarchical manner:
 - **Header Section**: Displays party name and type badges
@@ -319,10 +339,10 @@ The profile dashboard presents information in a structured, hierarchical manner:
 - **Activity Timeline**: Chronological display of customer interactions and transactions
 
 **Section sources**
-- [party-profile-header.tsx:1-26](file://components/crm/party-profile/party-profile-header.tsx#L1-L26)
-- [party-profile-summary.tsx:1-60](file://components/crm/party-profile/party-profile-summary.tsx#L1-L60)
-- [party-profile-links.tsx:1-67](file://components/crm/party-profile/party-profile-links.tsx#L1-L67)
-- [party-activity-timeline.tsx:1-102](file://components/crm/party-profile/party-activity-timeline.tsx#L1-L102)
+- [party-profile-header.tsx:1-26](file://components/domain/crm/party-profile/party-profile-header.tsx#L1-L26)
+- [party-profile-summary.tsx:1-60](file://components/domain/crm/party-profile/party-profile-summary.tsx#L1-L60)
+- [party-profile-links.tsx:1-67](file://components/domain/crm/party-profile/party-profile-links.tsx#L1-L67)
+- [party-activity-timeline.tsx:1-102](file://components/domain/crm/party-profile/party-activity-timeline.tsx#L1-L102)
 
 ## API Endpoints
 
@@ -442,7 +462,7 @@ The data model supports advanced CRM functionality including:
 
 **Section sources**
 - [schema.prisma:1238-1279](file://prisma/schema.prisma#L1238-L1279)
-- [party-owner.ts:67-111](file://lib/party/services/party-owner.ts#L67-L111)
+- [party-owner.ts:67-111](file://lib/domain/party/services/party-owner.ts#L67-L111)
 
 ## Security and Permissions
 
@@ -516,7 +536,7 @@ The Prisma schema includes strategic indexing on frequently queried fields:
 - Confirm activity timeline updates
 
 **Section sources**
-- [merge-party-picker.tsx:38-54](file://components/crm/merge/merge-party-picker.tsx#L38-L54)
+- [merge-party-picker.tsx:38-54](file://components/domain/crm/merge/merge-party-picker.tsx#L38-L54)
 - [route.ts:39-61](file://app/api/crm/parties/merge/route.ts#L39-L61)
 
 ## Conclusion
@@ -531,3 +551,5 @@ Key strengths of the implementation include:
 - **Extensibility**: Well-defined APIs and component interfaces supporting future enhancements
 
 The module successfully addresses core CRM requirements while maintaining integration with existing business domains, providing a unified interface for customer management across the organization.
+
+**Updated** The CRM module has been successfully restructured and consolidated under the accounting domain, improving organizational clarity and maintaining seamless functionality while providing better integration with the broader ERP system.

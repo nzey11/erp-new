@@ -2,13 +2,29 @@
 
 <cite>
 **Referenced Files in This Document**
+- [payment.service.ts](file://lib/modules/finance/services/payment.service.ts)
 - [route.ts](file://app/api/finance/payments/route.ts)
 - [route.ts](file://app/api/finance/payments/[id]/route.ts)
-- [journal.ts](file://lib/modules/accounting/journal.ts)
+- [route.ts](file://app/api/finance/categories/route.ts)
+- [actions.ts](file://app/(finance)/payments/actions.ts)
 - [schema.prisma](file://prisma/schema.prisma)
 - [page.tsx](file://app/(finance)/finance/payments/page.tsx)
-- [route.ts](file://app/api/finance/categories/route.ts)
+- [journal.ts](file://lib/modules/accounting/journal.ts)
+- [verify-payment-tenant-gate.ts](file://scripts/verify-payment-tenant-gate.ts)
+- [backfill-payment-tenant.ts](file://scripts/backfill-payment-tenant.ts)
+- [financial-business-logic.test.ts](file://tests/integration/finance/financial-business-logic.test.ts)
+- [payment-handler.test.ts](file://tests/unit/lib/payment-handler.test.ts)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive tenant isolation support with Payment.tenantId enforcement
+- Enhanced PaymentService with centralized service layer for payment operations
+- Updated API endpoints to use PaymentService with tenant-aware operations
+- Improved payment validation and error handling
+- Added enhanced journal posting with better account resolution
+- Updated payment cancellation workflows with document dependency checks
+- Enhanced payment reporting with tenant-scoped aggregations
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -23,434 +39,451 @@
 10. [Appendices](#appendices)
 
 ## Introduction
-This document describes the payment processing subsystem within the finance module. It covers the complete lifecycle for incoming and outgoing payments, payment method management, automatic journal posting, payment categories, and reporting. It also documents the API endpoints for creating, updating, and deleting payments, along with practical scenarios (customer payments, supplier payments, internal transfers), validation rules, currency handling, and troubleshooting guidance.
+This document describes the payment processing subsystem within the finance module, featuring a new comprehensive payment service with tenant isolation, enhanced payment processing workflows, and improved API endpoints for payment management. The system covers the complete lifecycle for incoming and outgoing payments, payment method management, automatic journal posting, payment categories, and reporting with strict tenant boundaries.
 
 ## Project Structure
-The payment subsystem spans API routes, database models, and UI pages:
-- API endpoints under `/api/finance/payments` implement CRUD operations and integrate with the accounting journal.
-- The database schema defines payment records, categories, and counters.
-- The finance UI page provides filtering, summaries, and forms to manage payments.
+The payment subsystem now features a centralized service layer with enhanced tenant isolation:
+- PaymentService provides unified payment operations with tenant awareness
+- API endpoints route through PaymentService for all payment operations
+- Database schema enforces tenant isolation with Payment.tenantId constraints
+- Enhanced validation and error handling throughout the payment lifecycle
 
 ```mermaid
 graph TB
-subgraph "UI"
-UI_Payments["Payments Page<br/>app/(finance)/finance/payments/page.tsx"]
+subgraph "Service Layer"
+PS["PaymentService<br/>lib/modules/finance/services/payment.service.ts"]
+PS_List["listPayments()"]
+PS_Create["createPayment()"]
+PS_Update["updatePayment()"]
+PS_Delete["deletePayment()"]
+PS_Categories["listFinanceCategories()<br/>createFinanceCategory()<br/>updateFinanceCategory()<br/>deleteFinanceCategory()"]
 end
-subgraph "API"
+subgraph "API Layer"
 API_List["GET /api/finance/payments<br/>route.ts"]
 API_Create["POST /api/finance/payments<br/>route.ts"]
 API_Update["PATCH /api/finance/payments/[id]<br/>route.ts"]
 API_Delete["DELETE /api/finance/payments/[id]<br/>route.ts"]
-API_Categories["GET /api/finance/categories<br/>route.ts"]
+API_Categories["GET/POST /api/finance/categories<br/>route.ts"]
+end
+subgraph "UI Layer"
+UI_Payments["Payments Page<br/>app/(finance)/finance/payments/page.tsx"]
+UI_FormActions["Server Actions<br/>app/(finance)/payments/actions.ts"]
 end
 subgraph "Domain Logic"
-J_Post["autoPostPayment()<br/>lib/modules/accounting/journal.ts"]
-J_Reverse["reverseEntry()<br/>lib/modules/accounting/journal.ts"]
+J_Post["autoPostPayment()<br/>journal.ts"]
+J_Reverse["reverseEntry()<br/>journal.ts"]
+Recalc["recalculateBalance()<br/>balance.service.ts"]
 end
-subgraph "Data"
-DB_Payment["Payment model<br/>prisma/schema.prisma"]
-DB_Category["FinanceCategory model<br/>prisma/schema.prisma"]
-DB_Counters["PaymentCounter/JournalCounter<br/>prisma/schema.prisma"]
+subgraph "Data Layer"
+DB_Payment["Payment model<br/>schema.prisma"]
+DB_Category["FinanceCategory model<br/>schema.prisma"]
+DB_Tenant["Tenant model<br/>schema.prisma"]
+DB_Counters["PaymentCounter/JournalCounter<br/>schema.prisma"]
 end
-UI_Payments --> API_List
-UI_Payments --> API_Create
-UI_Payments --> API_Update
-UI_Payments --> API_Delete
-UI_Payments --> API_Categories
-API_Create --> J_Post
-API_Update --> J_Reverse
-API_Update --> J_Post
-API_Delete --> J_Reverse
-API_List --> DB_Payment
-API_Create --> DB_Payment
-API_Update --> DB_Payment
-API_Delete --> DB_Payment
-API_Categories --> DB_Category
+UI_Payments --> UI_FormActions
+UI_FormActions --> PS
+API_List --> PS
+API_Create --> PS
+API_Update --> PS
+API_Delete --> PS
+API_Categories --> PS
+PS --> DB_Payment
+PS --> DB_Category
+PS --> DB_Tenant
+PS --> J_Post
+PS --> J_Reverse
+PS --> Recalc
 J_Post --> DB_Counters
 J_Reverse --> DB_Counters
 ```
 
 **Diagram sources**
-- [route.ts:26-112](file://app/api/finance/payments/route.ts#L26-L112)
-- [route.ts:16-128](file://app/api/finance/payments/[id]/route.ts#L16-L128)
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-- [schema.prisma:892-913](file://prisma/schema.prisma#L892-L913)
-- [schema.prisma:870-884](file://prisma/schema.prisma#L870-L884)
-- [schema.prisma:886-890](file://prisma/schema.prisma#L886-L890)
-- [route.ts:12-29](file://app/api/finance/categories/route.ts#L12-L29)
+- [payment.service.ts:51-321](file://lib/modules/finance/services/payment.service.ts#L51-L321)
+- [route.ts:29-60](file://app/api/finance/payments/route.ts#L29-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
+- [route.ts:12-42](file://app/api/finance/categories/route.ts#L12-L42)
+- [actions.ts:11-95](file://app/(finance)/payments/actions.ts#L11-L95)
+- [schema.prisma:789-812](file://prisma/schema.prisma#L789-L812)
+- [schema.prisma:767-781](file://prisma/schema.prisma#L767-L781)
+- [schema.prisma:28-44](file://prisma/schema.prisma#L28-L44)
 
 **Section sources**
-- [route.ts:1-113](file://app/api/finance/payments/route.ts#L1-L113)
-- [route.ts:1-129](file://app/api/finance/payments/[id]/route.ts#L1-L129)
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-- [schema.prisma:892-913](file://prisma/schema.prisma#L892-L913)
-- [schema.prisma:870-884](file://prisma/schema.prisma#L870-L884)
-- [schema.prisma:886-890](file://prisma/schema.prisma#L886-L890)
-- [page.tsx](file://app/(finance)/finance/payments/page.tsx#L48-L117)
-- [route.ts:12-29](file://app/api/finance/categories/route.ts#L12-L29)
+- [payment.service.ts:51-321](file://lib/modules/finance/services/payment.service.ts#L51-L321)
+- [route.ts:29-60](file://app/api/finance/payments/route.ts#L29-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
+- [route.ts:12-42](file://app/api/finance/categories/route.ts#L12-L42)
+- [actions.ts:11-95](file://app/(finance)/payments/actions.ts#L11-L95)
+- [schema.prisma:789-812](file://prisma/schema.prisma#L789-L812)
+- [schema.prisma:767-781](file://prisma/schema.prisma#L767-L781)
+- [schema.prisma:28-44](file://prisma/schema.prisma#L28-L44)
 
 ## Core Components
-- Payment entity: stores number, type (income/expense), amount, payment method, date, optional counterparty/document, and category linkage.
-- Finance categories: define income/expense buckets with optional default account codes.
-- Journal integration: automatic posting of payments to the double-entry ledger with reversal support.
-- UI: filters, totals, pagination, and dialogs for create/update/delete.
+The payment subsystem now features a comprehensive service layer with tenant isolation:
 
-Key behaviors:
-- Payment numbering uses a dedicated counter.
-- Auto-posting creates journal entries with debits/credits based on payment type and method.
-- Updates trigger a reversal of prior journal entry followed by a new posting.
-- Deletes reverse the associated journal entry before removing the payment.
+### PaymentService
+- Centralized payment operations with tenant awareness
+- Tenant-scoped payment listing, creation, updates, and deletions
+- Enhanced validation and error handling
+- Integrated journal posting with improved account resolution
+- Balance recalculation for counterparties
+
+### Tenant Isolation
+- Payment.tenantId is now NOT NULL (schema-enforced)
+- All payment operations automatically scoped to tenant
+- Tenant verification through dedicated scripts and gates
+- Foreign key integrity maintained against Tenant table
+
+### Enhanced Journal Integration
+- Improved account resolution with better error handling
+- Direct journal entry creation bypassing idempotency checks
+- Enhanced cash flow calculations with tenant scoping
 
 **Section sources**
-- [schema.prisma:892-913](file://prisma/schema.prisma#L892-L913)
-- [schema.prisma:870-884](file://prisma/schema.prisma#L870-L884)
-- [schema.prisma:886-890](file://prisma/schema.prisma#L886-L890)
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-- [route.ts:75-112](file://app/api/finance/payments/route.ts#L75-L112)
-- [route.ts:16-128](file://app/api/finance/payments/[id]/route.ts#L16-L128)
-- [page.tsx](file://app/(finance)/finance/payments/page.tsx#L48-L117)
+- [payment.service.ts:51-321](file://lib/modules/finance/services/payment.service.ts#L51-L321)
+- [verify-payment-tenant-gate.ts:1-88](file://scripts/verify-payment-tenant-gate.ts#L1-L88)
+- [backfill-payment-tenant.ts:1-80](file://scripts/backfill-payment-tenant.ts#L1-L80)
+- [schema.prisma:802](file://prisma/schema.prisma#L802)
 
 ## Architecture Overview
-The payment lifecycle integrates UI, API, domain logic, and persistence:
+The enhanced payment lifecycle now includes comprehensive tenant isolation and centralized service operations:
 
 ```mermaid
 sequenceDiagram
 participant Client as "Client UI"
 participant API as "Payments API"
+participant Service as "PaymentService"
 participant Domain as "Accounting Journal"
 participant DB as "Database"
 Client->>API : POST /api/finance/payments
-API->>DB : Create Payment record
-API->>Domain : autoPostPayment(paymentId)
+API->>Service : createPayment(data, tenantId)
+Service->>DB : Create Payment record with tenantId
+Service->>Domain : autoPostPayment(paymentId)
 Domain->>DB : Find Payment + Category
 Domain->>DB : Resolve Accounts (cash/bank vs category)
 Domain->>DB : Create JournalEntry + Lines
-Domain-->>API : Success
+Domain-->>Service : Success
+Service-->>API : Payment with tenant context
 API-->>Client : Payment JSON
 Client->>API : PATCH /api/finance/payments/ : id
-API->>DB : Load existing Payment
-API->>Domain : reverseEntry(oldEntryId)
+API->>Service : updatePayment(id, tenantId, data)
+Service->>DB : Load existing Payment (tenant-scoped)
+Service->>Domain : reverseEntry(oldEntryId)
 Domain->>DB : Create Reversal JournalEntry
-API->>DB : Update Payment
-API->>Domain : autoPostPayment(updatedId)
+Service->>DB : Update Payment
+Service->>Domain : Direct journal entry creation
 Domain->>DB : Create New JournalEntry
+Service-->>API : Updated Payment
 API-->>Client : Updated Payment JSON
 Client->>API : DELETE /api/finance/payments/ : id
-API->>DB : Load Payment
-API->>Domain : reverseEntry(entryId)
+API->>Service : deletePayment(id, tenantId)
+Service->>DB : Load Payment (tenant-scoped)
+Service->>Domain : reverseEntry(entryId)
 Domain->>DB : Create Reversal JournalEntry
-API->>DB : Delete Payment
+Service->>DB : Delete Payment
+Service->>DB : Recalculate Counterparty Balance
+Service-->>API : Success response
 API-->>Client : { success : true }
 ```
 
 **Diagram sources**
-- [route.ts:75-112](file://app/api/finance/payments/route.ts#L75-L112)
-- [route.ts:16-128](file://app/api/finance/payments/[id]/route.ts#L16-L128)
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
+- [payment.service.ts:97-123](file://lib/modules/finance/services/payment.service.ts#L97-L123)
+- [payment.service.ts:129-213](file://lib/modules/finance/services/payment.service.ts#L129-L213)
+- [payment.service.ts:215-241](file://lib/modules/finance/services/payment.service.ts#L215-L241)
+- [route.ts:42-60](file://app/api/finance/payments/route.ts#L42-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
 
 ## Detailed Component Analysis
 
-### Payment Entity and Lifecycle
-- Creation: Validates type, category, amount, method, optional counterparty/document, and date; assigns a numbered sequence; auto-posts to journal.
-- Update: Supports category, counterparty, amount, method, date, and description; reverses prior journal entry and posts updated entry.
-- Deletion: Reverses the journal entry before deletion.
+### Enhanced PaymentService Operations
+The PaymentService now provides comprehensive tenant-aware operations:
+
+#### Tenant-Scoped Payment Management
+- **listPayments**: Filters by tenantId, supports pagination, aggregation, and includes related entities
+- **createPayment**: Generates tenant-specific payment numbers, validates tenant context
+- **updatePayment**: Enforces tenant ownership, handles journal reversals, creates new entries
+- **deletePayment**: Reverses journal entries, recalculates balances, maintains tenant boundaries
+
+#### Enhanced Validation and Error Handling
+- Comprehensive Zod validation for all payment operations
+- Tenant ownership verification for all CRUD operations
+- Graceful error handling with appropriate HTTP status codes
+- Non-critical journal operations don't block payment operations
 
 ```mermaid
 flowchart TD
-Start([Start]) --> CreateOrModify{"Create or Modify?"}
-CreateOrModify --> |Create| ValidateCreate["Validate payload<br/>type, categoryId, amount, method"]
-ValidateCreate --> AssignNumber["Assign payment number"]
-AssignNumber --> PersistCreate["Persist Payment"]
-PersistCreate --> AutoPost["Auto-post to Journal"]
-AutoPost --> Done([Done])
-CreateOrModify --> |Update| LoadExisting["Load existing Payment"]
+Start([Payment Operation]) --> Auth["Require Permission<br/>tenantId from session"]
+Auth --> ServiceCall["Call PaymentService.method()"]
+ServiceCall --> TenantCheck{"Tenant Ownership<br/>Verify tenantId"}
+TenantCheck --> |Valid| DBOps["Database Operations<br/>Tenant-scoped queries"]
+TenantCheck --> |Invalid| Error404["Return 404 Not Found"]
+DBOps --> JournalOps{"Journal Operation<br/>Required?"}
+JournalOps --> |Yes| JournalPost["Reverse/Post Journal Entries<br/>with enhanced error handling"]
+JournalOps --> |No| ReturnData["Return Payment Data"]
+JournalPost --> ReturnData
+ReturnData --> Success([Success Response])
+```
+
+**Diagram sources**
+- [payment.service.ts:52-95](file://lib/modules/finance/services/payment.service.ts#L52-L95)
+- [payment.service.ts:97-123](file://lib/modules/finance/services/payment.service.ts#L97-L123)
+- [payment.service.ts:129-213](file://lib/modules/finance/services/payment.service.ts#L129-L213)
+- [payment.service.ts:215-241](file://lib/modules/finance/services/payment.service.ts#L215-L241)
+
+**Section sources**
+- [payment.service.ts:51-321](file://lib/modules/finance/services/payment.service.ts#L51-L321)
+- [route.ts:29-60](file://app/api/finance/payments/route.ts#L29-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
+
+### Tenant Isolation and Security
+The system now enforces strict tenant boundaries:
+
+#### Schema-Level Enforcement
+- Payment.tenantId is NOT NULL (schema-enforced)
+- Foreign key constraint ensures all payments reference valid tenants
+- Tenant verification through dedicated scripts and gates
+
+#### Runtime Enforcement
+- All API endpoints pass tenantId from session context
+- PaymentService methods enforce tenant ownership
+- Server actions validate tenant context before database operations
+
+#### Verification and Backfill
+- `verify-payment-tenant-gate.ts`: Ensures 100% FK integrity coverage
+- `backfill-payment-tenant.ts`: Idempotent verification of tenant references
+- Migration scripts ensure data consistency across tenant boundaries
+
+**Section sources**
+- [schema.prisma:802](file://prisma/schema.prisma#L802)
+- [verify-payment-tenant-gate.ts:1-88](file://scripts/verify-payment-tenant-gate.ts#L1-L88)
+- [backfill-payment-tenant.ts:1-80](file://scripts/backfill-payment-tenant.ts#L1-L80)
+- [payment.service.ts:63](file://lib/modules/finance/services/payment.service.ts#L63)
+
+### Enhanced Journal Posting and Reversal
+The journal integration now features improved reliability:
+
+#### Direct Journal Entry Creation
+- Updates bypass idempotency checks for better control
+- Enhanced account resolution with fallback logic
+- Improved error handling for non-critical journal operations
+
+#### Enhanced Account Resolution
+- Better cash account detection (50 for cash, 51 for bank)
+- Flexible category account resolution with default fallbacks
+- Parallel account lookup for improved performance
+
+```mermaid
+flowchart TD
+UpdatePayment["updatePayment()"] --> LoadExisting["Load Payment (tenant-scoped)"]
 LoadExisting --> HasJournal{"Has Journal Entry?"}
-HasJournal --> |Yes| ReverseOld["Reverse old Journal Entry"]
-HasJournal --> |No| PrepareUpdate["Prepare update fields"]
-ReverseOld --> PrepareUpdate
-PrepareUpdate --> PersistUpdate["Persist updated Payment"]
-PersistUpdate --> AutoPostUpdated["Auto-post updated Journal Entry"]
-AutoPostUpdated --> Done
-CreateOrModify --> |Delete| LoadForDelete["Load Payment"]
-LoadForDelete --> HasJournalDel{"Has Journal Entry?"}
-HasJournalDel --> |Yes| ReverseDel["Reverse Journal Entry"]
-HasJournalDel --> |No| SkipReverse["Skip reversal"]
-ReverseDel --> DeleteRecord["Delete Payment"]
-SkipReverse --> DeleteRecord
-DeleteRecord --> Done
+HasJournal --> |Yes| ReverseOld["reverseEntry(bypassAutoCheck:true)"]
+HasJournal --> |No| BuildEntry["Build New Journal Entry"]
+ReverseOld --> BuildEntry
+BuildEntry --> ResolveAccounts["Resolve Accounts:<br/>cashAccountCode=50/51,<br/>categoryAccountCode=default or 91.1/91.2"]
+ResolveAccounts --> ParallelLookup["Parallel Account Lookup"]
+ParallelLookup --> CreateEntry["Create Journal Entry<br/>Direct bypass of idempotency"]
+CreateEntry --> Success["Return Updated Payment"]
 ```
 
 **Diagram sources**
-- [route.ts:75-112](file://app/api/finance/payments/route.ts#L75-L112)
-- [route.ts:16-128](file://app/api/finance/payments/[id]/route.ts#L16-L128)
+- [payment.service.ts:146-213](file://lib/modules/finance/services/payment.service.ts#L146-L213)
 - [journal.ts:193-244](file://lib/modules/accounting/journal.ts#L193-L244)
 
 **Section sources**
-- [route.ts:7-16](file://app/api/finance/payments/route.ts#L7-L16)
-- [route.ts:75-112](file://app/api/finance/payments/route.ts#L75-L112)
+- [payment.service.ts:146-213](file://lib/modules/finance/services/payment.service.ts#L146-L213)
+- [journal.ts:193-244](file://lib/modules/accounting/journal.ts#L193-L244)
+
+### API Endpoints with Enhanced Service Layer
+
+#### GET /api/finance/payments
+- **Enhanced**: Now uses PaymentService.listPayments with tenant isolation
+- **Query Parameters**: type, categoryId, counterpartyId, dateFrom, dateTo, page, limit
+- **Response**: Enhanced with tenant-scoped aggregations and included entities
+
+#### POST /api/finance/payments
+- **Enhanced**: Uses PaymentService.createPayment with comprehensive validation
+- **Request Body**: Enhanced Zod validation with tenantId injection
+- **Response**: Payment with tenant context and included relations
+
+#### PATCH /api/finance/payments/[id]
+- **Enhanced**: PaymentService.updatePayment with tenant ownership verification
+- **Request Body**: Partial updates with enhanced validation
+- **Response**: Updated payment with tenant context
+
+#### DELETE /api/finance/payments/[id]
+- **Enhanced**: PaymentService.deletePayment with journal reversal and balance recalculation
+- **Response**: Success object with counterpartyId for cache invalidation
+
+#### GET/POST /api/finance/categories
+- **Enhanced**: PaymentService methods for category management
+- **Response**: Tenant-aware category operations
+
+**Section sources**
+- [route.ts:29-60](file://app/api/finance/payments/route.ts#L29-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
+- [route.ts:12-42](file://app/api/finance/categories/route.ts#L12-L42)
+- [payment.service.ts:52-95](file://lib/modules/finance/services/payment.service.ts#L52-L95)
+
+### Enhanced Payment Scenarios and Workflows
+
+#### Document-Linked Payments
+- Payments can be linked to documents with tenant context
+- Cancellation workflows prevent document cancellation when payments exist
+- Enhanced error messages for payment-linked documents
+
+#### Counterparty Integration
+- Automatic counterparty balance recalculation on payment deletion
+- Enhanced cache invalidation for counterparty-related pages
+- Improved mutual settlement accuracy
+
+#### Enhanced Cancellation Workflows
+- Payment deletion triggers counterparty balance recalculation
+- Document cancellation blocked when payments are linked
+- Improved audit trail for payment operations
+
+**Section sources**
+- [financial-business-logic.test.ts:373-403](file://tests/integration/finance/financial-business-logic.test.ts#L373-L403)
+- [payment.service.ts:231-241](file://lib/modules/finance/services/payment.service.ts#L231-L241)
+- [payment-handler.test.ts:40-73](file://tests/unit/lib/payment-handler.test.ts#L40-L73)
+
+### Enhanced Validation Rules and Data Integrity
+- **Comprehensive Zod Validation**: Enhanced schema validation for all payment operations
+- **Tenant Ownership**: All operations verify tenant ownership before execution
+- **Journal Operation Resilience**: Non-critical journal failures don't block payment operations
+- **Enhanced Error Handling**: Appropriate HTTP status codes and error messages
+
+**Section sources**
+- [route.ts:8-17](file://app/api/finance/payments/route.ts#L8-L17)
 - [route.ts:7-14](file://app/api/finance/payments/[id]/route.ts#L7-L14)
-- [route.ts:16-128](file://app/api/finance/payments/[id]/route.ts#L16-L128)
-- [journal.ts:193-244](file://lib/modules/accounting/journal.ts#L193-L244)
+- [payment.service.ts:148-210](file://lib/modules/finance/services/payment.service.ts#L148-L210)
 
-### Payment Categories System
-- Categories are income or expense buckets with optional default account codes.
-- UI filters payments by category and type; category lists are loaded dynamically.
-- Default account codes influence journal posting accounts for auto-posting.
-
-```mermaid
-classDiagram
-class FinanceCategory {
-+string id
-+string name
-+string type
-+boolean isSystem
-+boolean isActive
-+number order
-+string defaultAccountCode
-}
-class Payment {
-+string id
-+string number
-+string type
-+number amount
-+string paymentMethod
-+datetime date
-+string description
-+string categoryId
-+string counterpartyId
-+string documentId
-}
-FinanceCategory "1" <-- "many" Payment : "categoryId"
-```
-
-**Diagram sources**
-- [schema.prisma:870-884](file://prisma/schema.prisma#L870-L884)
-- [schema.prisma:892-913](file://prisma/schema.prisma#L892-L913)
+### Enhanced Reporting and Summaries
+- **Tenant-Scoped Aggregations**: All payment summaries respect tenant boundaries
+- **Enhanced Cash Flow**: Improved cash flow calculations with better accuracy
+- **Real-time Cache Invalidation**: Automatic cache invalidation for all related pages
 
 **Section sources**
-- [schema.prisma:870-884](file://prisma/schema.prisma#L870-L884)
-- [route.ts:6-10](file://app/api/finance/categories/route.ts#L6-L10)
-- [route.ts:12-29](file://app/api/finance/categories/route.ts#L12-L29)
-- [page.tsx](file://app/(finance)/finance/payments/page.tsx#L121-L132)
-
-### Journal Posting and Reversal
-- Auto-posting rules:
-  - Income: debit cash/bank, credit category account (or defaults).
-  - Expense: debit category account (or defaults), credit cash/bank.
-- Reversal creates a new journal entry swapping debit/credit; marks original as reversed.
-- Both operations use sequential numbering counters.
-
-```mermaid
-flowchart TD
-A["autoPostPayment(paymentId)"] --> B["Check existing JE (idempotent)"]
-B --> |Exists| C["Return (no-op)"]
-B --> |Missing| D["Resolve Accounts:<br/>cashAccountCode=50/51,<br/>categoryAccountCode=default or 91.1/91.2"]
-D --> E["Create JournalEntry with two lines:<br/>debit=amount, credit=0 and vice versa"]
-E --> F["Success"]
-G["reverseEntry(entryId)"] --> H["Find entry + lines"]
-H --> I["Create reversal lines (swap debit/credit)"]
-I --> J["Create reversal JournalEntry"]
-J --> K["Mark original as reversed"]
-K --> L["Success"]
-```
-
-**Diagram sources**
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-- [journal.ts:193-244](file://lib/modules/accounting/journal.ts#L193-L244)
-
-**Section sources**
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-- [journal.ts:193-244](file://lib/modules/accounting/journal.ts#L193-L244)
-
-### API Endpoints
-
-- GET /api/finance/payments
-  - Query parameters: type, categoryId, counterpartyId, dateFrom, dateTo, page, limit.
-  - Returns: payments list, total count, pagination info, incomeTotal, expenseTotal, netCashFlow.
-  - Filtering and aggregation computed server-side.
-
-- POST /api/finance/payments
-  - Request body validated against type, categoryId, counterpartyId, documentId, amount, paymentMethod, date, description.
-  - Assigns payment number via counter and persists the record.
-  - Triggers auto-posting to journal (non-critical failure does not fail the request).
-
-- PATCH /api/finance/payments/[id]
-  - Partial updates supported: categoryId, counterpartyId, amount, paymentMethod, date, description.
-  - Reverses existing journal entry if present, then re-posts with updated data.
-
-- DELETE /api/finance/payments/[id]
-  - Reverses the associated journal entry if present, then deletes the payment.
-
-- GET /api/finance/categories
-  - Lists active categories optionally filtered by type.
-  - Used by UI to populate category selectors.
-
-**Section sources**
-- [route.ts:26-73](file://app/api/finance/payments/route.ts#L26-L73)
-- [route.ts:75-112](file://app/api/finance/payments/route.ts#L75-L112)
-- [route.ts:16-99](file://app/api/finance/payments/[id]/route.ts#L16-L99)
-- [route.ts:102-128](file://app/api/finance/payments/[id]/route.ts#L102-L128)
-- [route.ts:12-29](file://app/api/finance/categories/route.ts#L12-L29)
-
-### Payment Scenarios and Workflows
-
-- Customer payment (income)
-  - Type: income; method: bank_transfer or card; optional counterparty.
-  - Journal: debit cash/bank, credit sales/revenue category.
-  - UI: select category (e.g., “Sales”), enter amount, date, optional description.
-
-- Supplier payment (expense)
-  - Type: expense; method: bank_transfer or cash; optional counterparty.
-  - Journal: debit expenses category, credit cash/bank.
-  - UI: select category (e.g., “Supplies”), enter amount, date, optional description.
-
-- Internal transfer (expense/income)
-  - Use separate categories for “Cash” and “Bank” to reflect internal movement.
-  - Journal: debit one cash/bank, credit another (both sides remain within cash assets).
-  - UI: choose appropriate categories and amounts.
-
-- Automatic creation from documents
-  - Payments may be linked to documents; UI indicates when a payment was auto-created from a document and disallows deletion.
-
-**Section sources**
-- [page.tsx](file://app/(finance)/finance/payments/page.tsx#L360-L422)
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-
-### Validation Rules and Data Integrity
-- Amount must be positive.
-- Type must be income or expense.
-- Category is mandatory; must reference an existing category.
-- Payment method must be cash, bank_transfer, or card.
-- Optional fields: counterpartyId, documentId, description.
-- Auto-posting is idempotent; if a journal entry exists for a payment, it will not be reposted.
-
-**Section sources**
-- [route.ts:7-16](file://app/api/finance/payments/route.ts#L7-L16)
-- [route.ts:7-14](file://app/api/finance/payments/[id]/route.ts#L7-L14)
-- [journal.ts:251-256](file://lib/modules/accounting/journal.ts#L251-L256)
-
-### Currency Handling and Multi-Currency Support
-- Current implementation uses RUB for all journal lines and amounts.
-- Multi-currency support is not present in the current schema or posting logic.
-
-**Section sources**
-- [journal.ts:74-118](file://lib/modules/accounting/journal.ts#L74-L118)
-- [journal.ts:293-324](file://lib/modules/accounting/journal.ts#L293-L324)
-
-### Reporting and Summaries
-- The payments list endpoint returns aggregated totals for income, expense, and net cash flow for the current filter set.
-- UI displays summary cards for income, expense, and net cash flow.
-
-**Section sources**
-- [route.ts:49-69](file://app/api/finance/payments/route.ts#L49-L69)
-- [page.tsx](file://app/(finance)/finance/payments/page.tsx#L262-L281)
+- [payment.service.ts:74-95](file://lib/modules/finance/services/payment.service.ts#L74-L95)
+- [payment.service.ts:306-320](file://lib/modules/finance/services/payment.service.ts#L306-L320)
+- [route.ts:53-60](file://app/api/finance/payments/[id]/route.ts#L53-L60)
 
 ## Dependency Analysis
-- API routes depend on:
-  - Prisma models for Payment, FinanceCategory, PaymentCounter, JournalCounter.
-  - Accounting journal functions for auto-posting and reversing entries.
-- UI depends on:
-  - API endpoints for listing, creating, updating, deleting payments.
-  - Category API for category lists.
+The enhanced payment system features a centralized service layer with clear dependency boundaries:
 
 ```mermaid
 graph LR
-API_List["GET /api/finance/payments"] --> DB_Payment
-API_Create["POST /api/finance/payments"] --> DB_Payment
-API_Update["PATCH /api/finance/payments/:id"] --> DB_Payment
-API_Delete["DELETE /api/finance/payments/:id"] --> DB_Payment
-API_Categories["GET /api/finance/categories"] --> DB_Category
-API_Create --> J_Auto["autoPostPayment()"]
-API_Update --> J_Reverse["reverseEntry()"]
-API_Update --> J_Auto
-API_Delete --> J_Reverse
-J_Auto --> DB_Journal["JournalEntry/Lines"]
+API_List["GET /api/finance/payments"] --> PS_List["PaymentService.listPayments"]
+API_Create["POST /api/finance/payments"] --> PS_Create["PaymentService.createPayment"]
+API_Update["PATCH /api/finance/payments/:id"] --> PS_Update["PaymentService.updatePayment"]
+API_Delete["DELETE /api/finance/payments/:id"] --> PS_Delete["PaymentService.deletePayment"]
+API_Categories["GET/POST /api/finance/categories"] --> PS_Categories["Category Methods"]
+PS_List --> DB_Payment
+PS_Create --> DB_Payment
+PS_Update --> DB_Payment
+PS_Delete --> DB_Payment
+PS_Categories --> DB_Category
+PS_Update --> J_Reverse["reverseEntry()"]
+PS_Create --> J_Post["autoPostPayment()"]
+PS_Delete --> J_Reverse
+PS_Delete --> Recalc["recalculateBalance()"]
+J_Post --> DB_Journal
 J_Reverse --> DB_Journal
+Recalc --> DB_Balance
 ```
 
 **Diagram sources**
-- [route.ts:26-112](file://app/api/finance/payments/route.ts#L26-L112)
-- [route.ts:16-128](file://app/api/finance/payments/[id]/route.ts#L16-L128)
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-- [schema.prisma:892-913](file://prisma/schema.prisma#L892-L913)
-- [schema.prisma:870-884](file://prisma/schema.prisma#L870-L884)
+- [route.ts:29-60](file://app/api/finance/payments/route.ts#L29-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
+- [payment.service.ts:51-321](file://lib/modules/finance/services/payment.service.ts#L51-L321)
+- [schema.prisma:789-812](file://prisma/schema.prisma#L789-L812)
+- [schema.prisma:767-781](file://prisma/schema.prisma#L767-L781)
 
 **Section sources**
-- [route.ts:26-112](file://app/api/finance/payments/route.ts#L26-L112)
-- [route.ts:16-128](file://app/api/finance/payments/[id]/route.ts#L16-L128)
-- [journal.ts:251-325](file://lib/modules/accounting/journal.ts#L251-L325)
-- [schema.prisma:892-913](file://prisma/schema.prisma#L892-L913)
-- [schema.prisma:870-884](file://prisma/schema.prisma#L870-L884)
+- [route.ts:29-60](file://app/api/finance/payments/route.ts#L29-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
+- [payment.service.ts:51-321](file://lib/modules/finance/services/payment.service.ts#L51-L321)
+- [schema.prisma:789-812](file://prisma/schema.prisma#L789-L812)
+- [schema.prisma:767-781](file://prisma/schema.prisma#L767-L781)
 
 ## Performance Considerations
-- Aggregated queries: The list endpoint computes income/expense totals and counts in a single request using aggregation.
-- Pagination: Server-side pagination reduces payload sizes.
-- Auto-posting is non-blocking; failures are caught and logged silently to avoid blocking payment creation.
-- Journal posting uses parallel account resolution and idempotency checks to prevent duplicate postings.
-
-[No sources needed since this section provides general guidance]
+- **Centralized Service Layer**: Reduced code duplication and improved maintainability
+- **Enhanced Parallel Operations**: Parallel account resolution and database queries
+- **Improved Cache Invalidation**: Targeted cache invalidation reduces unnecessary reloads
+- **Tenant-Scoped Queries**: Optimized database queries with proper indexing
+- **Non-Critical Journal Operations**: Journal failures don't impact payment creation/update
 
 ## Troubleshooting Guide
-Common issues and resolutions:
-- Unauthorized access
-  - Symptom: 401 responses on API calls.
-  - Resolution: Ensure authentication middleware is configured and user has required permissions.
+Enhanced troubleshooting for the new comprehensive payment service:
 
-- Validation errors on create/update
-  - Symptom: 400 responses with validation details.
-  - Resolution: Verify amount > 0, type is income/expense, category exists, and paymentMethod is valid.
+### Tenant Isolation Issues
+- **Payment not found despite existence**
+  - Symptom: 404 responses for payments that appear to exist
+  - Resolution: Verify tenantId in session matches payment tenantId; check tenant verification scripts
 
-- Journal entry not created
-  - Symptom: Payment created but no journal entry.
-  - Resolution: Check that accounts (cash/bank and category) are seeded; auto-posting skips if accounts are missing.
+- **Tenant FK integrity violations**
+  - Symptom: Payment tenantId references invalid tenant
+  - Resolution: Run `verify-payment-tenant-gate.ts`; ensure all payments have valid tenant references
 
-- Duplicate journal entries
-  - Symptom: Duplicate postings after updates.
-  - Resolution: Ensure reversal occurs before reposting; verify idempotency check passes.
+### Enhanced Service Layer Issues
+- **Payment creation fails with validation errors**
+  - Symptom: 400 responses with enhanced error details
+  - Resolution: Check PaymentService validation schemas; verify tenant context
 
-- Cannot delete payment
-  - Symptom: Attempted deletion fails or UI prevents deletion.
-  - Resolution: Payments linked to documents cannot be deleted; unlink or remove the document association first.
+- **Payment updates don't persist**
+  - Symptom: 404 responses on update operations
+  - Resolution: Verify tenant ownership; check PaymentService tenant verification logic
 
-- Currency mismatch
-  - Symptom: Unexpected RUB-only amounts in journal.
-  - Resolution: Multi-currency is not supported; ensure all transactions are in RUB.
+### Journal Integration Problems
+- **Journal entries not created during updates**
+  - Symptom: Payments updated but no journal entries
+  - Resolution: Check account resolution; verify cash/category account codes exist
+
+- **Enhanced error handling**
+  - Symptom: Silent failures in journal operations
+  - Resolution: PaymentService catches and logs journal errors; check logs for details
+
+### Cache and State Issues
+- **Stale payment data after operations**
+  - Symptom: UI shows old payment information
+  - Resolution: Enhanced cache invalidation for all related pages; check revalidation logic
 
 **Section sources**
-- [route.ts:106-111](file://app/api/finance/payments/route.ts#L106-L111)
-- [route.ts:94-99](file://app/api/finance/payments/[id]/route.ts#L94-L99)
-- [journal.ts:251-256](file://lib/modules/accounting/journal.ts#L251-L256)
-- [page.tsx](file://app/(finance)/finance/payments/page.tsx#L399-L418)
+- [verify-payment-tenant-gate.ts:23-82](file://scripts/verify-payment-tenant-gate.ts#L23-L82)
+- [payment.service.ts:148-210](file://lib/modules/finance/services/payment.service.ts#L148-L210)
+- [route.ts:53-60](file://app/api/finance/payments/[id]/route.ts#L53-L60)
 
 ## Conclusion
-The payment processing subsystem provides a robust, auditable, and user-friendly mechanism for managing financial transactions. It enforces strong validation, integrates tightly with the double-entry journal, supports flexible categorization, and offers powerful UI-driven filtering and reporting. While multi-currency is not currently supported, the design leaves room for extension.
+The enhanced payment processing subsystem now provides comprehensive tenant isolation, centralized service operations, and improved reliability. The new PaymentService architecture ensures strict tenant boundaries while providing enhanced validation, error handling, and journal integration. The system maintains backward compatibility while offering significant improvements in security, performance, and maintainability.
 
 ## Appendices
 
-### API Endpoint Reference
+### Enhanced API Endpoint Reference
 
-- GET /api/finance/payments
-  - Query: type, categoryId, counterpartyId, dateFrom, dateTo, page, limit
-  - Response: payments[], total, page, limit, incomeTotal, expenseTotal, netCashFlow
+#### GET /api/finance/payments
+- **Enhanced**: Tenant-scoped payment listing with comprehensive filtering
+- **Query**: type, categoryId, counterpartyId, dateFrom, dateTo, page, limit
+- **Response**: payments[], total, page, limit, incomeTotal, expenseTotal, netCashFlow
 
-- POST /api/finance/payments
-  - Body: type, categoryId, counterpartyId?, documentId?, amount, paymentMethod, date?, description?
-  - Response: Payment object
+#### POST /api/finance/payments
+- **Enhanced**: PaymentService-based creation with comprehensive validation
+- **Body**: type, categoryId, counterpartyId?, documentId?, amount, paymentMethod, date?, description?
+- **Response**: Payment object with tenant context and included relations
 
-- PATCH /api/finance/payments/[id]
-  - Body: categoryId?, counterpartyId?, amount?, paymentMethod?, date?, description?
-  - Response: Payment object
+#### PATCH /api/finance/payments/[id]
+- **Enhanced**: Tenant-aware updates with journal operation resilience
+- **Body**: categoryId?, counterpartyId?, amount?, paymentMethod?, date?, description?
+- **Response**: Updated Payment object with tenant context
 
-- DELETE /api/finance/payments/[id]
-  - Response: { success: true }
+#### DELETE /api/finance/payments/[id]
+- **Enhanced**: Comprehensive cleanup with journal reversal and balance recalculation
+- **Response**: { success: true, counterpartyId: string? }
 
-- GET /api/finance/categories
-  - Query: type?
-  - Response: categories[]
+#### GET/POST /api/finance/categories
+- **Enhanced**: PaymentService-based category operations
+- **GET**: Query: type?
+- **POST**: Body: name, type, defaultAccountCode?
 
 **Section sources**
-- [route.ts:26-73](file://app/api/finance/payments/route.ts#L26-L73)
-- [route.ts:75-112](file://app/api/finance/payments/route.ts#L75-L112)
-- [route.ts:16-99](file://app/api/finance/payments/[id]/route.ts#L16-L99)
-- [route.ts:102-128](file://app/api/finance/payments/[id]/route.ts#L102-L128)
-- [route.ts:12-29](file://app/api/finance/categories/route.ts#L12-L29)
+- [route.ts:29-60](file://app/api/finance/payments/route.ts#L29-L60)
+- [route.ts:16-70](file://app/api/finance/payments/[id]/route.ts#L16-L70)
+- [route.ts:12-42](file://app/api/finance/categories/route.ts#L12-L42)
+- [payment.service.ts:51-321](file://lib/modules/finance/services/payment.service.ts#L51-L321)

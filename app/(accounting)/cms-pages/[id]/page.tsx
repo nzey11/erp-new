@@ -12,6 +12,7 @@ import { RichTextEditor } from "@/components/domain/ecommerce/RichTextEditor";
 import { ChevronLeft, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { generateSlug } from "@/lib/shared/utils";
+import { csrfFetch } from "@/lib/client/csrf";
 import Link from "next/link";
 
 export default function CmsPageEditPage() {
@@ -101,7 +102,7 @@ export default function CmsPageEditPage() {
         ? "/api/accounting/cms-pages"
         : `/api/accounting/cms-pages/${pageId}`;
 
-      const res = await fetch(url, {
+      const res = await csrfFetch(url, {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

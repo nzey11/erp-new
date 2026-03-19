@@ -96,8 +96,8 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!customer) {
-      toast.error("Войдите, чтобы добавить в корзину");
-      router.push("/store/auth/telegram");
+      toast.error("Войдите или зарегистрируйтесь, чтобы добавить в корзину");
+      router.push("/store/register");
       return;
     }
 
@@ -110,8 +110,8 @@ export default function ProductDetailPage() {
 
   const handleToggleFavorite = async () => {
     if (!customer) {
-      toast.error("Войдите, чтобы добавить в избранное");
-      router.push("/store/auth/telegram");
+      toast.error("Войдите или зарегистрируйтесь, чтобы добавить в избранное");
+      router.push("/store/register");
       return;
     }
 

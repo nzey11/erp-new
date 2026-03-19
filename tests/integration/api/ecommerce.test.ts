@@ -31,10 +31,10 @@ import { POST as quickOrder } from "@/app/api/ecommerce/orders/quick-order/route
 import { GET as getOrders } from "@/app/api/ecommerce/orders/route";
 import { GET as getCustomerMe, PATCH as updateProfile } from "@/app/api/auth/customer/me/route";
 
-function mockCustomer(customer: { id: string; telegramId: string; telegramUsername?: string | null; name?: string | null; phone?: string | null; email?: string | null; isActive?: boolean }) {
+function mockCustomer(customer: { id: string; telegramId?: string | null; telegramUsername?: string | null; name?: string | null; phone?: string | null; email?: string | null; isActive?: boolean }) {
   vi.mocked(customerAuth.getCustomerSession).mockResolvedValue({
     id: customer.id,
-    telegramId: customer.telegramId,
+    telegramId: customer.telegramId ?? null,
     telegramUsername: customer.telegramUsername ?? null,
     name: customer.name ?? null,
     phone: customer.phone ?? null,
@@ -43,7 +43,7 @@ function mockCustomer(customer: { id: string; telegramId: string; telegramUserna
   });
   vi.mocked(customerAuth.requireCustomer).mockResolvedValue({
     id: customer.id,
-    telegramId: customer.telegramId,
+    telegramId: customer.telegramId ?? null,
     telegramUsername: customer.telegramUsername ?? null,
     name: customer.name ?? null,
     phone: customer.phone ?? null,

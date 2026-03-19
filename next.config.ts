@@ -7,15 +7,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
   poweredByHeader: false,
-  async redirects() {
-    return [
-      {
-        source: "/finance",
-        destination: "/finance/dashboard",
-        permanent: true,
-      },
-    ];
-  },
   headers: async () => [
     {
       source: "/:path*",

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type CartItem = {
   id: string;
@@ -56,6 +57,7 @@ interface CartProviderProps {
 export function CartProvider({ children, isAuthenticated }: CartProviderProps) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const refreshCart = useCallback(async () => {
     if (!isAuthenticated) {
@@ -82,6 +84,11 @@ export function CartProvider({ children, isAuthenticated }: CartProviderProps) {
 
   const addToCart = useCallback(
     async (productId: string, variantId: string | null, quantity: number): Promise<boolean> => {
+      if (!isAuthenticated) {
+        toast.error("Войдите или зарегистрируйтесь, чтобы добавить товар в корзину");
+        router.push("/store/register");
+        return false;
+      }
       try {
         const res = await fetch("/api/ecommerce/cart", {
           method: "POST",

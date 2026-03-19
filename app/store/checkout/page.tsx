@@ -58,7 +58,7 @@ export default function CheckoutPage() {
         ]);
 
         if (!cartRes.ok) {
-          router.push("/store/auth/telegram");
+          router.push("/store/register");
           return;
         }
 
