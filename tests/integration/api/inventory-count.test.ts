@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createTestRequest, jsonResponse, mockAuthUser, mockAuthNone } from "../../helpers/api-client";
-import { createUser, createWarehouse, createProduct, createDocument, createDocumentItem } from "../../helpers/factories";
+import { createUser, createWarehouse, createProduct, createDocument, createDocumentItem, createCounterparty } from "../../helpers/factories";
 import { getTestDb } from "../../helpers/test-db";
 
 // Mock auth module so we can control session
@@ -18,6 +18,7 @@ describe("API: inventory_count flow", () => {
   let warehouse: Awaited<ReturnType<typeof createWarehouse>>;
   let product: Awaited<ReturnType<typeof createProduct>>;
   let product2: Awaited<ReturnType<typeof createProduct>>;
+  let counterparty: Awaited<ReturnType<typeof createCounterparty>>;
 
   beforeEach(async () => {
     adminUser = await createUser({ role: "admin" });
@@ -26,6 +27,7 @@ describe("API: inventory_count flow", () => {
     warehouse = await createWarehouse({ name: "Склад инвентаризации", tenantId });
     product = await createProduct({ name: "Товар А", tenantId });
     product2 = await createProduct({ name: "Товар Б", tenantId });
+    counterparty = await createCounterparty({ name: "Поставщик списания", tenantId });
     mockAuthNone();
   });
 
@@ -62,20 +64,25 @@ describe("API: inventory_count flow", () => {
   async function createAdjustmentDoc(
     type: "write_off" | "stock_receipt",
     linkedDocId: string,
-    items: { productId: string; quantity: number; price: number }[]
+    items: { productId: string; quantity: number; price: number }[],
+    counterpartyId?: string
   ) {
     mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
+    const body: Record<string, unknown> = {
+      type,
+      status: "draft",
+      warehouseId: warehouse.id,
+      date: new Date().toISOString(),
+      description: `На основании инвентаризации`,
+      linkedDocumentId: linkedDocId,
+      items,
+    };
+    if (counterpartyId) {
+      body.counterpartyId = counterpartyId;
+    }
     const req = createTestRequest("/api/accounting/documents", {
       method: "POST",
-      body: {
-        type,
-        status: "draft",
-        warehouseId: warehouse.id,
-        date: new Date().toISOString(),
-        description: `На основании инвентаризации`,
-        linkedDocumentId: linkedDocId,
-        items,
-      },
+      body,
     });
     return CREATE_DOC(req);
   }
@@ -266,23 +273,36 @@ describe("API: inventory_count flow", () => {
 
   describe("stock movements after manual adjustment creation", () => {
     it("shortage → manual write_off confirmed creates StockMovement with negative qty", async () => {
+      // First, create stock via incoming_shipment so we have something to write off
+      const receiptDoc = await createDocument({
+        type: "incoming_shipment",
+        warehouseId: warehouse.id,
+        counterpartyId: counterparty.id,
+      });
+      await createDocumentItem(receiptDoc.id, product.id, { quantity: 10, price: 100 });
+      await confirmDoc(receiptDoc.id);
+
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 10, actualQty: 6 }, // deficit: -4
       ]);
 
       await confirmDoc(doc.id);
 
-      // Manually create and confirm write_off adjustment
+      // Manually create and confirm write_off adjustment (write_off needs counterparty)
       const adjRes = await createAdjustmentDoc("write_off", doc.id, [
         { productId: product.id, quantity: 4, price: 100 },
-      ]);
+      ], counterparty.id);
       expect(adjRes.status).toBe(201);
       const adjData = await (adjRes as unknown as Response).json();
 
       // Confirm the adjustment document to create stock movements
-      await confirmDoc(adjData.id);
+      const confirmRes = await confirmDoc(adjData.id);
+      expect(confirmRes.status).toBe(200);
 
       const db = getTestDb();
+      const confirmedDoc = await db.document.findUnique({ where: { id: adjData.id } });
+      expect(confirmedDoc?.status).toBe("confirmed");
+
       const movements = await db.stockMovement.findMany({
         where: { documentId: adjData.id, isReversing: false },
       });
@@ -365,21 +385,31 @@ describe("API: inventory_count flow", () => {
     });
 
     it("cancel does NOT cascade-cancel linked adjustment documents", async () => {
+      // First, create stock via incoming_shipment so we have something to write off
+      const receiptDoc = await createDocument({
+        type: "incoming_shipment",
+        warehouseId: warehouse.id,
+        counterpartyId: counterparty.id,
+      });
+      await createDocumentItem(receiptDoc.id, product.id, { quantity: 10, price: 100 });
+      await confirmDoc(receiptDoc.id);
+
       // Full cycle: confirm inventory_count, manually create write_off, then cancel parent
       const doc = await createInventoryDoc([
         { productId: product.id, expectedQty: 10, actualQty: 6 }, // shortage: -4
       ]);
       await confirmDoc(doc.id);
 
-      // Manually create linked write_off adjustment
+      // Manually create linked write_off adjustment (write_off needs counterparty)
       const adjRes = await createAdjustmentDoc("write_off", doc.id, [
         { productId: product.id, quantity: 4, price: 100 },
-      ]);
+      ], counterparty.id);
       expect(adjRes.status).toBe(201);
       const adjData = await (adjRes as unknown as Response).json();
 
       // Confirm the adjustment document
-      await confirmDoc(adjData.id);
+      const confirmRes = await confirmDoc(adjData.id);
+      expect(confirmRes.status).toBe(200);
 
       mockAuthUser({ ...adminUser, tenantId: `tenant-${adminUser.id}` });
       const cancelReq = createTestRequest(`/api/accounting/documents/${doc.id}/cancel`, {
