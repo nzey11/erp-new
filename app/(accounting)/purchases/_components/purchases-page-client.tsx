@@ -206,7 +206,7 @@ export function PurchasesPageClient({
     } finally {
       setAnalyticsLoading(false);
     }
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, message]);
 
   useEffect(() => {
     if (tab === "analytics") {
@@ -275,7 +275,7 @@ export function PurchasesPageClient({
           break;
       }
     },
-    [router]
+    [router, message]
   );
 
   // Row actions renderer for ERPTable
@@ -312,7 +312,7 @@ export function PurchasesPageClient({
     } finally {
       setBulkConfirming(false);
     }
-  }, [selectedRowKeys, router]);
+  }, [selectedRowKeys, router, message]);
 
   // CSV export
   const handleExport = useCallback(async () => {
@@ -335,7 +335,7 @@ export function PurchasesPageClient({
     } finally {
       setExportLoading(false);
     }
-  }, []);
+  }, [message]);
 
   // Show create button only on document tabs
   const showCreateButton = tab !== "analytics";

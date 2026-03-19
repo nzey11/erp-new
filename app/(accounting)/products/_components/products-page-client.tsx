@@ -171,7 +171,7 @@ export function ProductsPageClient({
     total: initialData.total,
   };
 
-  const columns = getProductColumns(handleRowAction);
+  const columns = getProductColumns();
 
   const handleSortChange = ({ sortField, sortOrder }: { sortField?: string; sortOrder?: "ascend" | "descend" | null }) => {
     const params = new URLSearchParams(searchParams.toString());

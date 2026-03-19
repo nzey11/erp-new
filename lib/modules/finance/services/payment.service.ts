@@ -1,7 +1,6 @@
 import 'server-only'
 import { db, toNumber } from '@/lib/shared/db'
-import { reverseEntry } from '@/lib/modules/accounting/finance/journal'
-import { recalculateBalance } from '@/lib/modules/accounting/services/balance.service'
+import { reverseEntry, recalculateBalance } from '@/lib/modules/accounting'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

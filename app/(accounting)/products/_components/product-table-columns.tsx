@@ -5,9 +5,7 @@ import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { formatMoney } from "@/components/erp/columns";
 import type { ProductWithRelations } from "@/lib/domain/products/queries";
 
-export function getProductColumns(
-  onRowAction: (action: string, row: ProductWithRelations) => void
-): ERPColumn<ProductWithRelations>[] {
+export function getProductColumns(): ERPColumn<ProductWithRelations>[] {
   return [
     {
       key: "image",

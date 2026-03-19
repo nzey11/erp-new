@@ -82,7 +82,7 @@ async function reserveStockWithOptimisticLock(
   productId: string,
   warehouseId: string,
   quantity: number,
-  tenantId: string
+  _tenantId: string
 ): Promise<void> {
   const MAX_RETRIES = 5;
 

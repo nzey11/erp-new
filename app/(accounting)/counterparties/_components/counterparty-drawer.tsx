@@ -14,7 +14,7 @@ import {
 import type { CounterpartyWithBalance } from "@/lib/domain/counterparties/queries";
 import type { CounterpartyType } from "@/lib/domain/counterparties/parse-filters";
 
-const { TextArea } = Input;
+
 
 export type CounterpartyDrawerMode = "create" | "edit";
 

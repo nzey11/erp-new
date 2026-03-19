@@ -6,7 +6,7 @@
  */
 
 import { db } from "@/lib/shared/db";
-import { createCounterpartyWithParty } from "@/lib/modules/accounting/services/counterparty.service";
+import { createCounterpartyWithParty } from "@/lib/modules/accounting";
 
 /**
  * Get or create Counterparty for Customer.

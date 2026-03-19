@@ -5,10 +5,7 @@
  */
 
 import { db } from "@/lib/shared/db";
-import {
-  validateTransition,
-  DocumentStateError,
-} from "@/lib/modules/accounting/document-states";
+import { validateTransition } from "@/lib/modules/accounting/document-states";
 import type { DocumentStatus } from "@/lib/generated/prisma/client";
 
 /**

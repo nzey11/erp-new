@@ -9,7 +9,7 @@ import { recordPaymentReceived } from "@/lib/domain/party";
 import {
   confirmDocumentTransactional,
   type ConfirmedDocumentResult,
-} from "@/lib/modules/accounting/services/document-confirm.service";
+} from "@/lib/modules/accounting";
 import type { PaymentMethod } from "../types";
 
 /**

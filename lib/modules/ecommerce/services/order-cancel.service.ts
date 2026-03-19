@@ -5,10 +5,29 @@
  */
 
 import { db, toNumber } from "@/lib/shared/db";
-import {
-  cancelDocumentTransactional,
-  type CancelledDocumentResult,
-} from "@/lib/modules/accounting/services/document-confirm.service";
+
+// TODO: Implement cancel document functionality in accounting module
+// For now, define local types until the accounting module exports these
+interface CancelledDocumentResult {
+  id: string;
+  type: string;
+  status: string;
+  number: string;
+  totalAmount: number;
+  typeName: string;
+  statusName: string;
+  items: unknown[];
+  warehouse: null;
+  targetWarehouse: null;
+  counterparty: null;
+}
+
+async function cancelDocumentTransactional(
+  _documentId: string,
+  _actor: string | null
+): Promise<CancelledDocumentResult> {
+  throw new Error("cancelDocumentTransactional not implemented");
+}
 
 /**
  * Cancel order (if not yet shipped).

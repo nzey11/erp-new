@@ -139,7 +139,7 @@ export default function DocumentDetailPage() {
       });
       setEditingActualQty(initial);
     }
-  }, [doc?.id, doc?.type]);
+  }, [doc?.id, doc?.type, doc?.items]);
 
   const loadJournalEntries = useCallback(async () => {
     setJournalLoading(true);

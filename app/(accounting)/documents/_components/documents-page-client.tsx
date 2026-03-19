@@ -175,18 +175,6 @@ export function DocumentsPageClient({
     );
   };
 
-  const bulkActionsNode =
-    selectedRowKeys.length > 0 ? (
-      <Button
-        icon={<CheckCircleOutlined />}
-        onClick={handleBulkConfirm}
-        loading={bulkConfirming}
-        size="small"
-      >
-        Подтвердить выбранные ({selectedRowKeys.length})
-      </Button>
-    ) : undefined;
-
   return (
     <div className="space-y-4">
       <PageHeader title="Документы" />

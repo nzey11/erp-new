@@ -12,7 +12,7 @@ import Link from "next/link";
 import { Card, Button } from "antd";
 import { ArrowRight, Check, X } from "lucide-react";
 import type { MergeRequest } from "@/lib/domain/party";
-import { approveMerge, rejectMerge } from "../_lib/actions";
+import { approveMerge } from "../_lib/actions";
 import { RejectDialog } from "./reject-dialog";
 
 interface MergeRequestCardProps {
