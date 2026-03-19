@@ -119,29 +119,16 @@ function getDefaultDateTo() {
 }
 
 export default function ReportsPage() {
-  const [mounted, setMounted] = useState(false);
   const [reportTab, setReportTab] = useState("pnl");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [asOfDate, setAsOfDate] = useState("");
+  const [dateFrom, setDateFrom] = useState(getDefaultDateFrom);
+  const [dateTo, setDateTo] = useState(getDefaultDateTo);
+  const [asOfDate, setAsOfDate] = useState(getDefaultDateTo);
 
   // Debounced versions that actually trigger the fetch (600ms delay)
-  const [appliedDateFrom, setAppliedDateFrom] = useState("");
-  const [appliedDateTo, setAppliedDateTo] = useState("");
-  const [appliedAsOf, setAppliedAsOf] = useState("");
+  const [appliedDateFrom, setAppliedDateFrom] = useState(getDefaultDateFrom);
+  const [appliedDateTo, setAppliedDateTo] = useState(getDefaultDateTo);
+  const [appliedAsOf, setAppliedAsOf] = useState(getDefaultDateTo);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const from = getDefaultDateFrom();
-    const to = getDefaultDateTo();
-    setDateFrom(from);
-    setDateTo(to);
-    setAsOfDate(to);
-    setAppliedDateFrom(from);
-    setAppliedDateTo(to);
-    setAppliedAsOf(to);
-    setMounted(true);
-  }, []);
 
   const scheduleApply = (from: string, to: string, asOf: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -260,17 +247,6 @@ export default function ReportsPage() {
   useEffect(() => {
     loadReports();
   }, [loadReports]);
-
-  if (!mounted) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title="Отчёты" />
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
