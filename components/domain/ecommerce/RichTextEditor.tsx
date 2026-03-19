@@ -71,6 +71,7 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
         HTMLAttributes: { class: "rounded-lg max-w-full" },
       }),
     ],
+    immediatelyRender: false,
     content,
     editorProps: {
       attributes: {
