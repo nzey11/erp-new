@@ -153,6 +153,7 @@ export default function CategoriesPage() {
   const income = categories.filter((c) => c.type === "income");
   const expense = categories.filter((c) => c.type === "expense");
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getCategoryColumns = (_colorClass: string): TableColumnsType<FinanceCategory> => [
     { key: "name", dataIndex: "name", title: "Название" },
     {

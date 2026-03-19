@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ListOpt ERP",
-  description: "ERP-система для оптовой торговли",
+  title: "OPRIX ERP",
+  description: "ERP-система для управления бизнесом",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
