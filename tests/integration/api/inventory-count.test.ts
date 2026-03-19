@@ -277,7 +277,7 @@ describe("API: inventory_count flow", () => {
         { productId: product.id, quantity: 4, price: 100 },
       ]);
       expect(adjRes.status).toBe(201);
-      const adjData = await jsonResponse(adjRes);
+      const adjData = await (adjRes as unknown as Response).json();
 
       // Confirm the adjustment document to create stock movements
       await confirmDoc(adjData.id);
@@ -303,7 +303,7 @@ describe("API: inventory_count flow", () => {
         { productId: product.id, quantity: 3, price: 100 },
       ]);
       expect(adjRes.status).toBe(201);
-      const adjData = await jsonResponse(adjRes);
+      const adjData = await (adjRes as unknown as Response).json();
 
       // Confirm the adjustment document
       await confirmDoc(adjData.id);
@@ -376,7 +376,7 @@ describe("API: inventory_count flow", () => {
         { productId: product.id, quantity: 4, price: 100 },
       ]);
       expect(adjRes.status).toBe(201);
-      const adjData = await jsonResponse(adjRes);
+      const adjData = await (adjRes as unknown as Response).json();
 
       // Confirm the adjustment document
       await confirmDoc(adjData.id);
