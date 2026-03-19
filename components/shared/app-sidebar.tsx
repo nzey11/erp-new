@@ -31,13 +31,8 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Dropdown } from "antd";
+import type { MenuProps } from "antd";
 import { useState, useSyncExternalStore, useEffect } from "react";
 import { clearCsrfToken } from "@/lib/client/csrf";
 
@@ -129,6 +124,33 @@ export function AppSidebar() {
     window.location.href = "/login";
   };
 
+  const menuItems: MenuProps["items"] = [
+    ...modules.map((module) => ({
+      key: module.id,
+      label: (
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <module.icon className="h-4 w-4" />
+            <span>{module.name}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {module.id === currentModule && <Check className="h-4 w-4" />}
+            {!module.available && <span className="text-xs text-muted-foreground">скоро</span>}
+          </div>
+        </div>
+      ),
+      disabled: !module.available,
+      onClick: () => module.available && setCurrentModule(module.id),
+    })),
+    { type: "divider" },
+    {
+      key: "hint",
+      label: "Модули можно подключить в настройках",
+      disabled: true,
+      className: "text-xs text-muted-foreground",
+    },
+  ];
+
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Logo */}
@@ -167,8 +189,7 @@ export function AppSidebar() {
             {!collapsed && <ChevronDown className="h-4 w-4 opacity-50" />}
           </Button>
         ) : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
             <Button
               variant="outline"
               className={cn(
@@ -182,33 +203,7 @@ export function AppSidebar() {
               </div>
               {!collapsed && <ChevronDown className="h-4 w-4 opacity-50" />}
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            {modules.map((module) => (
-              <DropdownMenuItem
-                key={module.id}
-                disabled={!module.available}
-                onClick={() => module.available && setCurrentModule(module.id)}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <module.icon className="h-4 w-4" />
-                  <span>{module.name}</span>
-                </div>
-                {module.id === currentModule && (
-                  <Check className="h-4 w-4" />
-                )}
-                {!module.available && (
-                  <span className="text-xs text-muted-foreground">скоро</span>
-                )}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-              Модули можно подключить в настройках
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </Dropdown>
         )}
       </div>
 

@@ -3,12 +3,8 @@
 import { useState } from "react";
 import { Link2, Send, MessageCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Dropdown } from "antd";
+import type { MenuProps } from "antd";
 import { toast } from "sonner";
 
 interface ShareButtonProps {
@@ -46,31 +42,36 @@ export function ShareButton({ title, url }: ShareButtonProps) {
     );
   };
 
+  const items: MenuProps["items"] = [
+    {
+      key: "copy",
+      label: "Копировать ссылку",
+      icon: <Link2 className="h-4 w-4" />,
+      onClick: handleCopyLink,
+    },
+    {
+      key: "telegram",
+      label: "Telegram",
+      icon: <Send className="h-4 w-4" />,
+      onClick: handleTelegram,
+    },
+    {
+      key: "whatsapp",
+      label: "WhatsApp",
+      icon: <MessageCircle className="h-4 w-4" />,
+      onClick: handleWhatsApp,
+    },
+  ];
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          {copied ? (
-            <Check className="h-4 w-4 text-green-600" />
-          ) : (
-            <Link2 className="h-4 w-4" />
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleCopyLink}>
-          <Link2 className="h-4 w-4 mr-2" />
-          Копировать ссылку
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleTelegram}>
-          <Send className="h-4 w-4 mr-2" />
-          Telegram
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleWhatsApp}>
-          <MessageCircle className="h-4 w-4 mr-2" />
-          WhatsApp
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Dropdown menu={{ items }} trigger={["click"]}>
+      <Button variant="outline" size="icon">
+        {copied ? (
+          <Check className="h-4 w-4 text-green-600" />
+        ) : (
+          <Link2 className="h-4 w-4" />
+        )}
+      </Button>
+    </Dropdown>
   );
 }

@@ -18,14 +18,12 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Dropdown, Tabs } from "antd";
+import type { MenuProps } from "antd";
 import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, RefreshCw, Edit2, MinusCircle, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub, formatDate, formatDateTime } from "@/lib/shared/utils";
 import Link from "next/link";
-import { Tabs } from "antd";
 
 interface JournalLine {
   id: string;
@@ -688,37 +686,38 @@ export default function DocumentDetailPage() {
               )}
               {/* Inventory count: quick navigation to auto-created adjustment docs */}
               {doc.type === "inventory_count" && doc.status === "confirmed" && doc.linkedFrom.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="h-4 w-4 mr-1" />Док. коррекции
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {doc.linkedFrom.map((linked) => (
-                      <DropdownMenuItem key={linked.id} onClick={() => router.push(`/documents/${linked.id}`)}>
-                        {linked.typeName || linked.type} {linked.number}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Dropdown
+                  trigger={["click"]}
+                  menu={{
+                    items: doc.linkedFrom.map((linked) => ({
+                      key: linked.id,
+                      label: `${linked.typeName || linked.type} ${linked.number}`,
+                      onClick: () => router.push(`/documents/${linked.id}`),
+                    })) satisfies MenuProps["items"],
+                  }}
+                >
+                  <Button variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-1" />Док. коррекции
+                  </Button>
+                </Dropdown>
               )}
               {linkedOptions.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" disabled={creatingLinked}>
-                      <Link2 className="h-4 w-4 mr-1" />
-                      {creatingLinked ? "Создание..." : "Создать на основании"}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {linkedOptions.map((opt) => (
-                      <DropdownMenuItem key={opt.type} onClick={() => handleCreateLinkedDoc(opt.type)}>
-                        {opt.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Dropdown
+                  trigger={["click"]}
+                  disabled={creatingLinked}
+                  menu={{
+                    items: linkedOptions.map((opt) => ({
+                      key: opt.type,
+                      label: opt.label,
+                      onClick: () => handleCreateLinkedDoc(opt.type),
+                    })) satisfies MenuProps["items"],
+                  }}
+                >
+                  <Button variant="outline" size="sm" disabled={creatingLinked}>
+                    <Link2 className="h-4 w-4 mr-1" />
+                    {creatingLinked ? "Создание..." : "Создать на основании"}
+                  </Button>
+                </Dropdown>
               )}
             </div>
           }
