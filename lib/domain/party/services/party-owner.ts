@@ -5,7 +5,7 @@
 import { db } from "@/lib/shared/db";
 import { resolveFinalPartyId } from "./party-resolver";
 import type { PartyOwner, Party } from "@/lib/generated/prisma/client";
-import type { OwnerRole, AssignOwnerOptions } from "../types";
+import type { AssignOwnerOptions } from "../types";
 
 // =============================================
 // Get Owner Functions

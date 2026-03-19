@@ -2,7 +2,7 @@
 // PARTY: Type Definitions
 // =============================================
 
-import type { Party, PartyLink, PartyActivity, PartyOwner, MergeRequest } from "@/lib/generated/prisma/client";
+import type { Party } from "@/lib/generated/prisma/client";
 
 // =============================================
 // Hints for Party Resolution

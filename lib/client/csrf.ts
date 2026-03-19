@@ -3,7 +3,7 @@
  * Fetches and caches CSRF tokens for mutating requests.
  */
 
-const CSRF_COOKIE_NAME = "csrf_token";
+// const CSRF_COOKIE_NAME = "csrf_token"; // Not used directly, kept for reference
 const CSRF_HEADER_NAME = "X-CSRF-Token";
 const CSRF_ENDPOINT = "/api/auth/csrf";
 

@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 
 const DATABASE_URL =
-  process.env.DATABASE_URL || "postgresql://test:test@localhost:5434/listopt_erp_test";
+  process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/listopt_erp_test";
 
 let pool: Pool | null = null;
 

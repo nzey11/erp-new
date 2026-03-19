@@ -62,8 +62,9 @@ export async function createAdminSession(): Promise<{
   sessionToken: string;
 }> {
   const passwordHash = await hash("admin123", 10);
+  const timestamp = Date.now();
   const user = await createUser({
-    username: "e2e_admin",
+    username: `e2e_admin_${timestamp}`,
     password: passwordHash,
     role: "admin",
     tenantId: E2E_TENANT_ID,

@@ -45,7 +45,7 @@ export async function PUT(
     } else if (data.status === "paid") {
       // Use proper confirm flow: stock movements, outbox, handlers
       const session = await getAuthSession();
-      const result = await confirmEcommerceOrderPayment({
+      await confirmEcommerceOrderPayment({
         documentId: id,
         paymentMethod: "tochka", // Default for admin-initiated
         actor: session?.username ?? null,

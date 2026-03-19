@@ -4,7 +4,7 @@
  * Transforms Prisma results to UI-friendly DTOs.
  */
 
-import type { Party, PartyLink, PartyActivity, User, Customer, Counterparty } from "@/lib/generated/prisma/client";
+import type { PartyActivity, User, Customer, Counterparty } from "@/lib/generated/prisma/client";
 import type { PartyProfileDto, PartyProfileLinkDto, PartyProfileActivityDto, PartyProfileOwnerDto } from "../dto/party-profile.dto";
 
 interface PartyProfileData {

@@ -5,9 +5,8 @@ import {
 } from "../../fixtures/database.fixture";
 
 test.describe("Catalog Management", () => {
-  test.beforeEach(async () => {
-    await cleanDatabase();
-  });
+  // Note: cleanDatabase is called in worker setup, not here
+  // to preserve the admin session created by the fixture
 
   test("create a new category", async ({ adminPage }) => {
     const catalog = new CatalogPage(adminPage);

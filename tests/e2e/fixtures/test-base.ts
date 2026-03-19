@@ -11,8 +11,8 @@ type TestFixtures = {
 };
 
 export const test = base.extend<TestFixtures>({
-  adminContext: async ({ browser }, use) => {
-    // Create admin session (specs must call cleanDatabase() in their own beforeEach BEFORE this runs)
+  adminContext: [async ({ browser }, use) => {
+    // Create admin session AFTER cleanDatabase is called in test's beforeEach
     const { sessionToken } = await createAdminSession();
     const { rawToken, signedToken } = await createCsrfTokens();
 
@@ -41,7 +41,7 @@ export const test = base.extend<TestFixtures>({
     await use(context);
 
     await context.close();
-  },
+  }, { auto: false }],
 
   csrfToken: async ({ adminContext }, use) => {
     // @ts-expect-error - retrieving custom property

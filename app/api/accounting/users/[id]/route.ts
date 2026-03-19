@@ -4,7 +4,6 @@ import { parseBody, validationError } from "@/lib/shared/validation";
 import { updateUserSchema } from "@/lib/modules/accounting/schemas/users.schema";
 import { UserService } from "@/lib/modules/accounting";
 import {
-  assertUserCanBeDeactivated,
   assertUserCanBeDeleted,
   ProtectedUserError,
 } from "@/lib/modules/accounting/services/user-lifecycle";

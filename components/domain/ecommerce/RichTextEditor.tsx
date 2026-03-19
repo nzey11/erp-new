@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/shared/utils";
 import { useCallback } from "react";
-import { Button } from "antd";
 
 function ToolButton({
   onClick,
