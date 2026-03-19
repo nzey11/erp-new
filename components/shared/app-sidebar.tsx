@@ -156,19 +156,16 @@ export function AppSidebar() {
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex h-14 items-center justify-between border-b px-4">
+      <div className="flex h-14 items-center justify-between border-b px-8">
         {!collapsed && (
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-              L
-            </div>
-            <span className="font-semibold text-lg">ListOpt</span>
+            <img src="/oprix-logo.svg" alt="OPRIX" className="h-38 w-auto" />
           </Link>
         )}
         {collapsed && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold mx-auto">
-            L
-          </div>
+          <Link href="/" className="mx-auto">
+            <img src="/oprix-logo.svg" alt="OPRIX" className="h-8 w-8 object-contain" />
+          </Link>
         )}
         <Button
           type="text"
