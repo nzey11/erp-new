@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Drawer } from "antd";
 import { ProductCard, type ProductCardData } from "@/components/domain/ecommerce/ProductCard";
 
 type Category = {
@@ -169,22 +169,19 @@ export default function CatalogPage() {
         </Select>
 
         {/* Mobile filter toggle */}
-        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="sm:hidden">
-              <Filter className="h-4 w-4 mr-2" />
-              Фильтры
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left">
-            <SheetHeader>
-              <SheetTitle>Фильтры</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6">
-              <FilterSidebar />
-            </div>
-          </SheetContent>
-        </Sheet>
+        <Button variant="outline" className="sm:hidden" onClick={() => setFiltersOpen(true)}>
+          <Filter className="h-4 w-4 mr-2" />
+          Фильтры
+        </Button>
+        <Drawer
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          placement="left"
+          title="Фильтры"
+          width={320}
+        >
+          <FilterSidebar />
+        </Drawer>
       </div>
 
       {/* Main Content */}
