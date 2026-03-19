@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, Plus, Check, Package } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, Typography } from "antd";
-import { Input } from "antd";
+import { Card, Typography, Button, Input } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
@@ -214,8 +212,7 @@ export default function CheckoutPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Адрес доставки</h2>
                 <Link href="/store/account/addresses">
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button variant="outlined" size="small" icon={<Plus className="h-4 w-4" />}>
                     Добавить
                   </Button>
                 </Link>
@@ -227,8 +224,7 @@ export default function CheckoutPage() {
                     У вас нет сохранённых адресов
                   </p>
                   <Link href="/store/account/addresses">
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
+                    <Button type="primary" icon={<Plus className="h-4 w-4" />}>
                       Добавить адрес
                     </Button>
                   </Link>
@@ -347,7 +343,8 @@ export default function CheckoutPage() {
 
             {/* Submit Button */}
             <Button
-              size="lg"
+              size="large"
+              type="primary"
               className="w-full"
               onClick={handleSubmit}
               disabled={submitting || (deliveryType === "courier" && !selectedAddressId)}

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Modal, Table, type TableColumnsType, Input, Typography } from "antd";
+import { Modal, Table, type TableColumnsType, Input, Typography, Button } from "antd";
 const { TextArea } = Input;
 import { Plus, Pencil, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -127,12 +126,8 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
       width: 100,
       render: (_, pl) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => openEdit(pl, e)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => handleDelete(pl, e)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Button type="text" shape="circle" className="h-8 w-8" onClick={(e) => openEdit(pl, e)} icon={<Pencil className="h-4 w-4" />} />
+          <Button type="text" shape="circle" className="h-8 w-8 text-destructive" onClick={(e) => handleDelete(pl, e)} icon={<Trash2 className="h-4 w-4" />} />
         </div>
       ),
     },
@@ -156,8 +151,7 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Прайс-листы</h3>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button size="small" type="primary" onClick={openCreate} icon={<Plus className="h-4 w-4" />}>
           Новый прайс-лист
         </Button>
       </div>
@@ -167,8 +161,7 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
       ) : priceLists.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground border rounded-lg">
           <p className="mb-2">Нет прайс-листов</p>
-          <Button variant="outline" size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button variant="outlined" size="small" onClick={openCreate} icon={<Plus className="h-4 w-4" />}>
             Создать первый
           </Button>
         </div>

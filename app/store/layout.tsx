@@ -12,7 +12,7 @@ import {
   Heart,
   ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { useState, useEffect } from "react";
 import { CartProvider, useCart } from "@/components/domain/ecommerce/CartContext";
 
@@ -28,8 +28,7 @@ function CartBadge() {
   const { count } = useCart();
   return (
     <Link href="/store/cart">
-      <Button variant="ghost" size="icon" className="relative text-muted-foreground">
-        <ShoppingCart className="h-5 w-5" />
+      <Button type="text" shape="circle" className="relative text-muted-foreground" icon={<ShoppingCart className="h-5 w-5" />}>
         {count > 0 && (
           <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
             {count > 99 ? "99+" : count}
@@ -91,16 +90,12 @@ function StoreContent({
           {/* Actions */}
           <div className="flex items-center gap-2">
             <Link href="/store/catalog">
-              <Button variant="ghost" size="icon" className="text-muted-foreground">
-                <Search className="h-5 w-5" />
-              </Button>
+              <Button type="text" shape="circle" className="text-muted-foreground" icon={<Search className="h-5 w-5" />} />
             </Link>
 
             {customer && (
               <Link href="/store/account/favorites">
-                <Button variant="ghost" size="icon" className="text-muted-foreground">
-                  <Heart className="h-5 w-5" />
-                </Button>
+                <Button type="text" shape="circle" className="text-muted-foreground" icon={<Heart className="h-5 w-5" />} />
               </Link>
             )}
 
@@ -108,21 +103,19 @@ function StoreContent({
 
             {customer ? (
               <Link href="/store/account">
-                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-                  <User className="h-4 w-4" />
+                <Button type="text" size="small" className="gap-2 text-muted-foreground" icon={<User className="h-4 w-4" />}>
                   <span className="hidden sm:block">{customer.name || customer.telegramUsername || "Кабинет"}</span>
                 </Button>
               </Link>
             ) : (
               <div className="flex items-center gap-1">
                 <Link href="/store/account">
-                  <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-                    <User className="h-4 w-4" />
+                  <Button type="text" size="small" className="gap-2 text-muted-foreground" icon={<User className="h-4 w-4" />}>
                     <span className="hidden sm:block">Войти</span>
                   </Button>
                 </Link>
                 <Link href="/store/register" className="hidden sm:block">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outlined" size="small">
                     Регистрация
                   </Button>
                 </Link>
@@ -131,13 +124,12 @@ function StoreContent({
 
             {/* Mobile menu toggle */}
             <Button
-              variant="ghost"
-              size="icon"
+              type="text"
+              shape="circle"
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+              icon={mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            />
           </div>
         </div>
 

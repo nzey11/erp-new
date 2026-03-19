@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input, Modal, Typography } from "antd";
+import { Input, Modal, Typography, Button } from "antd";
 const { TextArea } = Input;
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
@@ -84,17 +83,17 @@ export function ReviewForm({
   const getFooter = () => {
     if (submitted) {
       return (
-        <Button onClick={handleClose} className="w-full">
+        <Button type="primary" onClick={handleClose} className="w-full">
           Закрыть
         </Button>
       );
     }
     return (
       <>
-        <Button variant="outline" onClick={handleClose}>
+        <Button variant="outlined" onClick={handleClose}>
           Отмена
         </Button>
-        <Button onClick={handleSubmit} disabled={submitting || rating === 0}>
+        <Button type="primary" onClick={handleSubmit} disabled={submitting || rating === 0}>
           {submitting ? "Отправка..." : "Отправить"}
         </Button>
       </>

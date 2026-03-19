@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Tag, Card, Modal, Table, Input, Typography } from "antd";
+import { Button, Tag, Card, Modal, Table, Input, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import { Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -242,17 +241,16 @@ export default function PromoBlocksPage() {
       width: 150,
       render: (_, block) => (
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => openEditDialog(block)}>
+          <Button size="small" variant="outlined" onClick={() => openEditDialog(block)}>
             <Pencil className="h-3 w-3" />
           </Button>
           <Button
-            size="sm"
-            variant="destructive"
+            size="small"
+            danger
             onClick={() => handleDelete(block.id)}
             disabled={deleting === block.id}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+            icon={<Trash2 className="h-3 w-3" />}
+          />
         </div>
       ),
     },
@@ -264,8 +262,7 @@ export default function PromoBlocksPage() {
         title="Промо-блоки"
         description="Управление рекламными баннерами в магазине"
         actions={
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button type="primary" onClick={openCreateDialog} icon={<Plus className="h-4 w-4" />}>
             Новый промо-блок
           </Button>
         }

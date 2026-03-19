@@ -22,9 +22,9 @@ import {
   Minus,
   Code,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/shared/utils";
 import { useCallback } from "react";
+import { Button } from "antd";
 
 function ToolButton({
   onClick,
@@ -38,16 +38,19 @@ function ToolButton({
   title: string;
 }) {
   return (
-    <Button
+    <button
       type="button"
-      variant={active ? "default" : "ghost"}
-      size="icon-sm"
       onClick={onClick}
       title={title}
-      className="h-8 w-8"
+      className={cn(
+        "h-8 w-8 flex items-center justify-center rounded-md transition-colors",
+        active
+          ? "bg-primary text-primary-foreground"
+          : "hover:bg-muted text-muted-foreground hover:text-foreground"
+      )}
     >
       {children}
-    </Button>
+    </button>
   );
 }
 

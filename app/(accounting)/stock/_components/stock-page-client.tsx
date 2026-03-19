@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Tabs } from "antd";
-import { Button } from "@/components/ui/button";
+import { Tabs, Button } from "antd";
 import { Plus } from "lucide-react";
 import { CreateDocumentDialog } from "@/components/domain/accounting";
 import type { StockFilters } from "@/lib/domain/stock/parse-filters";
@@ -137,8 +136,7 @@ export function StockPageClient({
         description="Товарные остатки и складские операции"
         actions={
           showCreateButton ? (
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button type="primary" onClick={() => setCreateOpen(true)} icon={<Plus className="h-4 w-4" />}>
               Новый документ
             </Button>
           ) : undefined

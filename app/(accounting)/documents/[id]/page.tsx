@@ -4,8 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Tag, Card, Table, Modal, Dropdown, Tabs, Select, Input, Typography } from "antd";
+import { Button, Tag, Card, Table, Modal, Dropdown, Tabs, Select, Input, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import type { MenuProps } from "antd";
 import { Check, X, Plus, Trash2, ArrowLeft, Link2, BookOpen, Printer, Database, RefreshCw, Edit2, MinusCircle, PlusCircle } from "lucide-react";
@@ -581,7 +580,7 @@ export default function DocumentDetailPage() {
       <div className="text-center py-12">
         <p className="text-muted-foreground">Документ не найден</p>
         <Link href="/documents">
-          <Button variant="outline" className="mt-4">К списку документов</Button>
+          <Button variant="outlined" className="mt-4">К списку документов</Button>
         </Link>
       </div>
     );
@@ -723,7 +722,7 @@ export default function DocumentDetailPage() {
         title: "",
         width: 60,
         render: (_: unknown, __: DocumentItem, index: number) => (
-          <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(index)}>
+          <Button type="text" size="small" onClick={() => handleRemoveItem(index)}>
             <Trash2 className="h-4 w-4 text-red-500" />
           </Button>
         ),
@@ -767,7 +766,7 @@ export default function DocumentDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/documents">
-          <Button variant="ghost" size="icon">
+          <Button type="text" size="small">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -775,7 +774,7 @@ export default function DocumentDetailPage() {
           title={`${doc.typeName} ${doc.number}`}
           actions={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outlined" size="small">
                 <Link href={`/documents/${id}/print`} target="_blank" rel="noopener noreferrer">
                   <Printer className="h-4 w-4 mr-1" />Печать
                 </Link>
@@ -784,35 +783,35 @@ export default function DocumentDetailPage() {
                 <>
                   {doc.type === "inventory_count" && (
                     <>
-                      <Button variant="outline" size="sm" onClick={handleFillFromStock} disabled={fillingStock || fillingAll}>
+                      <Button variant="outlined" size="small" onClick={handleFillFromStock} disabled={fillingStock || fillingAll}>
                         <Database className="h-4 w-4 mr-1" />
                         {fillingStock ? "Заполнение..." : "Заполнить фактические остатки"}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleFillAllProducts} disabled={fillingStock || fillingAll}>
+                      <Button variant="outlined" size="small" onClick={handleFillAllProducts} disabled={fillingStock || fillingAll}>
                         <Plus className="h-4 w-4 mr-1" />
                         {fillingAll ? "Заполнение..." : "Заполнить все товары"}
                       </Button>
                     </>
                   )}
-                  <Button variant="outline" size="sm" onClick={() => setAddItemOpen(true)}>
+                  <Button variant="outlined" size="small" onClick={() => setAddItemOpen(true)}>
                     <Plus className="h-4 w-4 mr-1" />Добавить позицию
                   </Button>
-                  <Button size="sm" onClick={handleConfirm}>
+                  <Button type="primary" size="small" onClick={handleConfirm}>
                     <Check className="h-4 w-4 mr-1" />Подтвердить
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={handleDelete}>
+                  <Button danger size="small" onClick={handleDelete}>
                     <Trash2 className="h-4 w-4 mr-1" />Удалить
                   </Button>
                 </>
               )}
               {doc.status === "confirmed" && (
                 <>
-                  <Button variant="destructive" size="sm" onClick={handleCancel}>
+                  <Button danger size="small" onClick={handleCancel}>
                     <X className="h-4 w-4 mr-1" />Отменить
                   </Button>
                   {/* Reopen button for editable stock document types */}
                   {["inventory_count", "write_off", "stock_receipt"].includes(doc.type) && (
-                    <Button variant="outline" size="sm" onClick={handleReopen} disabled={reopening}>
+                    <Button variant="outlined" size="small" onClick={handleReopen} disabled={reopening}>
                       <Edit2 className="h-4 w-4 mr-1" />
                       {reopening ? "Открытие..." : "Редактировать"}
                     </Button>
@@ -822,8 +821,8 @@ export default function DocumentDetailPage() {
                     <>
                       {doc.items.some((i) => (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) < 0) && (
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="outlined"
+                          size="small"
                           onClick={() => handleCreateAdjustment("write_off")}
                           disabled={creatingLinkedAdj}
                         >
@@ -833,8 +832,8 @@ export default function DocumentDetailPage() {
                       )}
                       {doc.items.some((i) => (i.difference ?? (i.actualQty ?? 0) - (i.expectedQty ?? 0)) > 0) && (
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="outlined"
+                          size="small"
                           onClick={() => handleCreateAdjustment("stock_receipt")}
                           disabled={creatingLinkedAdj}
                         >
@@ -858,7 +857,7 @@ export default function DocumentDetailPage() {
                     })) satisfies MenuProps["items"],
                   }}
                 >
-                  <Button variant="outline" size="sm">
+                  <Button variant="outlined" size="small">
                     <RefreshCw className="h-4 w-4 mr-1" />Док. коррекции
                   </Button>
                 </Dropdown>
@@ -875,7 +874,7 @@ export default function DocumentDetailPage() {
                     })) satisfies MenuProps["items"],
                   }}
                 >
-                  <Button variant="outline" size="sm" disabled={creatingLinked}>
+                  <Button variant="outlined" size="small" disabled={creatingLinked}>
                     <Link2 className="h-4 w-4 mr-1" />
                     {creatingLinked ? "Создание..." : "Создать на основании"}
                   </Button>

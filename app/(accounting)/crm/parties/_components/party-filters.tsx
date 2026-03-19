@@ -9,8 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input, Select } from "antd";
+import { Button, Input, Select } from "antd";
 import type { PartyListParams } from "../_lib";
 import { buildFilterQueryString, buildResetQueryString } from "../_lib";
 
@@ -43,7 +42,7 @@ export function PartyFilters({ initialParams }: PartyFiltersProps) {
         </div>
         <div className="flex gap-2">
           <Button disabled>Применить</Button>
-          <Button variant="outline" disabled>Сбросить</Button>
+          <Button variant="outlined" disabled>Сбросить</Button>
         </div>
       </div>
     );
@@ -94,8 +93,8 @@ export function PartyFilters({ initialParams }: PartyFiltersProps) {
       </div>
 
       <div className="flex gap-2">
-        <Button onClick={handleApply}>Применить</Button>
-        <Button variant="outline" onClick={handleReset}>
+        <Button type="primary" onClick={handleApply}>Применить</Button>
+        <Button variant="outlined" onClick={handleReset}>
           Сбросить
         </Button>
       </div>

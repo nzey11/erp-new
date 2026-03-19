@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Tag } from "antd";
+import { Button, Tag } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
@@ -135,32 +134,29 @@ export default function CmsPagesListPage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
-            size="sm"
-            variant="outline"
+            size="small"
+            variant="outlined"
             onClick={() => router.push(`/cms-pages/${row.original.id}`)}
             title="Редактировать"
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
+            icon={<Pencil className="h-3 w-3" />}
+          />
           {row.original.isPublished && (
             <Button
-              size="sm"
-              variant="outline"
+              size="small"
+              variant="outlined"
               onClick={() => window.open(`/store/pages/${row.original.slug}`, "_blank")}
               title="Открыть на сайте"
-            >
-              <ExternalLink className="h-3 w-3" />
-            </Button>
+              icon={<ExternalLink className="h-3 w-3" />}
+            />
           )}
           <Button
-            size="sm"
-            variant="destructive"
+            size="small"
+            danger
             onClick={() => handleDelete(row.original.id)}
             disabled={deleting === row.original.id}
             title="Удалить"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+            icon={<Trash2 className="h-3 w-3" />}
+          />
         </div>
       ),
     },
@@ -172,8 +168,7 @@ export default function CmsPagesListPage() {
         title="CMS-страницы"
         description="Управление статическими страницами магазина"
         actions={
-          <Button onClick={() => router.push("/cms-pages/new")}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button type="primary" onClick={() => router.push("/cms-pages/new")} icon={<Plus className="h-4 w-4" />}>
             Новая страница
           </Button>
         }

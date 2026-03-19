@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProductFormContent } from "@/components/domain/accounting/catalog/ProductFormContent";
 // Local Product type for page (matches API response)
@@ -78,13 +78,13 @@ export default function ProductDetailPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/products")}>
+          <Button type="text" size="small" onClick={() => router.push("/products")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <PageHeader title="Товар не найден" />
         </div>
         <p className="text-muted-foreground">Товар с ID «{params.id}» не существует или был удалён.</p>
-        <Button variant="outline" onClick={() => router.push("/products")}>
+        <Button variant="outlined" onClick={() => router.push("/products")}>
           Вернуться к списку
         </Button>
       </div>
@@ -94,7 +94,7 @@ export default function ProductDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/products")}>
+        <Button type="text" size="small" onClick={() => router.push("/products")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <PageHeader title={product?.name ?? "Новый товар"} />

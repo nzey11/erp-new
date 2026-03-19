@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Link2, Send, MessageCircle, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dropdown } from "antd";
+import { Dropdown, Button } from "antd";
 import type { MenuProps } from "antd";
 import { toast } from "sonner";
 
@@ -65,13 +64,7 @@ export function ShareButton({ title, url }: ShareButtonProps) {
 
   return (
     <Dropdown menu={{ items }} trigger={["click"]}>
-      <Button variant="outline" size="icon">
-        {copied ? (
-          <Check className="h-4 w-4 text-green-600" />
-        ) : (
-          <Link2 className="h-4 w-4" />
-        )}
-      </Button>
+      <Button variant="outlined" shape="circle" icon={copied ? <Check className="h-4 w-4 text-green-600" /> : <Link2 className="h-4 w-4" />} />
     </Dropdown>
   );
 }

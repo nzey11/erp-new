@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Tag } from "antd";
-import { Card } from "antd";
-import { Select } from "antd";
-import { Table } from "antd";
+import { Button, Tag, Card, Select, Table } from "antd";
 import type { TableColumnsType } from "antd";
 import { Star, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -211,8 +207,8 @@ export default function ReviewsPage() {
       render: (_, review) => (
         <div className="flex items-center gap-2">
           <Button
-            size="sm"
-            variant="outline"
+            size="small"
+            variant="outlined"
             onClick={() => togglePublished(review)}
             disabled={updating === review.id}
           >
@@ -229,13 +225,12 @@ export default function ReviewsPage() {
             )}
           </Button>
           <Button
-            size="sm"
-            variant="destructive"
+            size="small"
+            danger
             onClick={() => handleDelete(review.id)}
             disabled={deleting === review.id}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+            icon={<Trash2 className="h-3 w-3" />}
+          />
         </div>
       ),
     },

@@ -9,8 +9,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card } from "antd";
-import { Button } from "@/components/ui/button";
+import { Card, Button } from "antd";
 import { ArrowRight, Check, X } from "lucide-react";
 import type { MergeRequest } from "@/lib/domain/party";
 import { approveMerge, rejectMerge } from "../_lib/actions";
@@ -61,21 +60,22 @@ export function MergeRequestCard({ request }: MergeRequestCardProps) {
 
         <div className="flex gap-2">
           <Button
-            size="sm"
+            size="small"
+            type="primary"
             onClick={handleApprove}
             disabled={isProcessing}
+            icon={<Check className="h-4 w-4" />}
           >
-            <Check className="h-4 w-4 mr-1" />
             Объединить
           </Button>
 
           <Button
-            size="sm"
-            variant="outline"
+            size="small"
+            variant="outlined"
             onClick={() => setIsRejectDialogOpen(true)}
             disabled={isProcessing}
+            icon={<X className="h-4 w-4" />}
           >
-            <X className="h-4 w-4 mr-1" />
             Отклонить
           </Button>
         </div>

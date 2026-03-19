@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Select, Checkbox, Input } from "antd";
+import { Select, Checkbox, Input, Button } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -104,8 +103,8 @@ export function ProductFiltersBar({
         />
 
         <Button
-          variant="ghost"
-          size="sm"
+          type="text"
+          size="small"
           onClick={() => setShowMore(!showMore)}
           className="text-muted-foreground"
         >
@@ -117,8 +116,8 @@ export function ProductFiltersBar({
         </Button>
 
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={onReset} className="text-muted-foreground">
-            <X className="h-4 w-4 mr-1" /> Сбросить
+          <Button type="text" size="small" onClick={onReset} className="text-muted-foreground" icon={<X className="h-4 w-4" />}>
+            Сбросить
           </Button>
         )}
       </div>

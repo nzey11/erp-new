@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, Input, Typography } from "antd";
-import { Button } from "@/components/ui/button";
+import { Card, Input, Typography, Button } from "antd";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
@@ -161,7 +160,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button htmlType="submit" type="primary" className="w-full" disabled={loading}>
             {loading ? "Регистрация..." : "Зарегистрироваться"}
           </Button>
         </form>

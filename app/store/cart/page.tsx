@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "antd";
+import { Card, Button } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { useCart } from "@/components/domain/ecommerce/CartContext";
 import { CartItemCard } from "@/components/domain/ecommerce/CartItemCard";
@@ -35,7 +34,7 @@ export default function CartPage() {
         <p className="text-muted-foreground mb-6">
           Добавьте товары из каталога, чтобы оформить заказ
         </p>
-        <Button onClick={() => router.push("/store/catalog")}>
+        <Button type="primary" onClick={() => router.push("/store/catalog")}>
           Перейти в каталог
         </Button>
       </div>
@@ -94,14 +93,15 @@ export default function CartPage() {
               </div>
             </div>
             <Button
-              size="lg"
+              size="large"
+              type="primary"
               className="w-full"
               onClick={() => router.push("/store/checkout")}
             >
               Оформить заказ
             </Button>
             <Button
-              variant="outline"
+              variant="outlined"
               className="w-full mt-3"
               onClick={() => router.push("/store/catalog")}
             >

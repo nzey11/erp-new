@@ -7,8 +7,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Modal } from "antd";
+import { Modal, Button } from "antd";
 import { PartyListItemDto } from "@/lib/domain/party/dto";
 
 interface MergeConfirmDialogProps {

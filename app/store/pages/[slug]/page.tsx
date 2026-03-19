@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { RichTextRenderer } from "@/components/domain/ecommerce/RichTextRenderer";
 
 type PageData = {
@@ -68,7 +68,7 @@ export default function StorePageView() {
         <p className="text-muted-foreground mb-6">
           Запрашиваемая страница не существует или была удалена
         </p>
-        <Button variant="outline" onClick={() => router.push("/store")}>
+        <Button variant="outlined" onClick={() => router.push("/store")}>
           На главную
         </Button>
       </div>

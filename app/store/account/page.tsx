@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShoppingBag, Heart, MapPin, LogOut, Package } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "antd";
-import { Tag } from "antd";
+import { Card, Tag, Button } from "antd";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";
 import { ProfileEditForm } from "@/components/domain/ecommerce/ProfileEditForm";
@@ -125,8 +123,7 @@ export default function AccountPage() {
           <h1 className="text-3xl font-bold mb-2">Личный кабинет</h1>
           <p className="text-muted-foreground">Добро пожаловать, {displayName}!</p>
         </div>
-        <Button variant="outline" onClick={handleLogout}>
-          <LogOut className="h-4 w-4 mr-2" />
+        <Button variant="outlined" onClick={handleLogout} icon={<LogOut className="h-4 w-4" />}>
           Выйти
         </Button>
       </div>
@@ -185,7 +182,7 @@ export default function AccountPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Последние заказы</h2>
             <Link href="/store/account/orders">
-              <Button variant="ghost" size="sm">
+              <Button type="text" size="small">
                 Все заказы →
               </Button>
             </Link>

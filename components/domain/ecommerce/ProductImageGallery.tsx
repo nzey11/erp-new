@@ -5,7 +5,7 @@ import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/shared/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 
 interface ProductImageGalleryProps {
   images: string[];
@@ -85,21 +85,19 @@ export function ProductImageGallery({ images, productName }: ProductImageGallery
 
         {/* Navigation arrows */}
         <Button
-          variant="ghost"
-          size="icon"
-          className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90 h-9 w-9 rounded-full"
+          type="text"
+          shape="circle"
+          className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90 h-9 w-9"
           onClick={() => emblaApi?.scrollPrev()}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
+          icon={<ChevronLeft className="h-5 w-5" />}
+        />
         <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90 h-9 w-9 rounded-full"
+          type="text"
+          shape="circle"
+          className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90 h-9 w-9"
           onClick={() => emblaApi?.scrollNext()}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
+          icon={<ChevronRight className="h-5 w-5" />}
+        />
 
         {/* Counter */}
         <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm text-xs px-2 py-1 rounded-full">

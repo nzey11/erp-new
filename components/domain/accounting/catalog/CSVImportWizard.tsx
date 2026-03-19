@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Modal } from "antd";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
-import { Select } from "antd";
-import { Checkbox } from "antd";
+import { Modal, Table, type TableColumnsType, Select, Checkbox, Button } from "antd";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
@@ -280,7 +275,7 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
   const getFooter = () => {
     if (step === "upload") {
       return (
-        <Button variant="outline" onClick={handleClose}>
+        <Button variant="outlined" onClick={handleClose}>
           Отмена
         </Button>
       );
@@ -288,10 +283,10 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
     if (step === "mapping") {
       return (
         <>
-          <Button variant="outline" onClick={() => setStep("upload")}>
+          <Button variant="outlined" onClick={() => setStep("upload")}>
             Назад
           </Button>
-          <Button onClick={() => setStep("preview")} disabled={!hasNameMapping}>
+          <Button type="primary" onClick={() => setStep("preview")} disabled={!hasNameMapping}>
             Далее
           </Button>
         </>
@@ -300,16 +295,16 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
     if (step === "preview") {
       return (
         <>
-          <Button variant="outline" onClick={() => setStep("mapping")}>
+          <Button variant="outlined" onClick={() => setStep("mapping")}>
             Назад
           </Button>
-          <Button onClick={handleImport} disabled={importing}>
+          <Button type="primary" onClick={handleImport} disabled={importing}>
             {importing ? "Импорт..." : `Импортировать ${csvRows.length} товаров`}
           </Button>
         </>
       );
     }
-    return <Button onClick={handleClose}>Закрыть</Button>;
+    return <Button type="primary" onClick={handleClose}>Закрыть</Button>;
   };
 
   return (
@@ -337,8 +332,7 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
                 className="hidden"
                 onChange={handleFileSelect}
               />
-              <Button onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4 mr-2" />
+              <Button type="primary" onClick={() => fileInputRef.current?.click()} icon={<Upload className="h-4 w-4" />}>
                 Выбрать файл
               </Button>
             </div>

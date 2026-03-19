@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Tag } from "antd";
-import { Button } from "@/components/ui/button";
-import { Card } from "antd";
+import { Tag, Button, Card } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -146,8 +144,8 @@ export default function AccountsPage() {
           <div className="flex flex-row items-center justify-between">
             <span>Счета ({grid.data.length})</span>
             <Button
-              variant="outline"
-              size="sm"
+              variant="outlined"
+              size="small"
               onClick={() => setIncludeInactive(!includeInactive)}
             >
               {includeInactive ? "Скрыть неактивные" : "Показать неактивные"}

@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCsrfToken } from "@/lib/client/csrf";
-import { Button } from "@/components/ui/button";
-import { Card, Input, Typography } from "antd";
+import { Button, Card, Input, Typography } from "antd";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -81,7 +80,7 @@ export default function LoginPage() {
               <p className="text-sm text-destructive">{error}</p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="primary" htmlType="submit" className="w-full" loading={loading}>
               {loading ? "Вход..." : "Войти"}
             </Button>
           </form>

@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2, Plus, Minus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "antd";
+import { Card, Button } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 
 interface CartItemCardProps {
@@ -72,23 +71,21 @@ export function CartItemCard({
             {/* Quantity */}
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
-                size="icon"
+                variant="outlined"
+                shape="circle"
                 className="h-7 w-7"
                 onClick={() => onUpdateQuantity(id, -1)}
                 disabled={quantity <= 1}
-              >
-                <Minus className="h-3 w-3" />
-              </Button>
+                icon={<Minus className="h-3 w-3" />}
+              />
               <span className="w-8 text-center text-sm font-medium">{quantity}</span>
               <Button
-                variant="outline"
-                size="icon"
+                variant="outlined"
+                shape="circle"
                 className="h-7 w-7"
                 onClick={() => onUpdateQuantity(id, 1)}
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
+                icon={<Plus className="h-3 w-3" />}
+              />
             </div>
 
             {/* Unit price */}
@@ -102,13 +99,12 @@ export function CartItemCard({
         {/* Actions & subtotal */}
         <div className="flex flex-col items-end justify-between">
           <Button
-            variant="ghost"
-            size="icon"
+            type="text"
+            shape="circle"
             className="h-8 w-8"
             onClick={() => onRemove(id)}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+            icon={<Trash2 className="h-4 w-4 text-destructive" />}
+          />
           <div className="text-lg font-bold">
             {formatRub(priceSnapshot * quantity)}
           </div>

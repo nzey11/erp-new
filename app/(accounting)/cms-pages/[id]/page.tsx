@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Card, Switch, Input, Typography } from "antd";
+import { Button, Card, Switch, Input, Typography } from "antd";
 import { RichTextEditor } from "@/components/domain/ecommerce/RichTextEditor";
 import { ChevronLeft, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -147,8 +146,7 @@ export default function CmsPageEditPage() {
             title={isNew ? "Новая страница" : "Редактирование страницы"}
           />
         </div>
-        <Button onClick={handleSave} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" />
+        <Button type="primary" onClick={handleSave} disabled={saving} icon={<Save className="h-4 w-4" />}>
           {saving ? "Сохранение..." : "Сохранить"}
         </Button>
       </div>
@@ -183,13 +181,10 @@ export default function CmsPageEditPage() {
                     />
                   </div>
                   <Button
-                    type="button"
-                    variant="outline"
                     onClick={handleGenerateSlug}
                     title="Сгенерировать из заголовка"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
+                    icon={<RefreshCw className="h-4 w-4" />}
+                  />
                 </div>
               </div>
             </div>
@@ -285,7 +280,7 @@ export default function CmsPageEditPage() {
             <Card className="p-6">
               <h3 className="font-semibold mb-3">Предпросмотр</h3>
               <Button
-                variant="outline"
+                variant="outlined"
                 className="w-full"
                 onClick={() => window.open(`/store/pages/${slug}`, "_blank")}
               >

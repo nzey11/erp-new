@@ -3,8 +3,7 @@
 import { useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Tag, Card, Modal, Select, Input, Typography } from "antd";
-import { Button } from "@/components/ui/button";
+import { Tag, Card, Modal, Select, Input, Typography, Button } from "antd";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import { ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -140,14 +139,12 @@ function EntryRow({
         <td className="px-3 py-2 w-10" onClick={(e) => e.stopPropagation()}>
           {!entry.isReversed && (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              type="text"
+              icon={<RotateCcw className="h-3.5 w-3.5" />}
+              className="h-7 w-7"
               title="Сторнировать проводку"
               onClick={() => onReverse(entry)}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </Button>
+            />
           )}
         </td>
       </tr>
@@ -337,7 +334,7 @@ function JournalPageContent() {
               />
             </div>
 
-            <Button variant="outline" size="sm" onClick={handleApply}>
+            <Button variant="outlined" size="small" onClick={handleApply}>
               Применить
             </Button>
           </div>

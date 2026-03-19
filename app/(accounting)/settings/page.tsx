@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { Tag, Card, Modal, Select, Input, Typography } from "antd";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { DataGrid } from "@/components/ui/data-grid";
@@ -167,7 +167,7 @@ export default function SettingsPage() {
       enableResizing: false,
       meta: { canHide: false },
       cell: ({ row }) => (
-        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEditUser(row.original); }}>
+        <Button type="text" size="small" onClick={(e) => { e.stopPropagation(); openEditUser(row.original); }}>
           <Pencil className="h-4 w-4" />
         </Button>
       ),
@@ -226,7 +226,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="mt-4">
-            <Button onClick={saveCompany} disabled={savingCompany} size="sm">
+            <Button onClick={saveCompany} disabled={savingCompany} size="small">
               <Save className="h-4 w-4 mr-2" />
               {savingCompany ? "Сохранение..." : "Сохранить"}
             </Button>
@@ -240,7 +240,7 @@ export default function SettingsPage() {
         </span>
       } extra={
         <Link href="/warehouses">
-          <Button size="sm" variant="outline">
+          <Button size="small" variant="outlined">
             Управлять складами
           </Button>
         </Link>
@@ -252,7 +252,7 @@ export default function SettingsPage() {
       </Card>
 
       <Card title={<span>Пользователи ({grid.data.length})</span>} extra={
-        <Button size="sm" onClick={openCreateUser}>
+        <Button size="small" onClick={openCreateUser}>
           <UserPlus className="h-4 w-4 mr-2" />
           Добавить
         </Button>

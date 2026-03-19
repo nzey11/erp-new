@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Tag, Table, type TableColumnsType, Select, Input } from "antd";
+import { Tag, Table, type TableColumnsType, Select, Input, Button } from "antd";
 import { Search, ImageIcon, Crown, ChevronRight, ChevronDown } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 
@@ -282,8 +281,8 @@ export function VariantGroupsPanel() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button
-            variant="outline"
-            size="sm"
+            variant="outlined"
+            size="small"
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
           >
@@ -293,8 +292,8 @@ export function VariantGroupsPanel() {
             Страница {page} из {totalPages}
           </span>
           <Button
-            variant="outline"
-            size="sm"
+            variant="outlined"
+            size="small"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >

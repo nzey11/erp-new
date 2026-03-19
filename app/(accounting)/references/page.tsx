@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { Card, Table, type TableColumnsType, Modal, Select, Input, Typography } from "antd";
 import { Tabs } from "antd";
 import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
@@ -216,7 +216,7 @@ export default function ReferencesPage() {
       title: "",
       width: 48,
       render: (_, unit) => (
-        <Button variant="ghost" size="icon" onClick={() => openEditUnit(unit)}>
+        <Button type="text" size="small" onClick={() => openEditUnit(unit)}>
           <Pencil className="h-4 w-4" />
         </Button>
       ),
@@ -232,7 +232,7 @@ export default function ReferencesPage() {
       title: "",
       width: 48,
       render: (_, pl) => (
-        <Button variant="ghost" size="icon" onClick={() => openEditPriceList(pl)}>
+        <Button type="text" size="small" onClick={() => openEditPriceList(pl)}>
           <Pencil className="h-4 w-4" />
         </Button>
       ),
@@ -257,10 +257,10 @@ export default function ReferencesPage() {
       width: 80,
       render: (_, cf) => (
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" onClick={() => openEditCf(cf)}>
+          <Button type="text" size="small" onClick={() => openEditCf(cf)}>
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => deleteCf(cf.id)}>
+          <Button type="text" size="small" onClick={() => deleteCf(cf.id)}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
@@ -276,7 +276,7 @@ export default function ReferencesPage() {
         defaultActiveKey="units"
         tabBarExtraContent={
           <Link href="/settings">
-            <Button variant="outline" size="sm" className="gap-1">
+            <Button variant="outlined" size="small" className="gap-1">
               Настройки
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
@@ -288,7 +288,7 @@ export default function ReferencesPage() {
             label: "Единицы измерения",
             children: (
               <Card title={`Единицы измерения (${units.length})`} extra={
-                <Button size="sm" onClick={openCreateUnit}>
+                <Button size="small" onClick={openCreateUnit}>
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
@@ -307,7 +307,7 @@ export default function ReferencesPage() {
             label: "Прайс-листы",
             children: (
               <Card title={`Прайс-листы (${priceLists.length})`} extra={
-                <Button size="sm" onClick={openCreatePriceList}>
+                <Button size="small" onClick={openCreatePriceList}>
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
@@ -326,7 +326,7 @@ export default function ReferencesPage() {
             label: "Характеристики",
             children: (
               <Card title={`Характеристики товаров (${customFields.length})`} extra={
-                <Button size="sm" onClick={openCreateCf}>
+                <Button size="small" onClick={openCreateCf}>
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>

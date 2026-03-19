@@ -5,7 +5,7 @@ import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/shared/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 
 interface HeroSlide {
   id: string;
@@ -100,21 +100,19 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
 
       {/* Navigation arrows */}
       <Button
-        variant="ghost"
-        size="icon"
-        className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm hover:bg-background/80 h-10 w-10 rounded-full"
+        type="text"
+        shape="circle"
+        className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm hover:bg-background/80 h-10 w-10"
         onClick={() => emblaApi?.scrollPrev()}
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </Button>
+        icon={<ChevronLeft className="h-5 w-5" />}
+      />
       <Button
-        variant="ghost"
-        size="icon"
-        className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm hover:bg-background/80 h-10 w-10 rounded-full"
+        type="text"
+        shape="circle"
+        className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/60 backdrop-blur-sm hover:bg-background/80 h-10 w-10"
         onClick={() => emblaApi?.scrollNext()}
-      >
-        <ChevronRight className="h-5 w-5" />
-      </Button>
+        icon={<ChevronRight className="h-5 w-5" />}
+      />
 
       {/* Dots */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">

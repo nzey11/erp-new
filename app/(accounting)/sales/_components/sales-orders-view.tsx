@@ -9,8 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { csrfFetch } from "@/lib/client/csrf";
-import { Button } from "@/components/ui/button";
-import { Select } from "antd";
+import { Button, Select } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { ShoppingCart, User, Eye } from "lucide-react";
@@ -276,14 +275,12 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
             onClick={(e) => e.stopPropagation()}
           >
             <Link href={`/documents/${doc.id}`}>
-              <Button variant="ghost" size="icon" title="Просмотр">
-                <Eye className="h-4 w-4" />
-              </Button>
+              <Button type="text" icon={<Eye className="h-4 w-4" />} title="Просмотр" />
             </Link>
             {isEcom && doc.status === "paid" && (
               <Button
-                size="sm"
-                variant="outline"
+                size="small"
+                variant="outlined"
                 className="h-7 text-xs px-2"
                 onClick={() => handleUpdateStatus(doc.id, "processing")}
               >
@@ -292,8 +289,8 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
             )}
             {isEcom && doc.status === "processing" && (
               <Button
-                size="sm"
-                variant="outline"
+                size="small"
+                variant="outlined"
                 className="h-7 text-xs px-2"
                 onClick={() => handleUpdateStatus(doc.id, "shipped")}
               >
@@ -302,8 +299,8 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
             )}
             {isEcom && doc.status === "shipped" && (
               <Button
-                size="sm"
-                variant="outline"
+                size="small"
+                variant="outlined"
                 className="h-7 text-xs px-2"
                 onClick={() => handleUpdateStatus(doc.id, "delivered")}
               >
@@ -312,13 +309,11 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
             )}
             {!isEcom && doc.status === "draft" && (
               <Button
-                variant="ghost"
-                size="icon"
+                type="text"
+                icon={<span className="text-green-600 text-xs font-bold">✓</span>}
                 title="Подтвердить"
                 onClick={() => handleConfirm(doc.id)}
-              >
-                <span className="text-green-600 text-xs font-bold">✓</span>
-              </Button>
+              />
             )}
           </div>
         );

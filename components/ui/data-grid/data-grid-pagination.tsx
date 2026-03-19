@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { Button } from "@/components/ui/button";
-import { Select, Input } from "antd";
+import { Select, Input, Button } from "antd";
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DataGridPaginationBarProps {
@@ -75,26 +74,24 @@ export function DataGridPaginationBar({
         <div className="flex items-center gap-1.5">
           {/* First */}
           <Button
-            variant="outline"
-            size="icon"
+            variant="outlined"
+            shape="circle"
             className="h-8 w-8"
             disabled={page <= 1}
             onClick={() => onPageChange(1)}
             title="Первая страница"
-          >
-            <ChevronFirst className="h-4 w-4" />
-          </Button>
+            icon={<ChevronFirst className="h-4 w-4" />}
+          />
           {/* Prev */}
           <Button
-            variant="outline"
-            size="icon"
+            variant="outlined"
+            shape="circle"
             className="h-8 w-8"
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
             title="Назад"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+            icon={<ChevronLeft className="h-4 w-4" />}
+          />
 
           {/* Page indicator */}
           <span className="text-sm text-muted-foreground px-1 select-none">
@@ -103,26 +100,24 @@ export function DataGridPaginationBar({
 
           {/* Next */}
           <Button
-            variant="outline"
-            size="icon"
+            variant="outlined"
+            shape="circle"
             className="h-8 w-8"
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
             title="Далее"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            icon={<ChevronRight className="h-4 w-4" />}
+          />
           {/* Last */}
           <Button
-            variant="outline"
-            size="icon"
+            variant="outlined"
+            shape="circle"
             className="h-8 w-8"
             disabled={page >= totalPages}
             onClick={() => onPageChange(totalPages)}
             title="Последняя страница"
-          >
-            <ChevronLast className="h-4 w-4" />
-          </Button>
+            icon={<ChevronLast className="h-4 w-4" />}
+          />
 
           {/* Jump to page */}
           {totalPages > 5 && (

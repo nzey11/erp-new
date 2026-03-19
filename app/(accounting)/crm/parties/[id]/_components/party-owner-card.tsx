@@ -8,8 +8,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "antd";
-import { Button } from "@/components/ui/button";
+import { Card, Button } from "antd";
 import { User } from "lucide-react";
 import type { PartyProfileOwnerDto } from "@/lib/domain/party";
 import type { AssignableOwner } from "@/lib/domain/crm";
@@ -56,8 +55,8 @@ export function PartyOwnerCard({
 
         <div className="space-y-1 mt-3">
           <Button
-            variant="outline"
-            size="sm"
+            variant="outlined"
+            size="small"
             disabled={isDisabled}
             onClick={() => setDialogOpen(true)}
           >

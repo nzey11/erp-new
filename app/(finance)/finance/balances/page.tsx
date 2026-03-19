@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, Table, type TableColumnsType, Tag, Modal, Input, Typography } from "antd";
-import { Button } from "@/components/ui/button";
+import { Card, Table, type TableColumnsType, Tag, Modal, Input, Typography, Button } from "antd";
 import { Loader2, FileText, ExternalLink } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
@@ -64,9 +63,7 @@ export default function BalancesPage() {
       width: 40,
       render: (_, doc) => (
         <Link href={`/documents/${doc.id}`}>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
+          <Button type="text" icon={<ExternalLink className="h-3.5 w-3.5" />} className="h-7 w-7" />
         </Link>
       ),
     },
@@ -141,14 +138,12 @@ export default function BalancesPage() {
       width: 40,
       render: (_, b) => (
         <Button
-          variant="ghost"
-          size="icon"
+          type="text"
+          icon={<FileText className="h-3.5 w-3.5" />}
           className="h-7 w-7"
           title="Документы контрагента"
           onClick={() => openDocs(b.counterparty)}
-        >
-          <FileText className="h-3.5 w-3.5" />
-        </Button>
+        />
       ),
     },
   ];
@@ -176,7 +171,7 @@ export default function BalancesPage() {
               className="w-40"
             />
             {asOfDate && (
-              <Button variant="ghost" size="sm" onClick={() => setAsOfDate("")}>
+              <Button type="text" size="small" onClick={() => setAsOfDate("")}>
                 Сбросить
               </Button>
             )}

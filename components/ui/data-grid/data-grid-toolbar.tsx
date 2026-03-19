@@ -1,8 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Button } from "@/components/ui/button";
-import { Dropdown, Checkbox, Input } from "antd";
+import { Dropdown, Checkbox, Input, Button } from "antd";
 import type { MenuProps } from "antd";
 import { Search, Settings2, X } from "lucide-react";
 import type { Table as TanStackTable } from "@tanstack/react-table";
@@ -74,9 +73,7 @@ function ColumnVisibilityMenu<TData>({ table }: { table: TanStackTable<TData> })
 
   if (!mounted) {
     return (
-      <Button variant="outline" size="icon" title="Настройка колонок" disabled>
-        <Settings2 className="h-4 w-4" />
-      </Button>
+      <Button variant="outlined" shape="circle" title="Настройка колонок" disabled icon={<Settings2 className="h-4 w-4" />} />
     );
   }
 
@@ -112,9 +109,7 @@ function ColumnVisibilityMenu<TData>({ table }: { table: TanStackTable<TData> })
 
   return (
     <Dropdown menu={{ items }} trigger={["click"]}>
-      <Button variant="outline" size="icon" title="Настройка колонок">
-        <Settings2 className="h-4 w-4" />
-      </Button>
+      <Button variant="outlined" shape="circle" title="Настройка колонок" icon={<Settings2 className="h-4 w-4" />} />
     </Dropdown>
   );
 }

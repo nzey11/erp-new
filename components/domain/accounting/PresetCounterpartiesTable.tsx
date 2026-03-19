@@ -8,8 +8,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Select } from "antd";
+import { Select, Button } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { ExternalLink } from "lucide-react";
@@ -77,16 +76,15 @@ export function PresetCounterpartiesTable({ onCounterpartySelect }: PresetCounte
       meta: { canHide: false },
       cell: ({ row }) => (
         <Button
-          variant="ghost"
-          size="icon"
+          type="text"
+          shape="circle"
           title="Открыть карточку"
           onClick={(e) => {
             e.stopPropagation();
             router.push(`/counterparties/${row.original.id}`);
           }}
-        >
-          <ExternalLink className="h-4 w-4" />
-        </Button>
+          icon={<ExternalLink className="h-4 w-4" />}
+        />
       ),
     },
   ];
@@ -130,7 +128,7 @@ export function PresetCounterpartiesTable({ onCounterpartySelect }: PresetCounte
           <div className="w-48 h-9 border rounded-md bg-muted/50" />
         ),
         actions: (
-          <Button onClick={() => router.push("/counterparties/new")}>
+          <Button type="primary" onClick={() => router.push("/counterparties/new")}>
             Добавить
           </Button>
         ),

@@ -4,9 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Tag, Tooltip, Badge, Space, Dropdown } from "antd";
+import { Tag, Tooltip, Badge, Space, Dropdown, Button } from "antd";
 import { MoreOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import { Button } from "@/components/ui/button";
 import { ERPTable } from "@/components/erp/erp-table";
 import { ERPToolbar } from "@/components/erp/erp-toolbar";
 import type { ERPColumn } from "@/components/erp/erp-table.types";
@@ -367,9 +366,7 @@ export function ProductsTable({
       }}
       trigger={["click"]}
     >
-      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-        <MoreOutlined />
-      </Button>
+      <Button type="text" shape="circle" className="h-7 w-7" onClick={(e) => e.stopPropagation()} icon={<MoreOutlined />} />
     </Dropdown>
   );
 

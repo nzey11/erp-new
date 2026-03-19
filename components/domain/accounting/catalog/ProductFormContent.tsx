@@ -3,8 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { csrfFetch } from "@/lib/client/csrf";
-import { Button } from "@/components/ui/button";
-import { Tag, Select, Tabs, Input, Typography } from "antd";
+import { Tag, Select, Tabs, Input, Typography, Button } from "antd";
 import type { TabsProps } from "antd";
 const { TextArea } = Input;
 import { Search, Upload, Wand2, Plus, X, ImageIcon, ExternalLink, Link2 } from "lucide-react";
@@ -422,8 +421,8 @@ export function ProductFormContent({
 
   const footer = (
     <div className={inDialog ? "flex justify-end gap-2 pt-4" : "flex justify-end gap-2 pt-6 border-t mt-2"}>
-      <Button variant="outline" onClick={onCancel}>Отмена</Button>
-      <Button onClick={handleSave} disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
+      <Button variant="outlined" onClick={onCancel}>Отмена</Button>
+      <Button type="primary" onClick={handleSave} disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
     </div>
   );
 
@@ -451,8 +450,8 @@ export function ProductFormContent({
               <div>
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden" onChange={handleUploadImage} />
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}>
-                  <Upload className="h-4 w-4 mr-2" />{uploadingImage ? "Загрузка..." : "Загрузить фото"}
+                <Button variant="outlined" size="small" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} icon={<Upload className="h-4 w-4" />}>
+                  {uploadingImage ? "Загрузка..." : "Загрузить фото"}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, WebP, GIF. Макс. 5 МБ</p>
               </div>
@@ -467,9 +466,7 @@ export function ProductFormContent({
               <Typography.Text strong>Артикул</Typography.Text>
               <div className="flex gap-2">
                 <Input value={formSku} onChange={(e) => setFormSku(e.target.value)} placeholder="Авто" className="flex-1" />
-                <Button variant="outline" size="icon" onClick={handleGenerateSku} disabled={generatingSku} title="Сгенерировать артикул">
-                  <Wand2 className="h-4 w-4" />
-                </Button>
+                <Button variant="outlined" shape="circle" onClick={handleGenerateSku} disabled={generatingSku} title="Сгенерировать артикул" icon={<Wand2 className="h-4 w-4" />} />
               </div>
             </div>
             <div className="grid gap-2">
@@ -542,15 +539,11 @@ export function ProductFormContent({
                 <Typography.Text strong className="text-sm">{def.name} <span className="text-muted-foreground text-xs">({FIELD_TYPE_LABELS[def.fieldType] || def.fieldType})</span></Typography.Text>
                 <div className="flex gap-1">
                   {customFieldValues[def.id] && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Очистить"
-                      onClick={() => setCustomFieldValues((prev) => { const next = { ...prev }; delete next[def.id]; return next; })}>
-                      <X className="h-3 w-3" />
-                    </Button>
+                    <Button type="text" shape="circle" className="h-6 w-6" title="Очистить"
+                      onClick={() => setCustomFieldValues((prev) => { const next = { ...prev }; delete next[def.id]; return next; })} icon={<X className="h-3 w-3" />} />
                   )}
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" title="Удалить характеристику"
-                    onClick={() => handleDeleteCf(def.id)}>
-                    <X className="h-3 w-3" />
-                  </Button>
+                  <Button type="text" shape="circle" className="h-6 w-6 text-destructive" title="Удалить характеристику"
+                    onClick={() => handleDeleteCf(def.id)} icon={<X className="h-3 w-3" />} />
                 </div>
               </div>
               {def.fieldType === "boolean" ? (
@@ -600,20 +593,20 @@ export function ProductFormContent({
                   onChange={(e) => setNewCfOptions(e.target.value)} />
               )}
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleCreateCf} disabled={!newCfName || savingCf}>
+                <Button size="small" type="primary" onClick={handleCreateCf} disabled={!newCfName || savingCf}>
                   {savingCf ? "Создание..." : "Создать"}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setShowNewCfForm(false)}>Отмена</Button>
+                <Button type="text" size="small" onClick={() => setShowNewCfForm(false)}>Отмена</Button>
               </div>
             </div>
           ) : (
             <div className="flex items-center gap-3 pt-1">
-              <Button variant="outline" size="sm" onClick={() => setShowNewCfForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />Добавить характеристику
+              <Button variant="outlined" size="small" onClick={() => setShowNewCfForm(true)} icon={<Plus className="h-4 w-4" />}>
+                Добавить характеристику
               </Button>
               <Link href="/references?tab=customfields" onClick={onCancel}>
-                <Button variant="link" size="sm" className="px-0 text-muted-foreground">
-                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />Справочники
+                <Button type="link" size="small" className="px-0 text-muted-foreground" icon={<ExternalLink className="h-3.5 w-3.5" />}>
+                  Справочники
                 </Button>
               </Link>
             </div>
@@ -690,9 +683,7 @@ export function ProductFormContent({
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleRemoveVariantLink(vl.id)}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+                      <Button type="text" shape="circle" className="h-7 w-7 shrink-0" onClick={() => handleRemoveVariantLink(vl.id)} icon={<X className="h-3.5 w-3.5" />} />
                     </div>
                   ))}
                 </div>
@@ -745,7 +736,7 @@ export function ProductFormContent({
               <p className="text-sm text-muted-foreground">Подсказок не найдено.</p>
             )}
             {suggestions.filter((s) => !dismissedSuggestions.has(s.productId) && s.confidence >= 80).length > 1 && (
-              <Button variant="outline" size="sm" onClick={handleAcceptAllHighConfidence}>
+              <Button variant="outlined" size="small" onClick={handleAcceptAllHighConfidence}>
                 Принять все с высокой уверенностью ({suggestions.filter((s) => s.confidence >= 80).length})
               </Button>
             )}
@@ -779,11 +770,9 @@ export function ProductFormContent({
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" className="h-7 text-green-600 hover:text-green-700"
+                      <Button type="text" size="small" className="h-7 text-green-600 hover:text-green-700"
                         onClick={() => handleAcceptSuggestion(s)}>Принять</Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDismissSuggestion(s.productId)}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+                      <Button type="text" shape="circle" className="h-7 w-7" onClick={() => handleDismissSuggestion(s.productId)} icon={<X className="h-3.5 w-3.5" />} />
                     </div>
                   </div>
                 ))}
@@ -821,9 +810,7 @@ export function ProductFormContent({
                             </span>
                           )}
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveDiscount(d.id)}>
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                        <Button type="text" shape="circle" className="h-7 w-7" onClick={() => handleRemoveDiscount(d.id)} icon={<X className="h-3.5 w-3.5" />} />
                       </div>
                     );
                   })}
@@ -858,8 +845,8 @@ export function ProductFormContent({
                   </p>
                 )}
               </div>
-              <Button variant="outline" size="sm" onClick={handleAddDiscount} disabled={!newDiscountName || !newDiscountValue}>
-                <Plus className="h-4 w-4 mr-2" /> Добавить скидку
+              <Button variant="outlined" size="small" onClick={handleAddDiscount} disabled={!newDiscountName || !newDiscountValue} icon={<Plus className="h-4 w-4" />}>
+                Добавить скидку
               </Button>
             </div>
           </div>

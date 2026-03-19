@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { Tag, Table, type TableColumnsType, Modal, Input, Typography } from "antd";
@@ -198,12 +198,12 @@ export default function WarehousesPage() {
       meta: { canHide: false },
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}>
+          <Button type="text" size="small" onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}>
             <Pencil className="h-4 w-4" />
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
+            type="text"
+            size="small"
             className="text-destructive hover:text-destructive"
             onClick={(e) => { e.stopPropagation(); openDelete(row.original); }}
           >

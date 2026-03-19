@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, Package, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "antd";
-import { Tag } from "antd";
+import { Card, Tag, Button } from "antd";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";
 import { OrderTimeline } from "@/components/domain/ecommerce/OrderTimeline";
@@ -154,7 +152,7 @@ export default function OrdersPage() {
           <p className="text-muted-foreground mb-6">
             Перейдите в каталог, чтобы сделать первый заказ
           </p>
-          <Button onClick={() => router.push("/store/catalog")}>
+          <Button type="primary" onClick={() => router.push("/store/catalog")}>
             Перейти в каталог
           </Button>
         </div>
@@ -252,9 +250,10 @@ export default function OrdersPage() {
                               </div>
                               {(order.status === "delivered" || order.status === "paid" || order.status === "shipped") && (
                                 <Button
-                                  variant="ghost"
-                                  size="sm"
+                                  type="text"
+                                  size="small"
                                   className="text-xs h-7"
+                                  icon={<Star className="h-3 w-3" />}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setReviewTarget({
@@ -264,7 +263,6 @@ export default function OrdersPage() {
                                     });
                                   }}
                                 >
-                                  <Star className="h-3 w-3 mr-1" />
                                   Отзыв
                                 </Button>
                               )}

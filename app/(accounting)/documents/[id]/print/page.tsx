@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { Printer, ArrowLeft } from "lucide-react";
 import { formatRub, formatDate, formatDateTime } from "@/lib/shared/utils";
 import Link from "next/link";
@@ -86,7 +86,7 @@ export default function DocumentPrintPage() {
       {/* Print toolbar - hidden when printing */}
       <div className="no-print bg-muted/30 border-b px-6 py-3 flex items-center gap-3">
         <Link href={`/documents/${id}`}>
-          <Button variant="ghost" size="sm">
+          <Button type="text" size="small">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Назад
           </Button>
@@ -94,7 +94,7 @@ export default function DocumentPrintPage() {
         <span className="text-sm text-muted-foreground flex-1">
           {doc.typeName} №{doc.number}
         </span>
-        <Button size="sm" onClick={() => window.print()}>
+        <Button type="primary" size="small" onClick={() => window.print()}>
           <Printer className="h-4 w-4 mr-2" />
           Печать
         </Button>

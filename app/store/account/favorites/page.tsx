@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, Heart, X, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "antd";
-import { Tag } from "antd";
+import { Card, Tag, Button } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -119,7 +117,7 @@ export default function FavoritesPage() {
           <p className="text-muted-foreground mb-6">
             Добавляйте товары в избранное, чтобы не потерять их
           </p>
-          <Button onClick={() => router.push("/store/catalog")}>
+          <Button type="primary" onClick={() => router.push("/store/catalog")}>
             Перейти в каталог
           </Button>
         </div>
@@ -153,13 +151,11 @@ export default function FavoritesPage() {
 
               {/* Remove Button */}
               <Button
-                variant="ghost"
-                size="icon-sm"
+                type="text"
                 className="absolute top-2 left-2 bg-background/80 hover:bg-background z-10"
+                icon={<X className="h-4 w-4 text-destructive" />}
                 onClick={() => handleRemove(item.productId)}
-              >
-                <X className="h-4 w-4 text-destructive" />
-              </Button>
+              />
 
               <div className="p-4">
                 <Link href={`/store/catalog/${item.productSlug || item.productId}`}>

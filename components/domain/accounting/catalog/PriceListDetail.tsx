@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Table, type TableColumnsType, Modal, Input, Typography } from "antd";
+import { Table, type TableColumnsType, Modal, Input, Typography, Button } from "antd";
 import { ArrowLeft, Search, Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
@@ -192,9 +191,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
                 if (e.key === "Escape") cancelEdit();
               }}
             />
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => saveEdit(record)}>
-              <Save className="h-4 w-4" />
-            </Button>
+            <Button type="text" shape="circle" className="h-8 w-8" onClick={() => saveEdit(record)} icon={<Save className="h-4 w-4" />} />
           </div>
         ) : (
           <button className="hover:underline" onClick={() => startEdit(record)}>
@@ -218,13 +215,12 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
       width: 80,
       render: (_, record) => (
         <Button
-          variant="ghost"
-          size="icon"
+          type="text"
+          shape="circle"
           className="h-8 w-8 text-destructive"
           onClick={() => handleDeletePrice(record)}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+          icon={<Trash2 className="h-4 w-4" />}
+        />
       ),
     },
   ];
@@ -267,9 +263,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        <Button type="text" shape="circle" onClick={onBack} icon={<ArrowLeft className="h-4 w-4" />} />
         <div>
           <h3 className="text-lg font-semibold">{priceList.name}</h3>
           {priceList.description && (
@@ -288,8 +282,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
             className="pl-10"
           />
         </div>
-        <Button size="sm" onClick={() => setAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button size="small" type="primary" onClick={() => setAddDialogOpen(true)} icon={<Plus className="h-4 w-4" />}>
           Добавить товар
         </Button>
       </div>
@@ -299,8 +292,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
       ) : prices.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground border rounded-lg">
           <p className="mb-2">В прайс-листе нет товаров</p>
-          <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button variant="outlined" size="small" onClick={() => setAddDialogOpen(true)} icon={<Plus className="h-4 w-4" />}>
             Добавить первый товар
           </Button>
         </div>
@@ -344,8 +336,8 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
                   )}
                 </div>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  type="text"
+                  size="small"
                   onClick={() => setSelectedProduct(null)}
                 >
                   Изменить

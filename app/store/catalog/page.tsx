@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, Select, Drawer, Input } from "antd";
+import { Card, Select, Drawer, Input, Button } from "antd";
 import { ProductCard, type ProductCardData } from "@/components/domain/ecommerce/ProductCard";
 
 type Category = {
@@ -95,7 +94,7 @@ export default function CatalogPage() {
         <h3 className="font-semibold mb-3">Категории</h3>
         <div className="space-y-2">
           <Button
-            variant={selectedCategory === "" ? "default" : "ghost"}
+            type={selectedCategory === "" ? "primary" : "text"}
             className="w-full justify-start"
             onClick={() => handleCategoryChange("")}
           >
@@ -104,7 +103,7 @@ export default function CatalogPage() {
           {categories.map((cat) => (
             <Button
               key={cat.id}
-              variant={selectedCategory === cat.id ? "default" : "ghost"}
+              type={selectedCategory === cat.id ? "primary" : "text"}
               className="w-full justify-start"
               onClick={() => handleCategoryChange(cat.id)}
             >
@@ -115,8 +114,7 @@ export default function CatalogPage() {
       </div>
 
       {(selectedCategory || search) && (
-        <Button variant="outline" className="w-full" onClick={clearFilters}>
-          <X className="h-4 w-4 mr-2" />
+        <Button variant="outlined" className="w-full" onClick={clearFilters} icon={<X className="h-4 w-4" />}>
           Сбросить фильтры
         </Button>
       )}
@@ -142,9 +140,7 @@ export default function CatalogPage() {
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
-          <Button onClick={handleSearch}>
-            <Search className="h-4 w-4" />
-          </Button>
+          <Button type="primary" onClick={handleSearch} icon={<Search className="h-4 w-4" />} />
         </div>
 
         <Select
@@ -160,8 +156,7 @@ export default function CatalogPage() {
         />
 
         {/* Mobile filter toggle */}
-        <Button variant="outline" className="sm:hidden" onClick={() => setFiltersOpen(true)}>
-          <Filter className="h-4 w-4 mr-2" />
+        <Button variant="outlined" className="sm:hidden" onClick={() => setFiltersOpen(true)} icon={<Filter className="h-4 w-4" />}>
           Фильтры
         </Button>
         <Drawer
@@ -198,7 +193,7 @@ export default function CatalogPage() {
             <div className="text-center py-12">
               <p className="text-muted-foreground">Товары не найдены</p>
               {(selectedCategory || search) && (
-                <Button variant="outline" className="mt-4" onClick={clearFilters}>
+                <Button variant="outlined" className="mt-4" onClick={clearFilters}>
                   Сбросить фильтры
                 </Button>
               )}
@@ -215,7 +210,7 @@ export default function CatalogPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8">
                   <Button
-                    variant="outline"
+                    variant="outlined"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                   >
@@ -236,9 +231,10 @@ export default function CatalogPage() {
                       return (
                         <Button
                           key={pageNum}
-                          variant={page === pageNum ? "default" : "outline"}
+                          type={page === pageNum ? "primary" : "default"}
+                          variant={page === pageNum ? undefined : "outlined"}
                           onClick={() => setPage(pageNum)}
-                          size="icon"
+                          shape="circle"
                         >
                           {pageNum}
                         </Button>
@@ -246,7 +242,7 @@ export default function CatalogPage() {
                     })}
                   </div>
                   <Button
-                    variant="outline"
+                    variant="outlined"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
                   >

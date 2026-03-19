@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Tag, Table, type TableColumnsType, Modal, Select, Input, Typography } from "antd";
+import { Tag, Table, type TableColumnsType, Modal, Select, Input, Typography, Button } from "antd";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -185,23 +184,20 @@ export default function CategoriesPage() {
       render: (_, cat) => (
         <div className="flex gap-1">
           <Button
-            variant="ghost"
-            size="icon"
+            type="text"
+            icon={<Pencil className="h-3 w-3" />}
             className="h-7 w-7"
             onClick={() => openEdit(cat)}
             title="Назначить счёт"
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
+          />
           {!cat.isSystem && (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive"
+              type="text"
+              danger
+              icon={<Trash2 className="h-3 w-3" />}
+              className="h-7 w-7"
               onClick={() => confirmDelete(cat)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            />
           )}
         </div>
       ),
@@ -248,8 +244,7 @@ export default function CategoriesPage() {
         title="Статьи доходов и расходов"
         description="Привяжите каждую статью к счёту плана счетов для автоматических проводок"
         actions={
-          <Button onClick={() => { setForm({ name: "", type: "income", defaultAccountCode: "" }); setCreateOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button type="primary" onClick={() => { setForm({ name: "", type: "income", defaultAccountCode: "" }); setCreateOpen(true); }} icon={<Plus className="h-4 w-4" />}>
             Добавить статью
           </Button>
         }

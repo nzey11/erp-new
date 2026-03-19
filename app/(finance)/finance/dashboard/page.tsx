@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card } from "antd";
-import { Button } from "@/components/ui/button";
+import { Card, Button } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { TrendingUp, TrendingDown, Wallet, Users, Banknote, Calendar } from "lucide-react";
 import { toast } from "sonner";
@@ -106,8 +105,9 @@ export default function FinanceDashboardPage() {
         {PERIOD_OPTIONS.map((opt, i) => (
           <Button
             key={i}
-            variant={selectedPeriod === i ? "default" : "outline"}
-            size="sm"
+            type={selectedPeriod === i ? "primary" : "default"}
+            variant={selectedPeriod === i ? undefined : "outlined"}
+            size="small"
             onClick={() => setSelectedPeriod(i)}
           >
             {opt.label}

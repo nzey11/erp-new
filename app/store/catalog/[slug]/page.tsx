@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Star, ShoppingCart, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "antd";
-import { Tag } from "antd";
+import { Card, Tag, Button } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -157,7 +155,7 @@ export default function ProductDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Товар не найден</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push("/store/catalog")}>
+        <Button variant="outlined" className="mt-4" onClick={() => router.push("/store/catalog")}>
           Вернуться в каталог
         </Button>
       </div>
@@ -252,8 +250,8 @@ export default function ProductDetailPage() {
             <label className="text-sm font-medium mb-2 block">Количество</label>
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
-                size="icon"
+                variant="outlined"
+                shape="circle"
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               >
                 -
@@ -266,8 +264,8 @@ export default function ProductDetailPage() {
                 className="w-20 text-center border rounded-md h-9"
               />
               <Button
-                variant="outline"
-                size="icon"
+                variant="outlined"
+                shape="circle"
                 onClick={() => setQuantity((q) => q + 1)}
               >
                 +
@@ -281,12 +279,13 @@ export default function ProductDetailPage() {
           {/* Actions */}
           <div className="flex gap-3">
             <Button
-              size="lg"
+              size="large"
+              type="primary"
               className="flex-1"
               onClick={handleAddToCart}
               disabled={!product.inStock || addingToCart}
+              icon={<ShoppingCart className="h-5 w-5" />}
             >
-              <ShoppingCart className="h-5 w-5 mr-2" />
               {addingToCart ? "Добавление..." : "В корзину"}
             </Button>
             <BuyOneClick
@@ -299,8 +298,7 @@ export default function ProductDetailPage() {
           </div>
           <div className="flex gap-3">
             {customer && (
-              <Button size="lg" variant="outline" onClick={handleToggleFavorite}>
-                <Heart className="h-5 w-5 mr-2" />
+              <Button size="large" variant="outlined" onClick={handleToggleFavorite} icon={<Heart className="h-5 w-5" />}>
                 В избранное
               </Button>
             )}

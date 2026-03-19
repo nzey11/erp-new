@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Modal, Input, Typography } from "antd";
+import { Modal, Input, Typography, Button } from "antd";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
 
@@ -76,12 +75,12 @@ export function BuyOneClick({
   return (
     <>
       <Button
-        variant="outline"
-        size="lg"
+        variant="outlined"
+        size="large"
         className="flex-1"
         onClick={() => setOpen(true)}
+        icon={<Zap className="h-4 w-4" />}
       >
-        <Zap className="h-4 w-4 mr-2" />
         Купить в 1 клик
       </Button>
 
@@ -90,15 +89,15 @@ export function BuyOneClick({
         onCancel={handleClose}
         footer={
           orderNumber ? (
-            <Button onClick={handleClose} className="w-full">
+            <Button type="primary" onClick={handleClose} className="w-full">
               Закрыть
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="outlined" onClick={handleClose}>
                 Отмена
               </Button>
-              <Button onClick={handleSubmit} disabled={submitting}>
+              <Button type="primary" onClick={handleSubmit} disabled={submitting}>
                 {submitting ? "Оформление..." : "Оформить"}
               </Button>
             </>

@@ -4,8 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Tag, Input, Select, Divider, Typography } from "antd";
+import { Button, Tag, Input, Select, Divider, Typography } from "antd";
 const { TextArea } = Input;
 
 
@@ -242,29 +241,25 @@ function CounterpartyDetailPage() {
           <div className="flex items-center gap-2">
             {!isNew && !editing && (
               <>
-                <Button variant="outline" onClick={() => setEditing(true)}>
-                  <Pencil className="h-4 w-4 mr-2" />
+                <Button variant="outlined" onClick={() => setEditing(true)} icon={<Pencil className="h-4 w-4" />}>
                   Редактировать
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="outlined"
                   onClick={handleToggleActive}
                   className={counterparty?.isActive ? "text-red-600 hover:text-red-700" : "text-green-600 hover:text-green-700"}
+                  icon={counterparty?.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                 >
-                  {counterparty?.isActive
-                    ? <><UserX className="h-4 w-4 mr-2" />Деактивировать</>
-                    : <><UserCheck className="h-4 w-4 mr-2" />Активировать</>}
+                  {counterparty?.isActive ? "Деактивировать" : "Активировать"}
                 </Button>
               </>
             )}
             {editing && (
               <>
-                <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
-                  <X className="h-4 w-4 mr-2" />
+                <Button variant="outlined" onClick={handleCancelEdit} disabled={saving} icon={<X className="h-4 w-4" />}>
                   Отмена
                 </Button>
-                <Button onClick={handleSave} disabled={saving}>
-                  <Check className="h-4 w-4 mr-2" />
+                <Button type="primary" onClick={handleSave} disabled={saving} icon={<Check className="h-4 w-4" />}>
                   {saving ? "Сохранение..." : "Сохранить"}
                 </Button>
               </>

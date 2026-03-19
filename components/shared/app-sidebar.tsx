@@ -30,8 +30,7 @@ import {
   Merge,
   ClipboardCheck,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dropdown } from "antd";
+import { Dropdown, Button } from "antd";
 import type { MenuProps } from "antd";
 import { useState, useSyncExternalStore, useEffect } from "react";
 import { clearCsrfToken } from "@/lib/client/csrf";
@@ -169,19 +168,18 @@ export function AppSidebar() {
           </div>
         )}
         <Button
-          variant="ghost"
-          size="icon"
+          type="text"
+          shape="circle"
           className="hidden md:flex shrink-0"
           onClick={() => setCollapsed(!collapsed)}
-        >
-          <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
-        </Button>
+          icon={<ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />}
+        />
       </div>
 
       {/* Module Switcher */}
       <div className="p-2 border-b">
         {!mounted ? (
-          <Button variant="outline" className={cn("w-full justify-between font-normal", collapsed && "px-2")} disabled>
+          <Button variant="outlined" className={cn("w-full justify-between font-normal", collapsed && "px-2")} disabled>
             <div className="flex items-center gap-2">
               <currentModuleData.icon className="h-4 w-4 shrink-0" />
               {!collapsed && <span>{currentModuleData.name}</span>}
@@ -191,7 +189,7 @@ export function AppSidebar() {
         ) : (
           <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
             <Button
-              variant="outline"
+              variant="outlined"
               className={cn(
                 "w-full justify-between font-normal",
                 collapsed && "px-2"
@@ -311,13 +309,12 @@ export function AppSidebar() {
     <>
       {/* Mobile toggle */}
       <Button
-        variant="ghost"
-        size="icon"
+        type="text"
+        shape="circle"
         className="fixed top-3 left-3 z-50 md:hidden"
         onClick={() => setMobileOpen(!mobileOpen)}
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
+        icon={<Menu className="h-5 w-5" />}
+      />
 
       {/* Mobile overlay */}
       {mobileOpen && (

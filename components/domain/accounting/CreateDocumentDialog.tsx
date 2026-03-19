@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { csrfFetch } from "@/lib/client/csrf";
-import { Modal, Select, Typography } from "antd";
-import { Button } from "@/components/ui/button";
+import { Modal, Select, Typography, Button } from "antd";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import type { WarehouseRef, CounterpartyRef } from "@/lib/modules/accounting";
@@ -221,14 +220,13 @@ export function CreateDocumentDialog({
                 )}
                 {counterpartyRedirect && (
                   <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
+                    type="primary"
+                    variant="outlined"
+                    shape="circle"
                     title="Создать нового контрагента"
                     onClick={() => router.push(`/counterparties/new?redirect=${counterpartyRedirect}`)}
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
+                    icon={<UserPlus className="h-4 w-4" />}
+                  />
                 )}
               </div>
             </div>

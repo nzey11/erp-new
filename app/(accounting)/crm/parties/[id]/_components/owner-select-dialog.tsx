@@ -7,9 +7,7 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { Modal } from "antd";
-import { Select } from "antd";
-import { Button } from "@/components/ui/button";
+import { Modal, Select, Button } from "antd";
 import { AlertCircle } from "lucide-react";
 import type { AssignableOwner } from "@/lib/domain/crm";
 import { assignPartyOwner } from "../_lib/actions";

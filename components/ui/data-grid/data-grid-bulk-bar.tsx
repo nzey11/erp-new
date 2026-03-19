@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { X } from "lucide-react";
 
 interface DataGridBulkBarProps {
@@ -19,8 +19,7 @@ export function DataGridBulkBar({ selectedCount, onClear, children }: DataGridBu
       <div className="flex items-center gap-2">
         {children}
       </div>
-      <Button variant="ghost" size="sm" onClick={onClear} className="ml-auto">
-        <X className="h-4 w-4 mr-1" />
+      <Button type="text" size="small" onClick={onClear} className="ml-auto" icon={<X className="h-4 w-4" />}>
         Снять выделение
       </Button>
     </div>

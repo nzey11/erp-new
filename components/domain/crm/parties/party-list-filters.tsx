@@ -8,8 +8,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Select, Input } from "antd";
-import { Button } from "@/components/ui/button";
+import { Select, Input, Button } from "antd";
 
 interface PartyListFiltersProps {
   owners: Array<{ id: string; name: string }>;
@@ -51,7 +50,7 @@ export function PartyListFilters({ owners }: PartyListFiltersProps) {
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
-        <Button onClick={handleSearch}>Search</Button>
+        <Button type="primary" onClick={handleSearch}>Search</Button>
       </div>
 
       <Select
@@ -79,7 +78,7 @@ export function PartyListFilters({ owners }: PartyListFiltersProps) {
       />
 
       {(search || currentType || currentOwner) && (
-        <Button variant="outline" onClick={clearFilters}>
+        <Button variant="outlined" onClick={clearFilters}>
           Clear
         </Button>
       )}

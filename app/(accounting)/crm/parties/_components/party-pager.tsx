@@ -6,7 +6,7 @@
  */
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { PartyListParams } from "../_lib";
 import { buildPaginationQueryString } from "../_lib";
@@ -45,11 +45,11 @@ export function PartyPager({ total, page, pageSize, params }: PartyPagerProps) {
           tabIndex={hasPrev ? undefined : -1}
         >
           <Button
-            variant="outline"
-            size="sm"
+            variant="outlined"
+            size="small"
             disabled={!hasPrev}
+            icon={<ChevronLeft className="h-4 w-4" />}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
             Назад
           </Button>
         </Link>
@@ -64,12 +64,12 @@ export function PartyPager({ total, page, pageSize, params }: PartyPagerProps) {
           tabIndex={hasNext ? undefined : -1}
         >
           <Button
-            variant="outline"
-            size="sm"
+            variant="outlined"
+            size="small"
             disabled={!hasNext}
+            icon={<ChevronRight className="h-4 w-4" />}
           >
             Вперёд
-            <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </Link>
       </div>

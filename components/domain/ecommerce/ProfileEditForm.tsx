@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, Input, Typography } from "antd";
+import { Card, Input, Typography, Button } from "antd";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 
@@ -72,8 +71,7 @@ export function ProfileEditForm({ customer, onUpdate }: ProfileEditFormProps) {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Контактная информация</h2>
-          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-            <Pencil className="h-4 w-4 mr-2" />
+          <Button type="text" size="small" onClick={() => setEditing(true)} icon={<Pencil className="h-4 w-4" />}>
             Редактировать
           </Button>
         </div>
@@ -136,10 +134,10 @@ export function ProfileEditForm({ customer, onUpdate }: ProfileEditFormProps) {
           />
         </div>
         <div className="flex gap-3">
-          <Button onClick={handleSave} disabled={saving}>
+          <Button type="primary" onClick={handleSave} disabled={saving}>
             {saving ? "Сохранение..." : "Сохранить"}
           </Button>
-          <Button variant="outline" onClick={handleCancel} disabled={saving}>
+          <Button variant="outlined" onClick={handleCancel} disabled={saving}>
             Отмена
           </Button>
         </div>

@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, MapPin, Plus, Pencil, Trash2, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, Input, Modal, Typography } from "antd";
+import { Card, Input, Modal, Typography, Button } from "antd";
 import { toast } from "sonner";
 
 type Address = {
@@ -179,8 +178,7 @@ export default function AddressesPage() {
               {addresses.length === 0 ? "У вас пока нет сохранённых адресов" : `Сохранено адресов: ${addresses.length}`}
             </p>
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button type="primary" onClick={openCreateDialog} icon={<Plus className="h-4 w-4" />}>
             Добавить адрес
           </Button>
         </div>
@@ -194,8 +192,7 @@ export default function AddressesPage() {
           <p className="text-muted-foreground mb-6">
             Добавьте адрес доставки для быстрого оформления заказов
           </p>
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button type="primary" onClick={openCreateDialog} icon={<Plus className="h-4 w-4" />}>
             Добавить адрес
           </Button>
         </div>
@@ -227,19 +224,16 @@ export default function AddressesPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant="ghost"
-                    size="icon-sm"
+                    type="text"
+                    icon={<Pencil className="h-4 w-4" />}
                     onClick={() => openEditDialog(address)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  />
                   <Button
-                    variant="ghost"
-                    size="icon-sm"
+                    type="text"
+                    danger
+                    icon={<Trash2 className="h-4 w-4" />}
                     onClick={() => handleDelete(address.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  />
                 </div>
               </div>
             </Card>

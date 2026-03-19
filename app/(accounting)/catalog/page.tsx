@@ -2,9 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Modal, Typography } from "antd";
-import { Input, Select, Tabs } from "antd";
+import { Button, Modal, Typography, Input, Select, Tabs } from "antd";
 import Link from "next/link";
 
 import { Plus, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Trash2, Settings } from "lucide-react";
@@ -283,8 +281,7 @@ export default function CatalogPage() {
         onChange={setActiveTab}
         tabBarExtraContent={
           <Link href="/settings">
-            <Button variant="outline" size="sm" className="gap-1">
-              <Settings className="h-3.5 w-3.5" />
+            <Button variant="outlined" size="small" icon={<Settings className="h-3.5 w-3.5" />}>
               Настройки
             </Button>
           </Link>
@@ -300,9 +297,7 @@ export default function CatalogPage() {
                   <div className="border rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b">
                       <h3 className="text-sm font-medium">Категории</h3>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openCreateCategory} title="Добавить категорию">
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                      <Button type="text" size="small" className="h-7 w-7" onClick={openCreateCategory} title="Добавить категорию" icon={<Plus className="h-4 w-4" />} />
                     </div>
                     <div className="py-1 max-h-[calc(100vh-280px)] overflow-y-auto">
                       {/* All Products */}

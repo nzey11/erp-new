@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Tag, Select } from "antd";
+import { Button, Tag, Select } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { ImageIcon, Crown, ChevronRight, ChevronDown } from "lucide-react";
@@ -220,7 +219,7 @@ export default function VariantGroupsPage() {
           </p>
         </div>
         <Link href="/catalog">
-          <Button variant="outline">&#8592; Назад в каталог</Button>
+          <Button variant="outlined">&#8592; Назад в каталог</Button>
         </Link>
       </div>
 

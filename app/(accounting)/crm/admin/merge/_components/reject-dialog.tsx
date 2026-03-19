@@ -7,8 +7,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "antd";
-import { Button } from "@/components/ui/button";
+import { Modal, Button } from "antd";
 import { rejectMerge } from "../_lib/actions";
 
 interface RejectDialogProps {

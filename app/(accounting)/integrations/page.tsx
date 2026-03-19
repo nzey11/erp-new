@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Card, Switch, Tabs, Tag, Input, Typography } from "antd";
+import { Button, Card, Switch, Tabs, Tag, Input, Typography } from "antd";
 import { Bot, Save, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -220,8 +219,7 @@ export default function IntegrationsPage() {
                     </div>
 
                     <div className="flex justify-end pt-4 border-t">
-                      <Button onClick={saveTelegramSettings} disabled={saving}>
-                        <Save className="h-4 w-4 mr-2" />
+                      <Button type="primary" onClick={saveTelegramSettings} disabled={saving} icon={<Save className="h-4 w-4" />}>
                         {saving ? "Сохранение..." : "Сохранить настройки"}
                       </Button>
                     </div>

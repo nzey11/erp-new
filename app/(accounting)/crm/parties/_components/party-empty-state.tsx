@@ -6,7 +6,7 @@
  */
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "antd";
 import { Users } from "lucide-react";
 
 interface PartyEmptyStateProps {
@@ -27,9 +27,9 @@ export function PartyEmptyState({ hasFilters }: PartyEmptyStateProps) {
           <p className="text-muted-foreground mb-4">
             Попробуйте изменить параметры поиска
           </p>
-          <Button variant="outline" asChild>
-            <Link href="/crm/parties">Сбросить фильтры</Link>
-          </Button>
+          <Link href="/crm/parties">
+            <Button variant="outlined">Сбросить фильтры</Button>
+          </Link>
         </>
       ) : (
         <p className="text-muted-foreground">
