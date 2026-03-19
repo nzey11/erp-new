@@ -234,10 +234,8 @@ describe("buildPostingLines — ОСНО (with VAT 20%)", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("resolvePostingAccounts", () => {
-  let taxCtx: Awaited<ReturnType<typeof seedAccounting>>;
-
   beforeEach(async () => {
-    taxCtx = await seedAccounting("usn_income");
+    await seedAccounting("usn_income");
   });
 
   it("resolves account codes to DB IDs", async () => {

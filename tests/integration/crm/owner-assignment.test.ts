@@ -8,7 +8,7 @@
  * - Query layer (listAssignableCrmOwners)
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { cleanDatabase, getTestDb } from "../../helpers/test-db";
 import { createUser, createParty } from "../../helpers/factories";
 import { assignOwner, getOwner, getOwners } from "@/lib/domain/party/services/party-owner";

@@ -23,7 +23,6 @@ import {
 import { generateProfitLoss } from "@/lib/modules/finance/reports/profit-loss";
 import { generateCashFlow } from "@/lib/modules/finance/reports/cash-flow";
 import { generateBalanceSheet } from "@/lib/modules/finance/reports/balance-sheet";
-import { AccountType, AccountCategory } from "@/lib/generated/prisma/client";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,15 +55,15 @@ async function createEntry(params: {
   });
 }
 
-/** Create extra account not in MINIMAL_ACCOUNTS or REPORT_ACCOUNTS (edge-case tests only) */
-async function mkAccount(code: string, name: string) {
-  const db = getTestDb();
-  return db.account.upsert({
-    where: { code },
-    update: {},
-    create: { code, name, type: AccountType.active, category: AccountCategory.asset, isActive: true },
-  });
-}
+// mkAccount — not currently used in active test cases
+// async function mkAccount(code: string, name: string) {
+//   const db = getTestDb();
+//   return db.account.upsert({
+//     where: { code },
+//     update: {},
+//     create: { code, name, type: AccountType.active, category: AccountCategory.asset, isActive: true },
+//   });
+// }
 
 // ─── balances.ts ──────────────────────────────────────────────────────────────
 

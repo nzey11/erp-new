@@ -20,15 +20,12 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { db } from "@/lib/shared/db";
 import {
   cancelDocumentTransactional,
-  confirmDocumentTransactional,
   DocumentCancelError,
 } from "@/lib/modules/accounting/services/document-confirm.service";
-import { autoPostDocument } from "@/lib/modules/accounting/finance/journal";
 import { onDocumentConfirmedPayment } from "@/lib/modules/accounting/handlers/payment-handler";
 import { onDocumentConfirmedJournal } from "@/lib/modules/accounting/handlers/journal-handler";
 import {
   clearOutboxHandlers,
-  registerOutboxHandler,
 } from "@/lib/events/outbox";
 import {
   resetOutboxHandlerRegistration,

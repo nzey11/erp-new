@@ -14,7 +14,7 @@ import {
 } from "@/lib/domain/party/services/party-merge";
 import { resolveParty } from "@/lib/domain/party/services/party-resolver";
 import { assignOwner } from "@/lib/domain/party/services/party-owner";
-import { createCustomer, createCounterparty, createUser } from "@/tests/helpers/factories";
+import { createCustomer, createUser } from "@/tests/helpers/factories";
 
 describe("Party Merge Service", () => {
   let survivorId: string;

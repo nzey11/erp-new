@@ -44,7 +44,6 @@ import {
   clearOutboxHandlers,
   markOutboxProcessed,
   markOutboxFailed,
-  registerOutboxHandler,
   type EventHandler,
 } from "@/lib/events/outbox";
 import {
@@ -797,7 +796,6 @@ describe("Outbox — Processing is idempotent (no duplicate entries)", () => {
 describe("Outbox — registerOutboxHandlers wires correct handlers", () => {
   it("registerOutboxHandlers is idempotent (calling twice does not double-register)", () => {
     // Re-running registration should be a no-op due to the module-level guard
-    const before = new Map(localRegistry);
     registerOutboxHandlers(); // second call — should be no-op (global registry guard)
     // The globalRegistry from outbox.ts won't double-add because of the
     // registered=true guard in register-outbox-handlers.ts

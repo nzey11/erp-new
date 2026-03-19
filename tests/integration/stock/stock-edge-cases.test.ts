@@ -110,32 +110,6 @@ async function createDraftReceipt(opts: {
   });
 }
 
-/** Seed a StockRecord with given quantity and averageCost */
-async function seedStock(
-  warehouseId: string,
-  productId: string,
-  quantity: number,
-  averageCost: number
-) {
-  return db.stockRecord.upsert({
-    where: { warehouseId_productId: { warehouseId, productId } },
-    create: {
-      warehouseId,
-      productId,
-      quantity,
-      averageCost,
-      totalCostValue: quantity * averageCost,
-      version: 0,
-    },
-    update: {
-      quantity,
-      averageCost,
-      totalCostValue: quantity * averageCost,
-      version: 0,
-    },
-  });
-}
-
 /** Seed StockMovements to match the StockRecord (so reconcileStockRecord stays consistent) */
 async function seedStockViaDocument(opts: {
   warehouseId: string;

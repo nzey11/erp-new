@@ -30,7 +30,6 @@ import {
   assertStockRecord,
   assertStockMatchesMovements,
   assertMovementCount,
-  assertReversingMovementsNegate,
   assertIdempotentOperation,
 } from "../../helpers/stock-assertions";
 

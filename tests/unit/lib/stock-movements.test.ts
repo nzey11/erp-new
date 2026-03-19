@@ -16,7 +16,6 @@ import {
 } from "../../helpers/factories";
 import { cleanDatabase } from "../../helpers/test-db";
 import {
-  assertStockRecord,
   assertStockMatchesMovements,
   assertMovementCount,
   assertMovementsType,

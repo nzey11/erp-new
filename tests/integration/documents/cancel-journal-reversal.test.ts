@@ -15,7 +15,6 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { db } from "@/lib/shared/db";
 import {
   cancelDocumentTransactional,
-  DocumentCancelError,
 } from "@/lib/modules/accounting/services/document-confirm.service";
 import { autoPostDocument } from "@/lib/modules/accounting/finance/journal";
 import {

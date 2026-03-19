@@ -7,7 +7,6 @@ import { db } from "@/lib/shared/db";
 import {
   resolveParty,
   resolveFinalPartyId,
-  resolveFinalParty,
   getPartyByCustomer,
   getPartyByCounterparty,
 } from "@/lib/domain/party/services/party-resolver";

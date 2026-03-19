@@ -15,7 +15,6 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "@/lib/shared/db";
 import { cleanDatabase } from "../helpers/test-db";
 import {
-  createUser,
   createTenant,
   createProduct,
   createWarehouse,
