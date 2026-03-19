@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Tag, Select } from "antd";
-import { DataGrid } from "@/components/ui/data-grid";
-import type { DataGridColumn } from "@/components/ui/data-grid";
+import { Button, Input, Table, Tag, Select, type TableColumnsType } from "antd";
+import { ERPToolbar } from "@/components/erp/erp-toolbar";
 import { ImageIcon, Crown, ChevronRight, ChevronDown } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import Link from "next/link";
@@ -38,11 +37,6 @@ interface VariantGroup {
   variants: VariantInfo[];
 }
 
-// Flattened row type for DataGrid
-type FlatRow =
-  | { type: "group"; group: VariantGroup; expanded: boolean }
-  | { type: "variant"; variant: VariantInfo; parentId: string };
-
 const ALL_VALUE = "__all__";
 
 export default function VariantGroupsPage() {
@@ -73,139 +67,145 @@ export default function VariantGroupsPage() {
     });
   };
 
-  // Flatten groups + expanded variants into a single array
-  const flatRows: FlatRow[] = [];
-  for (const group of grid.data) {
-    const expanded = expandedGroups.has(group.id);
-    flatRows.push({ type: "group", group, expanded });
-    if (expanded) {
-      for (const variant of group.variants) {
-        flatRows.push({ type: "variant", variant, parentId: group.id });
-      }
-    }
-  }
-
-  const columns: DataGridColumn<FlatRow>[] = [
+  const groupColumns: TableColumnsType<VariantGroup> = [
     {
-      id: "expand",
-      size: 40,
-      enableResizing: false,
-      meta: { canHide: false },
-      cell: ({ row }) => {
-        if (row.original.type !== "group") return null;
-        return row.original.expanded ? (
+      key: "expand",
+      width: 40,
+      render: (_, group) =>
+        expandedGroups.has(group.id) ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         ) : (
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        );
-      },
+        ),
     },
     {
-      id: "image",
-      header: "Фото",
-      size: 50,
-      enableResizing: false,
-      cell: ({ row }) => {
-        const r = row.original;
-        const url = r.type === "group" ? r.group.imageUrl : r.variant.imageUrl;
-        const sz = r.type === "group" ? "h-8 w-8" : "h-6 w-6";
-        const iconSz = r.type === "group" ? "h-4 w-4" : "h-3 w-3";
-        return url ? (
-         // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className={`${sz} rounded object-cover`} />
+      key: "image",
+      title: "Фото",
+      width: 50,
+      render: (_, group) =>
+        group.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={group.imageUrl} alt="" className="h-8 w-8 rounded object-cover" />
         ) : (
-          <div className={`${sz} rounded bg-muted flex items-center justify-center`}>
-            <ImageIcon className={`${iconSz} text-muted-foreground`} />
+          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
           </div>
-        );
-      },
+        ),
     },
     {
-      id: "name",
-      header: "Мастер-товар",
-      size: 280,
-      meta: { canHide: false },
-      cell: ({ row }) => {
-        const r = row.original;
-        if (r.type === "group") {
-          return (
-            <div className="flex items-center gap-2 font-medium">
-              <Crown className="h-4 w-4 text-blue-500 shrink-0" />
-              {r.group.name}
-            </div>
-          );
-        }
-        return (
-          <span className="pl-6 text-sm">
-            <span className="text-muted-foreground">&nbsp;└</span> {r.variant.name}
-          </span>
-        );
-      },
+      key: "name",
+      title: "Мастер-товар",
+      width: 280,
+      render: (_, group) => (
+        <div className="flex items-center gap-2 font-medium">
+          <Crown className="h-4 w-4 text-blue-500 shrink-0" />
+          {group.name}
+        </div>
+      ),
     },
     {
-      id: "sku",
-      header: "Артикул",
-      size: 120,
-      cell: ({ row }) => {
-        const r = row.original;
-        const sku = r.type === "group" ? r.group.sku : r.variant.sku;
-        return <span className="text-muted-foreground">{sku || "—"}</span>;
-      },
+      key: "sku",
+      title: "Артикул",
+      width: 120,
+      render: (_, group) => (
+        <span className="text-muted-foreground">{group.sku || "—"}</span>
+      ),
     },
     {
-      id: "category",
-      header: "Категория",
-      size: 150,
-      cell: ({ row }) =>
-        row.original.type === "group" ? (row.original.group.category?.name || "—") : "",
+      key: "category",
+      title: "Категория",
+      width: 150,
+      render: (_, group) => group.category?.name || "—",
     },
     {
-      id: "variants",
-      header: "Вариантов",
-      size: 130,
-      meta: { align: "center" as const },
-      cell: ({ row }) => {
-        const r = row.original;
-        if (r.type !== "group") {
-          return r.variant.publishedToStore ? (
-            <Tag color="green" className="text-xs">На сайте</Tag>
-          ) : null;
-        }
-        return (
-          <Tag color="default">
-            {r.group.totalVariants}
-            {r.group.publishedVariants > 0 && (
-              <span className="text-green-600 ml-1">({r.group.publishedVariants} на сайте)</span>
-            )}
-          </Tag>
-        );
-      },
+      key: "variants",
+      title: "Вариантов",
+      width: 130,
+      align: "center",
+      render: (_, group) => (
+        <Tag color="default">
+          {group.totalVariants}
+          {group.publishedVariants > 0 && (
+            <span className="text-green-600 ml-1">({group.publishedVariants} на сайте)</span>
+          )}
+        </Tag>
+      ),
     },
     {
-      id: "priceRange",
-      header: "Диапазон цен",
-      size: 200,
-      meta: { align: "right" as const },
-      cell: ({ row }) => {
-        const r = row.original;
-        if (r.type === "group") {
-          return r.group.priceRange
-            ? `${formatRub(r.group.priceRange.min)} — ${formatRub(r.group.priceRange.max)}`
-            : "—";
-        }
-        return r.variant.salePrice != null ? formatRub(r.variant.salePrice) : "—";
-      },
+      key: "priceRange",
+      title: "Диапазон цен",
+      width: 200,
+      align: "right",
+      render: (_, group) =>
+        group.priceRange
+          ? `${formatRub(group.priceRange.min)} — ${formatRub(group.priceRange.max)}`
+          : "—",
     },
     {
-      id: "stock",
-      header: "Остаток",
-      size: 100,
-      meta: { align: "right" as const },
-      cell: ({ row }) => {
-        const r = row.original;
-        const stock = r.type === "group" ? r.group.totalStock : r.variant.stock;
-        return stock > 0 ? String(stock) : "—";
-      },
+      key: "stock",
+      title: "Остаток",
+      width: 100,
+      align: "right",
+      render: (_, group) => (group.totalStock > 0 ? String(group.totalStock) : "—"),
+    },
+  ];
+
+  const variantColumns: TableColumnsType<VariantInfo> = [
+    {
+      key: "image",
+      width: 50,
+      render: (_, variant) =>
+        variant.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={variant.imageUrl} alt="" className="h-6 w-6 rounded object-cover" />
+        ) : (
+          <div className="h-6 w-6 rounded bg-muted flex items-center justify-center">
+            <ImageIcon className="h-3 w-3 text-muted-foreground" />
+          </div>
+        ),
+    },
+    {
+      key: "name",
+      title: "Вариант",
+      width: 280,
+      render: (_, variant) => (
+        <span className="pl-6 text-sm">
+          <span className="text-muted-foreground">&nbsp;└</span> {variant.name}
+        </span>
+      ),
+    },
+    {
+      key: "sku",
+      title: "Артикул",
+      width: 120,
+      render: (_, variant) => (
+        <span className="text-muted-foreground">{variant.sku || "—"}</span>
+      ),
+    },
+    {
+      key: "published",
+      title: "Вариантов",
+      width: 130,
+      align: "center",
+      render: (_, variant) =>
+        variant.publishedToStore ? (
+          <Tag color="green" className="text-xs">На сайте</Tag>
+        ) : null,
+    },
+    {
+      key: "priceRange",
+      title: "Диапазон цен",
+      width: 200,
+      align: "right",
+      render: (_, variant) =>
+        variant.salePrice != null ? formatRub(variant.salePrice) : "—",
+    },
+    {
+      key: "stock",
+      title: "Остаток",
+      width: 100,
+      align: "right",
+      render: (_, variant) => (variant.stock > 0 ? String(variant.stock) : "—"),
     },
   ];
 
@@ -232,26 +232,9 @@ export default function VariantGroupsPage() {
         </span>
       </div>
 
-      <DataGrid
-        data={flatRows}
-        columns={columns}
-        loading={grid.loading}
-        emptyMessage="Группы вариантов не найдены"
-        persistenceKey="variant-groups"
-        onRowClick={(row) => {
-          if (row.type === "group") toggleExpanded(row.group.id);
-        }}
-        getRowClassName={(row) =>
-          `cursor-pointer ${row.type === "variant" ? "bg-muted/30" : ""}`
-        }
-        toolbar={{
-          ...grid.gridProps.toolbar,
-          search: {
-            value: grid.search,
-            onChange: grid.setSearch,
-            placeholder: "Поиск по названию, артикулу...",
-          },
-          filters: (
+      <ERPToolbar
+        extraActions={
+          <>
             <Select
               value={grid.filters.categoryId || ALL_VALUE}
               onChange={(v: string) => grid.setFilter("categoryId", v === ALL_VALUE ? "" : v)}
@@ -262,9 +245,49 @@ export default function VariantGroupsPage() {
                 ...categories.map((c) => ({ value: c.id, label: c.name })),
               ]}
             />
-          ),
+            <Input.Search
+              placeholder="Поиск по названию, артикулу..."
+              value={grid.search}
+              onChange={(e) => grid.setSearch(e.target.value)}
+              style={{ width: 250 }}
+            />
+          </>
+        }
+      />
+
+      <Table<VariantGroup>
+        dataSource={grid.data}
+        columns={groupColumns}
+        loading={grid.loading}
+        rowKey="id"
+        pagination={{
+          current: grid.page,
+          pageSize: grid.pageSize,
+          total: grid.total,
+          showSizeChanger: true,
+          onChange: (page, pageSize) => {
+            grid.setPage(page);
+            grid.setPageSize(pageSize ?? 20);
+          },
         }}
-        pagination={grid.gridProps.pagination}
+        expandable={{
+          expandedRowKeys: Array.from(expandedGroups),
+          onExpand: (_, group) => toggleExpanded(group.id),
+          expandedRowRender: (group) => (
+            <Table<VariantInfo>
+              dataSource={group.variants}
+              columns={variantColumns}
+              rowKey="id"
+              pagination={false}
+              size="small"
+            />
+          ),
+          showExpandColumn: false,
+        }}
+        onRow={(group) => ({
+          onClick: () => toggleExpanded(group.id),
+          style: { cursor: "pointer" },
+        })}
       />
     </div>
   );

@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Tag, Button, Card } from "antd";
-import { DataGrid } from "@/components/ui/data-grid";
-import type { DataGridColumn } from "@/components/ui/data-grid";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import { formatRub } from "@/lib/shared/utils";
 
@@ -64,54 +64,57 @@ export default function AccountsPage() {
       .catch(() => {});
   }, []);
 
-  const columns: DataGridColumn<Account>[] = [
+  const columns: ERPColumn<Account>[] = [
     {
-      accessorKey: "code",
-      header: "Счет",
-      size: 100,
-      meta: { canHide: false },
-      cell: ({ row }) => (
-        <span className="font-mono font-semibold">{row.original.code}</span>
+      key: "code",
+      dataIndex: "code",
+      title: "Счет",
+      width: 100,
+      render: (_, row) => (
+        <span className="font-mono font-semibold">{row.code}</span>
       ),
     },
     {
-      accessorKey: "name",
-      header: "Наименование",
-      size: 340,
-      meta: { canHide: false },
-      cell: ({ row }) => (
-        <span className={row.original.parent ? "pl-4 text-sm" : "font-medium"}>
-          {row.original.name}
+      key: "name",
+      dataIndex: "name",
+      title: "Наименование",
+      width: 340,
+      render: (_, row) => (
+        <span className={row.parent ? "pl-4 text-sm" : "font-medium"}>
+          {row.name}
         </span>
       ),
     },
     {
-      accessorKey: "type",
-      header: "Вид",
-      size: 160,
-      cell: ({ row }) => (
+      key: "type",
+      dataIndex: "type",
+      title: "Вид",
+      width: 160,
+      render: (_, row) => (
         <span className="text-muted-foreground text-sm">
-          {TYPE_LABELS[row.original.type] ?? row.original.type}
+          {TYPE_LABELS[row.type] ?? row.type}
         </span>
       ),
     },
     {
-      accessorKey: "category",
-      header: "Раздел",
-      size: 120,
-      cell: ({ row }) => (
-        <Tag color={CATEGORY_COLORS[row.original.category] ?? ""}>
-          {CATEGORY_LABELS[row.original.category] ?? row.original.category}
+      key: "category",
+      dataIndex: "category",
+      title: "Раздел",
+      width: 120,
+      render: (_, row) => (
+        <Tag color={CATEGORY_COLORS[row.category] ?? ""}>
+          {CATEGORY_LABELS[row.category] ?? row.category}
         </Tag>
       ),
     },
     {
-      id: "balance",
-      header: "Остаток",
-      size: 140,
-      meta: { align: "right" as const },
-      cell: ({ row }) => {
-        const bal = balances[row.original.id];
+      key: "balance",
+      dataIndex: "id",
+      title: "Остаток",
+      width: 140,
+      align: "right",
+      render: (_, row) => {
+        const bal = balances[row.id];
         if (bal === undefined || bal === 0) return <span className="text-muted-foreground text-sm">—</span>;
         return (
           <span className={`font-mono text-sm font-semibold ${bal > 0 ? "text-green-600" : "text-red-600"}`}>
@@ -121,12 +124,13 @@ export default function AccountsPage() {
       },
     },
     {
-      accessorKey: "isSystem",
-      header: "Тип",
-      size: 100,
-      cell: ({ row }) => (
-        <Tag color={row.original.isSystem ? "default" : ""}>
-          {row.original.isSystem ? "Системный" : "Пользов."}
+      key: "isSystem",
+      dataIndex: "isSystem",
+      title: "Тип",
+      width: 100,
+      render: (_, row) => (
+        <Tag color={row.isSystem ? "default" : ""}>
+          {row.isSystem ? "Системный" : "Пользов."}
         </Tag>
       ),
     },
@@ -153,12 +157,11 @@ export default function AccountsPage() {
           </div>
         }
       >
-        <DataGrid
-          {...grid.gridProps}
+        <ERPTable
+          data={grid.data}
           columns={columns}
-          emptyMessage="Нет счетов"
-          persistenceKey="chart-of-accounts"
-          stickyHeader={false}
+          loading={grid.loading}
+          emptyText="Нет счетов"
           onRowClick={(row) => router.push(`/finance/journal?accountCode=${row.code}`)}
         />
       </Card>

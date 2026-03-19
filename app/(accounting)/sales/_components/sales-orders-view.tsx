@@ -1,17 +1,11 @@
 "use client";
 
-/**
- * SalesOrdersView — extracted from legacy sales/page.tsx.
- * Preserved as-is for Step 4b migration (EcomStatus, paymentStatus, dual mutations).
- *
- * Step 4b will replace this with an ERPTable-based implementation.
- */
-
 import { useState, useEffect } from "react";
 import { csrfFetch } from "@/lib/client/csrf";
-import { Button, Select } from "antd";
-import { DataGrid } from "@/components/ui/data-grid";
-import type { DataGridColumn } from "@/components/ui/data-grid";
+import { Button, Input, Select } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
+import { ERPToolbar } from "@/components/erp/erp-toolbar";
 import { ShoppingCart, User, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatRub, formatDate } from "@/lib/shared/utils";
@@ -115,7 +109,7 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
     setMounted(true);
   }, []);
 
-  const allRows = grid.gridProps.data ?? [];
+  const allRows = grid.data ?? [];
   const rows =
     sourceFilter === "all"
       ? allRows
@@ -157,30 +151,31 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
     }
   };
 
-  const columns: DataGridColumn<SalesOrderDoc>[] = [
+  const columns: ERPColumn<SalesOrderDoc>[] = [
     {
-      accessorKey: "number",
-      header: "Номер",
-      size: 130,
-      enableSorting: true,
-      meta: { canHide: false },
-      cell: ({ row }) => (
-        <span className="font-mono font-medium">{row.original.number}</span>
+      key: "number",
+      title: "Номер",
+      dataIndex: "number",
+      width: 130,
+      sortable: true,
+      render: (_value, row) => (
+        <span className="font-mono font-medium">{row.number}</span>
       ),
     },
     {
-      accessorKey: "date",
-      header: "Дата",
-      size: 110,
-      enableSorting: true,
-      cell: ({ row }) => formatDate(row.original.date),
+      key: "date",
+      title: "Дата",
+      dataIndex: "date",
+      width: 110,
+      sortable: true,
+      render: (_value, row) => formatDate(row.date),
     },
     {
-      id: "source",
-      header: "Источник",
-      size: 140,
-      cell: ({ row }) => {
-        const isEcom = row.original.customerId != null;
+      key: "source",
+      title: "Источник",
+      width: 140,
+      render: (_value, row) => {
+        const isEcom = row.customerId != null;
         return isEcom ? (
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-0.5">
             <ShoppingCart className="h-3 w-3" />
@@ -195,19 +190,20 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
       },
     },
     {
-      id: "customer",
-      header: "Покупатель",
-      size: 180,
-      cell: ({ row }) => (
-        <span className="text-sm">{getCustomerDisplay(row.original)}</span>
+      key: "customer",
+      title: "Покупатель",
+      width: 180,
+      render: (_value, row) => (
+        <span className="text-sm">{getCustomerDisplay(row)}</span>
       ),
     },
     {
-      id: "paymentStatus",
-      header: "Оплата",
-      size: 150,
-      cell: ({ row }) => {
-        const ps = row.original.paymentStatus;
+      key: "paymentStatus",
+      title: "Оплата",
+      dataIndex: "paymentStatus",
+      width: 150,
+      render: (_value, row) => {
+        const ps = row.paymentStatus;
         if (!ps)
           return (
             <span className="text-muted-foreground text-xs">—</span>
@@ -225,30 +221,33 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
       },
     },
     {
-      id: "delivery",
-      header: "Доставка",
-      size: 120,
-      cell: ({ row }) => {
-        const dt = row.original.deliveryType;
+      key: "delivery",
+      title: "Доставка",
+      dataIndex: "deliveryType",
+      width: 120,
+      render: (_value, row) => {
+        const dt = row.deliveryType;
         if (!dt)
           return <span className="text-muted-foreground text-xs">—</span>;
         return <span className="text-sm">{DELIVERY_LABEL[dt]}</span>;
       },
     },
     {
-      accessorKey: "totalAmount",
-      header: "Сумма",
-      size: 130,
-      enableSorting: true,
-      meta: { align: "right" as const },
-      cell: ({ row }) => formatRub(row.original.totalAmount),
+      key: "totalAmount",
+      title: "Сумма",
+      dataIndex: "totalAmount",
+      width: 130,
+      align: "right",
+      sortable: true,
+      render: (_value, row) => formatRub(row.totalAmount),
     },
     {
-      accessorKey: "statusName",
-      header: "Статус",
-      size: 150,
-      cell: ({ row }) => {
-        const s = row.original.status as EcomStatus;
+      key: "statusName",
+      title: "Статус",
+      dataIndex: "statusName",
+      width: 150,
+      render: (_value, row) => {
+        const s = row.status as EcomStatus;
         return (
           <span
             className={cn(
@@ -256,18 +255,16 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
               ECOM_STATUS_COLOR[s] ?? "bg-gray-100 text-gray-700 border-gray-300"
             )}
           >
-            {row.original.statusName}
+            {row.statusName}
           </span>
         );
       },
     },
     {
-      id: "actions",
-      size: 130,
-      enableResizing: false,
-      meta: { canHide: false },
-      cell: ({ row }) => {
-        const doc = row.original;
+      key: "actions",
+      title: "",
+      width: 130,
+      render: (_value, doc) => {
         const isEcom = doc.customerId != null;
         return (
           <div
@@ -322,32 +319,54 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
   ];
 
   return (
-    <DataGrid
-      {...grid.gridProps}
-      data={rows}
-      columns={columns}
-      emptyMessage="Заказы покупателей не найдены"
-      persistenceKey="sales-orders-ecom"
-      toolbar={{
-        ...grid.gridProps.toolbar,
-        search: {
-          value: grid.search,
-          onChange: grid.setSearch,
-          placeholder: "Поиск по номеру...",
-        },
-        filters: mounted ? (
-          <Select
-            value={sourceFilter}
-            onChange={(v) => setSourceFilter(v as typeof sourceFilter)}
-            style={{ width: 176 }}
-            options={[
-              { value: "all", label: "Все заказы" },
-              { value: "ecom", label: "🛒 Интернет-магазин" },
-              { value: "manual", label: "👤 Менеджер" },
-            ]}
-          />
-        ) : null,
-      }}
-    />
+    <>
+      <ERPToolbar
+        extraActions={
+          mounted ? (
+            <>
+              <Input.Search
+                placeholder="Поиск по номеру..."
+                value={grid.search}
+                onChange={(e) => grid.setSearch(e.target.value)}
+                style={{ width: 200 }}
+                allowClear
+              />
+              <Select
+                value={sourceFilter}
+                onChange={(v) => setSourceFilter(v as typeof sourceFilter)}
+                style={{ width: 176 }}
+                options={[
+                  { value: "all", label: "Все заказы" },
+                  { value: "ecom", label: "🛒 Интернет-магазин" },
+                  { value: "manual", label: "👤 Менеджер" },
+                ]}
+              />
+            </>
+          ) : null
+        }
+      />
+      <ERPTable<SalesOrderDoc>
+        data={rows}
+        columns={columns}
+        loading={grid.loading}
+        rowKey="id"
+        pagination={{
+          current: grid.page,
+          pageSize: grid.pageSize,
+          total: grid.total,
+        }}
+        onChange={({ page, pageSize, sortField, sortOrder }) => {
+          if (page !== undefined) grid.setPage(page);
+          if (pageSize !== undefined) grid.setPageSize(pageSize);
+          if (sortField) {
+            grid.setSort(
+              sortField,
+              sortOrder === "descend" ? "desc" : "asc"
+            );
+          }
+        }}
+        emptyText="Заказы покупателей не найдены"
+      />
+    </>
   );
 }
