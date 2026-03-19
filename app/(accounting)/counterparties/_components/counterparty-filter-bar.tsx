@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Space, Select, Input, Button } from "antd";
 import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
@@ -40,8 +40,11 @@ export function CounterpartyFilterBar({
 
   // antd Select generates internal <input id> via counter
   // which diverges between SSR and client — suppress until mounted
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   // Debounced search state
   const [debouncedSearch, setDebouncedSearch] = useState(search);
