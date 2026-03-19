@@ -5,13 +5,7 @@ import { Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
 
@@ -93,33 +87,39 @@ export function BuyOneClick({
         Купить в 1 клик
       </Button>
 
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          {orderNumber ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>Заказ оформлен!</DialogTitle>
-              </DialogHeader>
-              <div className="py-6 text-center space-y-3">
-                <div className="text-4xl mb-4">&#10003;</div>
-                <p className="text-lg font-semibold">
-                  Заказ #{orderNumber}
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  Мы свяжемся с вами для подтверждения заказа
-                </p>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleClose} className="w-full">
-                  Закрыть
-                </Button>
-              </DialogFooter>
-            </>
+      <Modal
+        open={open}
+        onCancel={handleClose}
+        footer={
+          orderNumber ? (
+            <Button onClick={handleClose} className="w-full">
+              Закрыть
+            </Button>
           ) : (
             <>
-              <DialogHeader>
-                <DialogTitle>Быстрый заказ</DialogTitle>
-              </DialogHeader>
+              <Button variant="outline" onClick={handleClose}>
+                Отмена
+              </Button>
+              <Button onClick={handleSubmit} disabled={submitting}>
+                {submitting ? "Оформление..." : "Оформить"}
+              </Button>
+            </>
+          )
+        }
+        title={orderNumber ? "Заказ оформлен!" : "Быстрый заказ"}
+      >
+        {orderNumber ? (
+          <div className="py-6 text-center space-y-3">
+            <div className="text-4xl mb-4">&#10003;</div>
+            <p className="text-lg font-semibold">
+              Заказ #{orderNumber}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              Мы свяжемся с вами для подтверждения заказа
+            </p>
+          </div>
+        ) : (
+          <>
               <div className="space-y-4 py-4">
                 <div className="bg-muted/50 rounded-lg p-3">
                   <p className="font-medium text-sm line-clamp-2">{productName}</p>
@@ -148,18 +148,9 @@ export function BuyOneClick({
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={handleClose}>
-                  Отмена
-                </Button>
-                <Button onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? "Оформление..." : "Оформить"}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+              </>
+            )}
+          </Modal>
     </>
   );
 }

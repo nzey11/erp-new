@@ -11,9 +11,7 @@ import { Card } from "antd";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -1056,92 +1054,89 @@ export default function DocumentDetailPage() {
       )}
 
       {/* Add Item Dialog */}
-      <Dialog open={addItemOpen} onOpenChange={setAddItemOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Добавить позицию</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Товар *</Label>
-              <Input
-                placeholder="Поиск товара..."
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                className="mb-1"
-              />
-              <Select value={itemProductId} onValueChange={handleProductSelect}>
-                <SelectTrigger><SelectValue placeholder="Выберите из списка" /></SelectTrigger>
-                <SelectContent>
-                  {products.length === 0 && (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      {productSearch ? "Ничего не найдено" : "Начните вводить название..."}
-                    </div>
-                  )}
-                  {products.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} {p.sku ? `(${p.sku})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {doc?.type === "inventory_count" ? (
-              /* Inventory count: show По учёту + Факт fields */
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>По учёту</Label>
-                  <Input
-                    type="number"
-                    readOnly
-                    value={itemExpectedQty}
-                    className="bg-muted cursor-default"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Фактическое кол-во</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.001"
-                    value={itemQuantity}
-                    onChange={(e) => setItemQuantity(e.target.value)}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Количество</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={itemQuantity}
-                    onChange={(e) => setItemQuantity(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Цена {products.find(p => p.id === itemProductId)?.purchasePrice != null && doc && ["incoming_shipment","purchase_order","supplier_return","stock_receipt"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(закупочная)</span> : products.find(p => p.id === itemProductId)?.salePrice != null && doc && ["outgoing_shipment","sales_order","customer_return"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(продажная)</span> : null}</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={itemPrice}
-                    onChange={(e) => setItemPrice(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
+      <Modal
+        open={addItemOpen}
+        onCancel={() => setAddItemOpen(false)}
+        onOk={handleAddItem}
+        okButtonProps={{ disabled: saving, loading: saving }}
+        okText={saving ? "Добавление..." : "Добавить"}
+        cancelText="Отмена"
+        title="Добавить позицию"
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Товар *</Label>
+            <Input
+              placeholder="Поиск товара..."
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              className="mb-1"
+            />
+            <Select value={itemProductId} onValueChange={handleProductSelect}>
+              <SelectTrigger><SelectValue placeholder="Выберите из списка" /></SelectTrigger>
+              <SelectContent>
+                {products.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    {productSearch ? "Ничего не найдено" : "Начните вводить название..."}
+                  </div>
+                )}
+                {products.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} {p.sku ? `(${p.sku})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddItemOpen(false)}>Отмена</Button>
-            <Button onClick={handleAddItem} disabled={saving}>
-              {saving ? "Добавление..." : "Добавить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {doc?.type === "inventory_count" ? (
+            /* Inventory count: show По учёту + Факт fields */
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>По учёту</Label>
+                <Input
+                  type="number"
+                  readOnly
+                  value={itemExpectedQty}
+                  className="bg-muted cursor-default"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Фактическое кол-во</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={itemQuantity}
+                  onChange={(e) => setItemQuantity(e.target.value)}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Количество</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={itemQuantity}
+                  onChange={(e) => setItemQuantity(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Цена {products.find(p => p.id === itemProductId)?.purchasePrice != null && doc && ["incoming_shipment","purchase_order","supplier_return","stock_receipt"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(закупочная)</span> : products.find(p => p.id === itemProductId)?.salePrice != null && doc && ["outgoing_shipment","sales_order","customer_return"].includes(doc.type) ? <span className="text-xs text-muted-foreground ml-1">(продажная)</span> : null}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={itemPrice}
+                  onChange={(e) => setItemPrice(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

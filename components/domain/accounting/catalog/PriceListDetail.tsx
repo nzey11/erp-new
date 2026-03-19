@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Search, Plus, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -320,12 +318,16 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
         </div>
       )}
 
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Добавить товар в прайс-лист</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+      <Modal
+        open={addDialogOpen}
+        onCancel={() => setAddDialogOpen(false)}
+        onOk={handleAddPrice}
+        okButtonProps={{ disabled: saving || !selectedProduct || !newPrice, loading: saving }}
+        okText={saving ? "Добавление..." : "Добавить"}
+        cancelText="Отмена"
+        title="Добавить товар в прайс-лист"
+      >
+        <div className="grid gap-4 py-4">
             {selectedProduct ? (
               <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/30">
                 {selectedProduct.imageUrl ? (
@@ -419,16 +421,7 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleAddPrice} disabled={saving || !selectedProduct || !newPrice}>
-              {saving ? "Добавление..." : "Добавить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </Modal>
     </div>
   );
 }

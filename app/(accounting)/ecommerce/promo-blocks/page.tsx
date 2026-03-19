@@ -7,9 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tag } from "antd";
 import { Card } from "antd";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -285,82 +283,75 @@ export default function PromoBlocksPage() {
       </Card>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingBlock ? "Редактировать промо-блок" : "Новый промо-блок"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Заголовок *</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Летняя распродажа"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="subtitle">Подзаголовок</Label>
-              <Input
-                id="subtitle"
-                value={subtitle}
-                onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="Скидки до 50%"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="imageUrl">URL изображения *</Label>
-              <Input
-                id="imageUrl"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="linkUrl">Ссылка</Label>
-              <Input
-                id="linkUrl"
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="https://example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="order">Порядок сортировки</Label>
-              <Input
-                id="order"
-                type="number"
-                value={order}
-                onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <Label htmlFor="isActive" className="cursor-pointer">
-                Активен
-              </Label>
-            </div>
+      <Modal
+        open={dialogOpen}
+        onCancel={() => setDialogOpen(false)}
+        onOk={handleSave}
+        okButtonProps={{ disabled: saving, loading: saving }}
+        okText={saving ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingBlock ? "Редактировать промо-блок" : "Новый промо-блок"}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="title">Заголовок *</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Летняя распродажа"
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Сохранение..." : "Сохранить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid gap-2">
+            <Label htmlFor="subtitle">Подзаголовок</Label>
+            <Input
+              id="subtitle"
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
+              placeholder="Скидки до 50%"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="imageUrl">URL изображения *</Label>
+            <Input
+              id="imageUrl"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="linkUrl">Ссылка</Label>
+            <Input
+              id="linkUrl"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="order">Порядок сортировки</Label>
+            <Input
+              id="order"
+              type="number"
+              value={order}
+              onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="isActive" className="cursor-pointer">
+              Активен
+            </Label>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

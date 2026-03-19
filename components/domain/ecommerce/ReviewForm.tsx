@@ -7,13 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Input as AntdInput } from "antd";
 const { TextArea } = AntdInput;
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
 
@@ -90,43 +84,54 @@ export function ReviewForm({
     }, 200);
   };
 
+  const getFooter = () => {
+    if (submitted) {
+      return (
+        <Button onClick={handleClose} className="w-full">
+          Закрыть
+        </Button>
+      );
+    }
+    return (
+      <>
+        <Button variant="outline" onClick={handleClose}>
+          Отмена
+        </Button>
+        <Button onClick={handleSubmit} disabled={submitting || rating === 0}>
+          {submitting ? "Отправка..." : "Отправить"}
+        </Button>
+      </>
+    );
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        {submitted ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>Спасибо за отзыв!</DialogTitle>
-            </DialogHeader>
-            <div className="py-6 text-center space-y-3">
-              <div className="flex justify-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={cn(
-                      "h-6 w-6",
-                      i < rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-muted-foreground/30"
-                    )}
-                  />
-                ))}
-              </div>
-              <p className="text-muted-foreground text-sm">
-                Ваш отзыв будет опубликован после проверки модератором
-              </p>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleClose} className="w-full">
-                Закрыть
-              </Button>
-            </DialogFooter>
-          </>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle>Оставить отзыв</DialogTitle>
-            </DialogHeader>
+    <Modal
+      open={open}
+      onCancel={handleClose}
+      footer={getFooter()}
+      title={submitted ? "Спасибо за отзыв!" : "Оставить отзыв"}
+    >
+      {submitted ? (
+        <div className="py-6 text-center space-y-3">
+          <div className="flex justify-center gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={cn(
+                  "h-6 w-6",
+                  i < rating
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-muted-foreground/30"
+                )}
+              />
+            ))}
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Ваш отзыв будет опубликован после проверки модератором
+          </p>
+        </div>
+      ) : (
+        <>
             <div className="space-y-4 py-4">
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="font-medium text-sm line-clamp-2">{productName}</p>
@@ -184,17 +189,8 @@ export function ReviewForm({
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleClose}>
-                Отмена
-              </Button>
-              <Button onClick={handleSubmit} disabled={submitting || rating === 0}>
-                {submitting ? "Отправка..." : "Отправить"}
-              </Button>
-            </DialogFooter>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
+            </>
+          )}
+        </Modal>
+      );
 }

@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { csrfFetch } from "@/lib/client/csrf";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -157,13 +155,16 @@ export function CreateDocumentDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-4 py-4">
+    <Modal
+      open={open}
+      onCancel={() => handleClose(false)}
+      onOk={handleCreate}
+      okButtonProps={{ disabled: creating, loading: creating }}
+      okText={creating ? "Создание..." : "Создать"}
+      cancelText="Отмена"
+      title={title}
+    >
+      <div className="grid gap-4 py-4">
           {/* Document type */}
           <div className="grid gap-2">
             <Label>Тип документа *</Label>
@@ -244,15 +245,7 @@ export function CreateDocumentDialog({
               </div>
             </div>
           )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleClose(false)}>Отмена</Button>
-          <Button onClick={handleCreate} disabled={creating}>
-            {creating ? "Создание..." : "Создать"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </Modal>
   );
 }

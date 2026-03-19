@@ -9,7 +9,7 @@ import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Loader2, FileText, ExternalLink } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
@@ -216,49 +216,50 @@ export default function BalancesPage() {
       )}
 
       {/* Documents Drill-down Dialog */}
-      <Dialog open={docsOpen} onOpenChange={setDocsOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Документы: {docsCounterparty?.name}</DialogTitle>
-          </DialogHeader>
-          {docsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : docs.length === 0 ? (
-            <div className="py-6 text-center text-muted-foreground text-sm">Подтверждённых документов нет</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Номер</TableHead>
-                  <TableHead>Тип</TableHead>
-                  <TableHead>Дата</TableHead>
-                  <TableHead className="text-right">Сумма</TableHead>
-                  <TableHead className="w-10"></TableHead>
+      <Modal
+        open={docsOpen}
+        onCancel={() => setDocsOpen(false)}
+        footer={null}
+        title={`Документы: ${docsCounterparty?.name}`}
+        width={700}
+      >
+        {docsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : docs.length === 0 ? (
+          <div className="py-6 text-center text-muted-foreground text-sm">Подтверждённых документов нет</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Номер</TableHead>
+                <TableHead>Тип</TableHead>
+                <TableHead>Дата</TableHead>
+                <TableHead className="text-right">Сумма</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {docs.map((doc) => (
+                <TableRow key={doc.id}>
+                  <TableCell className="font-mono text-sm">{doc.number}</TableCell>
+                  <TableCell className="text-sm">{doc.typeName}</TableCell>
+                  <TableCell className="text-sm">{new Date(doc.date).toLocaleDateString("ru-RU")}</TableCell>
+                  <TableCell className="text-right font-semibold">{formatRub(doc.totalAmount)}</TableCell>
+                  <TableCell>
+                    <Link href={`/documents/${doc.id}`}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {docs.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell className="font-mono text-sm">{doc.number}</TableCell>
-                    <TableCell className="text-sm">{doc.typeName}</TableCell>
-                    <TableCell className="text-sm">{new Date(doc.date).toLocaleDateString("ru-RU")}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatRub(doc.totalAmount)}</TableCell>
-                    <TableCell>
-                      <Link href={`/documents/${doc.id}`}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </DialogContent>
-      </Dialog>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -10,9 +10,7 @@ import type { DataGridColumn } from "@/components/ui/data-grid";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -231,99 +229,92 @@ export default function WarehousesPage() {
       />
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Редактировать склад" : "Новый склад"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Название *</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Адрес</Label>
-              <Input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Ответственный</Label>
-              <Input value={formResponsible} onChange={(e) => setFormResponsible(e.target.value)} />
-            </div>
+      <Modal
+        open={dialogOpen}
+        onCancel={() => setDialogOpen(false)}
+        onOk={handleSave}
+        okButtonProps={{ disabled: saving, loading: saving }}
+        okText={saving ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editing ? "Редактировать склад" : "Новый склад"}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Название *</Label>
+            <Input value={formName} onChange={(e) => setFormName(e.target.value)} />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Отмена</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Сохранение..." : "Сохранить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid gap-2">
+            <Label>Адрес</Label>
+            <Input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} />
+          </div>
+          <div className="grid gap-2">
+            <Label>Ответственный</Label>
+            <Input value={formResponsible} onChange={(e) => setFormResponsible(e.target.value)} />
+          </div>
+        </div>
+      </Modal>
 
       {/* Delete Confirm Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { if (!deleting) setDeleteDialogOpen(open); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Деактивировать склад?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Склад <span className="font-medium text-foreground">«{deletingWarehouse?.name}»</span> будет
-            деактивирован. Документы и остатки сохранятся.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
-              Отмена
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? "Деактивация..." : "Деактивировать"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Modal
+        open={deleteDialogOpen}
+        onCancel={() => { if (!deleting) setDeleteDialogOpen(false); }}
+        onOk={handleDelete}
+        okButtonProps={{ disabled: deleting, loading: deleting, danger: true }}
+        okText={deleting ? "Деактивация..." : "Деактивировать"}
+        cancelText="Отмена"
+        title="Деактивировать склад?"
+      >
+        <p className="text-sm text-muted-foreground py-2">
+          Склад <span className="font-medium text-foreground">«{deletingWarehouse?.name}»</span> будет
+          деактивирован. Документы и остатки сохранятся.
+        </p>
+      </Modal>
 
-      {/* Stock Dialog */}
-      <Dialog open={stockDialogOpen} onOpenChange={setStockDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Остатки: {selectedWarehouse?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-96 overflow-y-auto">
-            <Table>
-              <TableHeader>
+      {/* Stock Dialog - no footer, just display */}
+      <Modal
+        open={stockDialogOpen}
+        onCancel={() => setStockDialogOpen(false)}
+        footer={null}
+        title={`Остатки: ${selectedWarehouse?.name}`}
+        width={700}
+      >
+        <div className="max-h-96 overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Товар</TableHead>
+                <TableHead>Артикул</TableHead>
+                <TableHead className="text-right">Количество</TableHead>
+                <TableHead className="text-right">Средн. себест.</TableHead>
+                <TableHead className="text-right">Стоимость</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {stockRecords.length === 0 ? (
                 <TableRow>
-                  <TableHead>Товар</TableHead>
-                  <TableHead>Артикул</TableHead>
-                  <TableHead className="text-right">Количество</TableHead>
-                  <TableHead className="text-right">Средн. себест.</TableHead>
-                  <TableHead className="text-right">Стоимость</TableHead>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
+                    Нет остатков
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stockRecords.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
-                      Нет остатков
+              ) : (
+                stockRecords.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.product.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.product.sku || "—"}</TableCell>
+                    <TableCell className="text-right">{formatNumber(r.quantity)}</TableCell>
+                    <TableCell className="text-right">
+                      {r.averageCost > 0 ? formatRub(r.averageCost) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {r.averageCost > 0 ? formatRub(r.quantity * r.averageCost) : "—"}
                     </TableCell>
                   </TableRow>
-                ) : (
-                  stockRecords.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.product.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{r.product.sku || "—"}</TableCell>
-                      <TableCell className="text-right">{formatNumber(r.quantity)}</TableCell>
-                      <TableCell className="text-right">
-                        {r.averageCost > 0 ? formatRub(r.averageCost) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {r.averageCost > 0 ? formatRub(r.quantity * r.averageCost) : "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </DialogContent>
-      </Dialog>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Modal>
     </div>
   );
 }

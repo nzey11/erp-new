@@ -4,9 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -400,39 +398,36 @@ export default function CatalogPage() {
       />
 
       {/* Category Dialog */}
-      <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingCategory ? "Редактировать категорию" : "Новая категория"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Название *</Label>
-              <Input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Родительская категория</Label>
-              <Select value={catForm.parentId} onValueChange={(v) => setCatForm({ ...catForm, parentId: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="Без родительской" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Без родительской</SelectItem>
-                  {flatCategories
-                    .filter((c) => c.id !== editingCategory?.id)
-                    .map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <Modal
+        open={catDialogOpen}
+        onCancel={() => setCatDialogOpen(false)}
+        onOk={saveCategory}
+        okButtonProps={{ disabled: savingCategory, loading: savingCategory }}
+        okText={savingCategory ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingCategory ? "Редактировать категорию" : "Новая категория"}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Название *</Label>
+            <Input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCatDialogOpen(false)}>Отмена</Button>
-            <Button onClick={saveCategory} disabled={savingCategory}>
-              {savingCategory ? "Сохранение..." : "Сохранить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid gap-2">
+            <Label>Родительская категория</Label>
+            <Select value={catForm.parentId} onValueChange={(v) => setCatForm({ ...catForm, parentId: v === "none" ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder="Без родительской" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Без родительской</SelectItem>
+                {flatCategories
+                  .filter((c) => c.id !== editingCategory?.id)
+                  .map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

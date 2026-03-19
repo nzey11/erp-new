@@ -8,9 +8,7 @@ import { Tag } from "antd";
 import { Card } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -269,43 +267,42 @@ export default function SettingsPage() {
       </Card>
 
       {/* User Dialog */}
-      <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingUser ? "Редактировать пользователя" : "Новый пользователь"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Логин *</Label>
-              <Input value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>{editingUser ? "Новый пароль (оставьте пустым)" : "Пароль *"}</Label>
-              <Input type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Email</Label>
-              <Input value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Роль</Label>
-              <Select value={userForm.role} onValueChange={(v) => setUserForm({ ...userForm, role: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Администратор</SelectItem>
-                  <SelectItem value="manager">Менеджер</SelectItem>
-                  <SelectItem value="accountant">Бухгалтер</SelectItem>
-                  <SelectItem value="viewer">Наблюдатель</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <Modal
+        open={userDialogOpen}
+        onCancel={() => setUserDialogOpen(false)}
+        onOk={saveUser}
+        okButtonProps={{ disabled: savingUser, loading: savingUser }}
+        okText={savingUser ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingUser ? "Редактировать пользователя" : "Новый пользователь"}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Логин *</Label>
+            <Input value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUserDialogOpen(false)}>Отмена</Button>
-            <Button onClick={saveUser} disabled={savingUser}>{savingUser ? "Сохранение..." : "Сохранить"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid gap-2">
+            <Label>{editingUser ? "Новый пароль (оставьте пустым)" : "Пароль *"}</Label>
+            <Input type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
+          </div>
+          <div className="grid gap-2">
+            <Label>Email</Label>
+            <Input value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} />
+          </div>
+          <div className="grid gap-2">
+            <Label>Роль</Label>
+            <Select value={userForm.role} onValueChange={(v) => setUserForm({ ...userForm, role: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Администратор</SelectItem>
+                <SelectItem value="manager">Менеджер</SelectItem>
+                <SelectItem value="accountant">Бухгалтер</SelectItem>
+                <SelectItem value="viewer">Наблюдатель</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

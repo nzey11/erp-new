@@ -3,9 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -198,14 +196,16 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingPriceList ? "Редактировать прайс-лист" : "Новый прайс-лист"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+      <Modal
+        open={dialogOpen}
+        onCancel={() => setDialogOpen(false)}
+        onOk={handleSave}
+        okButtonProps={{ disabled: saving, loading: saving }}
+        okText={saving ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingPriceList ? "Редактировать прайс-лист" : "Новый прайс-лист"}
+      >
+        <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>Название *</Label>
               <Input
@@ -224,16 +224,7 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Сохранение..." : "Сохранить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </Modal>
     </div>
   );
 }

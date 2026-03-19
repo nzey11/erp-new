@@ -8,9 +8,7 @@ import { Card } from "antd";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -371,89 +369,86 @@ export default function ReferencesPage() {
       />
 
       {/* Unit Dialog */}
-      <Dialog open={unitDialogOpen} onOpenChange={setUnitDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingUnit ? "Редактировать единицу" : "Новая единица измерения"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Название *</Label>
-              <Input value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })} placeholder="Килограмм" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Сокращение *</Label>
-              <Input value={unitForm.shortName} onChange={(e) => setUnitForm({ ...unitForm, shortName: e.target.value })} placeholder="кг" />
-            </div>
+      <Modal
+        open={unitDialogOpen}
+        onCancel={() => setUnitDialogOpen(false)}
+        onOk={saveUnit}
+        okButtonProps={{ disabled: savingUnit, loading: savingUnit }}
+        okText={savingUnit ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingUnit ? "Редактировать единицу" : "Новая единица измерения"}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Название *</Label>
+            <Input value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })} placeholder="Килограмм" />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUnitDialogOpen(false)}>Отмена</Button>
-            <Button onClick={saveUnit} disabled={savingUnit}>{savingUnit ? "Сохранение..." : "Сохранить"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid gap-2">
+            <Label>Сокращение *</Label>
+            <Input value={unitForm.shortName} onChange={(e) => setUnitForm({ ...unitForm, shortName: e.target.value })} placeholder="кг" />
+          </div>
+        </div>
+      </Modal>
 
       {/* Warehouse Dialog removed — warehouses managed at /warehouses */}
 
       {/* Price List Dialog */}
-      <Dialog open={plDialogOpen} onOpenChange={setPlDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingPriceList ? "Редактировать прайс-лист" : "Новый прайс-лист"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Название *</Label>
-              <Input value={plForm.name} onChange={(e) => setPlForm({ ...plForm, name: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Описание</Label>
-              <Input value={plForm.description} onChange={(e) => setPlForm({ ...plForm, description: e.target.value })} />
-            </div>
+      <Modal
+        open={plDialogOpen}
+        onCancel={() => setPlDialogOpen(false)}
+        onOk={savePriceList}
+        okButtonProps={{ disabled: savingPriceList, loading: savingPriceList }}
+        okText={savingPriceList ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingPriceList ? "Редактировать прайс-лист" : "Новый прайс-лист"}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Название *</Label>
+            <Input value={plForm.name} onChange={(e) => setPlForm({ ...plForm, name: e.target.value })} />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPlDialogOpen(false)}>Отмена</Button>
-            <Button onClick={savePriceList} disabled={savingPriceList}>{savingPriceList ? "Сохранение..." : "Сохранить"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid gap-2">
+            <Label>Описание</Label>
+            <Input value={plForm.description} onChange={(e) => setPlForm({ ...plForm, description: e.target.value })} />
+          </div>
+        </div>
+      </Modal>
 
       {/* Custom Field Dialog */}
-      <Dialog open={cfDialogOpen} onOpenChange={setCfDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingCf ? "Редактировать характеристику" : "Новая характеристика"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Название *</Label>
-              <Input value={cfForm.name} onChange={(e) => setCfForm({ ...cfForm, name: e.target.value })} placeholder="Материал, Цвет, Вес..." />
-            </div>
-            <div className="grid gap-2">
-              <Label>Тип поля</Label>
-              <Select value={cfForm.fieldType} onValueChange={(v) => setCfForm({ ...cfForm, fieldType: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">Текст</SelectItem>
-                  <SelectItem value="number">Число</SelectItem>
-                  <SelectItem value="select">Список (выбор из вариантов)</SelectItem>
-                  <SelectItem value="boolean">Да / Нет</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {cfForm.fieldType === "select" && (
-              <div className="grid gap-2">
-                <Label>Варианты (через запятую)</Label>
-                <Input value={cfForm.options} onChange={(e) => setCfForm({ ...cfForm, options: e.target.value })} placeholder="Красный, Синий, Зелёный" />
-              </div>
-            )}
+      <Modal
+        open={cfDialogOpen}
+        onCancel={() => setCfDialogOpen(false)}
+        onOk={saveCf}
+        okButtonProps={{ disabled: savingCf, loading: savingCf }}
+        okText={savingCf ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingCf ? "Редактировать характеристику" : "Новая характеристика"}
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Название *</Label>
+            <Input value={cfForm.name} onChange={(e) => setCfForm({ ...cfForm, name: e.target.value })} placeholder="Материал, Цвет, Вес..." />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCfDialogOpen(false)}>Отмена</Button>
-            <Button onClick={saveCf} disabled={savingCf}>{savingCf ? "Сохранение..." : "Сохранить"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid gap-2">
+            <Label>Тип поля</Label>
+            <Select value={cfForm.fieldType} onValueChange={(v) => setCfForm({ ...cfForm, fieldType: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Текст</SelectItem>
+                <SelectItem value="number">Число</SelectItem>
+                <SelectItem value="select">Список (выбор из вариантов)</SelectItem>
+                <SelectItem value="boolean">Да / Нет</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {cfForm.fieldType === "select" && (
+            <div className="grid gap-2">
+              <Label>Варианты (через запятую)</Label>
+              <Input value={cfForm.options} onChange={(e) => setCfForm({ ...cfForm, options: e.target.value })} placeholder="Красный, Синий, Зелёный" />
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

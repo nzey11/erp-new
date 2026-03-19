@@ -7,14 +7,7 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import {
   Select,
   SelectContent,
@@ -77,53 +70,39 @@ export function OwnerSelectDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Назначение владельца</DialogTitle>
-          <DialogDescription>
-            Выберите пользователя для назначения владельцем партии
-          </DialogDescription>
-        </DialogHeader>
+    <Modal
+      open={open}
+      onCancel={() => handleOpenChange(false)}
+      onOk={handleSubmit}
+      okButtonProps={{ disabled: isPending || !selectedUserId, loading: isPending }}
+      okText={isPending ? "Назначение..." : "Назначить"}
+      cancelText="Отмена"
+      title="Назначение владельца"
+    >
+      <div className="py-4">
+        <p className="text-muted-foreground mb-4">
+          Выберите пользователя для назначения владельцем партии
+        </p>
+        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите пользователя" />
+          </SelectTrigger>
+          <SelectContent>
+            {owners.map((owner) => (
+              <SelectItem key={owner.id} value={owner.id}>
+                {owner.username}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-        <div className="py-4">
-          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите пользователя" />
-            </SelectTrigger>
-            <SelectContent>
-              {owners.map((owner) => (
-                <SelectItem key={owner.id} value={owner.id}>
-                  {owner.username}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error}</span>
         </div>
-
-        {error && (
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={isPending}
-          >
-            Отмена
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isPending || !selectedUserId}
-          >
-            {isPending ? "Назначение..." : "Назначить"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+    </Modal>
   );
 }

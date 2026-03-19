@@ -2,9 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -240,21 +238,57 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
     }
   };
 
+  const getModalTitle = () => {
+    let stepLabel = "";
+    if (step === "mapping") stepLabel = " — Сопоставление колонок";
+    else if (step === "preview") stepLabel = " — Предпросмотр";
+    else if (step === "result") stepLabel = " — Результат";
+    return `Импорт товаров из CSV${stepLabel}`;
+  };
+
+  const getFooter = () => {
+    if (step === "upload") {
+      return (
+        <Button variant="outline" onClick={handleClose}>
+          Отмена
+        </Button>
+      );
+    }
+    if (step === "mapping") {
+      return (
+        <>
+          <Button variant="outline" onClick={() => setStep("upload")}>
+            Назад
+          </Button>
+          <Button onClick={() => setStep("preview")} disabled={!hasNameMapping}>
+            Далее
+          </Button>
+        </>
+      );
+    }
+    if (step === "preview") {
+      return (
+        <>
+          <Button variant="outline" onClick={() => setStep("mapping")}>
+            Назад
+          </Button>
+          <Button onClick={handleImport} disabled={importing}>
+            {importing ? "Импорт..." : `Импортировать ${csvRows.length} товаров`}
+          </Button>
+        </>
+      );
+    }
+    return <Button onClick={handleClose}>Закрыть</Button>;
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            Импорт товаров из CSV
-            {step !== "upload" && (
-              <span className="text-muted-foreground font-normal ml-2">
-                — {step === "mapping" && "Сопоставление колонок"}
-                {step === "preview" && "Предпросмотр"}
-                {step === "result" && "Результат"}
-              </span>
-            )}
-          </DialogTitle>
-        </DialogHeader>
+    <Modal
+      open={open}
+      onCancel={handleClose}
+      footer={getFooter()}
+      title={getModalTitle()}
+      width={800}
+    >
 
         {/* Step 1: Upload */}
         {step === "upload" && (
@@ -434,40 +468,6 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
           </div>
         )}
 
-        <DialogFooter>
-          {step === "upload" && (
-            <Button variant="outline" onClick={handleClose}>
-              Отмена
-            </Button>
-          )}
-
-          {step === "mapping" && (
-            <>
-              <Button variant="outline" onClick={() => setStep("upload")}>
-                Назад
-              </Button>
-              <Button onClick={() => setStep("preview")} disabled={!hasNameMapping}>
-                Далее
-              </Button>
-            </>
-          )}
-
-          {step === "preview" && (
-            <>
-              <Button variant="outline" onClick={() => setStep("mapping")}>
-                Назад
-              </Button>
-              <Button onClick={handleImport} disabled={importing}>
-                {importing ? "Импорт..." : `Импортировать ${csvRows.length} товаров`}
-              </Button>
-            </>
-          )}
-
-          {step === "result" && (
-            <Button onClick={handleClose}>Закрыть</Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </Modal>
   );
 }

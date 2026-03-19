@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "antd";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import { ChevronDown, ChevronRight, RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
@@ -381,33 +381,30 @@ function JournalPageContent() {
       </Card>
 
       {/* Reverse Confirmation Dialog */}
-      <Dialog open={reverseOpen} onOpenChange={(o) => { setReverseOpen(o); if (!o) setReverseTarget(null); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Сторнировать проводку?
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground py-2">
-            Проводка{" "}
-            <span className="font-mono font-semibold">{reverseTarget?.number}</span> от{" "}
-            {reverseTarget ? formatDate(reverseTarget.date) : ""} на сумму{" "}
-            <span className="font-semibold">
-              {reverseTarget ? formatRub(reverseTarget.lines.reduce((s, l) => s + l.debit, 0)) : ""}
-            </span>{" "}
-            будет сторнирована — создана обратная запись. Исходная проводка останется.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setReverseOpen(false); setReverseTarget(null); }}>
-              Отмена
-            </Button>
-            <Button variant="destructive" onClick={handleReverse} disabled={reversing}>
-              {reversing ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Создание...</> : "Сторнировать"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Modal
+        open={reverseOpen}
+        onCancel={() => { setReverseOpen(false); setReverseTarget(null); }}
+        onOk={handleReverse}
+        okButtonProps={{ danger: true, disabled: reversing, loading: reversing }}
+        okText={reversing ? "Создание..." : "Сторнировать"}
+        cancelText="Отмена"
+        title={
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            Сторнировать проводку?
+          </span>
+        }
+      >
+        <p className="text-sm text-muted-foreground py-2">
+          Проводка{" "}
+          <span className="font-mono font-semibold">{reverseTarget?.number}</span> от{" "}
+          {reverseTarget ? formatDate(reverseTarget.date) : ""} на сумму{" "}
+          <span className="font-semibold">
+            {reverseTarget ? formatRub(reverseTarget.lines.reduce((s, l) => s + l.debit, 0)) : ""}
+          </span>{" "}
+          будет сторнирована — создана обратная запись. Исходная проводка останется.
+        </p>
+      </Modal>
     </div>
   );
 }

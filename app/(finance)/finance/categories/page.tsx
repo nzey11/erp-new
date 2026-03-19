@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tag } from "antd";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -262,102 +262,101 @@ export default function CategoriesPage() {
       )}
 
       {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Новая статья</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>Тип *</Label>
-              <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v, defaultAccountCode: "" }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income">Доход</SelectItem>
-                  <SelectItem value="expense">Расход</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <Modal
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        onOk={handleCreate}
+        okButtonProps={{ disabled: saving, loading: saving }}
+        okText={saving ? "Сохранение..." : "Добавить"}
+        cancelText="Отмена"
+        title="Новая статья"
+      >
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Тип *</Label>
+            <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v, defaultAccountCode: "" }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="income">Доход</SelectItem>
+                <SelectItem value="expense">Расход</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Название *</Label>
+            <Input
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Например: Маркетинг"
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>Счёт по умолчанию</Label>
+            <p className="text-xs text-muted-foreground">
+              При создании платежа с этой статьёй будет автоматически сформирована проводка на указанный счёт.
+            </p>
+            <AccountSelect value={form.defaultAccountCode} onChange={(v) => setForm((f) => ({ ...f, defaultAccountCode: v }))} type={form.type} />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Dialog */}
+      <Modal
+        open={editOpen}
+        onCancel={() => setEditOpen(false)}
+        onOk={handleEdit}
+        okButtonProps={{ disabled: saving, loading: saving }}
+        okText={saving ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editTarget?.isSystem ? "Настроить счёт" : "Редактировать статью"}
+      >
+        <div className="grid gap-4 py-4">
+          {!editTarget?.isSystem && (
             <div className="grid gap-2">
               <Label>Название *</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Например: Маркетинг"
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                onKeyDown={(e) => e.key === "Enter" && handleEdit()}
               />
             </div>
-            <div className="grid gap-2">
-              <Label>Счёт по умолчанию</Label>
-              <p className="text-xs text-muted-foreground">
-                При создании платежа с этой статьёй будет автоматически сформирована проводка на указанный счёт.
-              </p>
-              <AccountSelect value={form.defaultAccountCode} onChange={(v) => setForm((f) => ({ ...f, defaultAccountCode: v }))} type={form.type} />
-            </div>
+          )}
+          <div className="grid gap-2">
+            <Label>Счёт по умолчанию</Label>
+            <p className="text-xs text-muted-foreground">
+              {editTarget?.type === "income"
+                ? "Типичные счета: 90.1 (выручка), 91.1 (прочие доходы)"
+                : "Типичные счета: 44 (расходы на продажи), 26 (общехозяйственные), 91.2 (прочие расходы)"}
+            </p>
+            <AccountSelect
+              value={form.defaultAccountCode}
+              onChange={(v) => setForm((f) => ({ ...f, defaultAccountCode: v }))}
+              type={editTarget?.type ?? "expense"}
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Отмена</Button>
-            <Button onClick={handleCreate} disabled={saving}>{saving ? "Сохранение..." : "Добавить"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editTarget?.isSystem ? "Настроить счёт" : "Редактировать статью"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {!editTarget?.isSystem && (
-              <div className="grid gap-2">
-                <Label>Название *</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  onKeyDown={(e) => e.key === "Enter" && handleEdit()}
-                />
-              </div>
-            )}
-            <div className="grid gap-2">
-              <Label>Счёт по умолчанию</Label>
-              <p className="text-xs text-muted-foreground">
-                {editTarget?.type === "income"
-                  ? "Типичные счета: 90.1 (выручка), 91.1 (прочие доходы)"
-                  : "Типичные счета: 44 (расходы на продажи), 26 (общехозяйственные), 91.2 (прочие расходы)"}
-              </p>
-              <AccountSelect
-                value={form.defaultAccountCode}
-                onChange={(v) => setForm((f) => ({ ...f, defaultAccountCode: v }))}
-                type={editTarget?.type ?? "expense"}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Отмена</Button>
-            <Button onClick={handleEdit} disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </Modal>
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setDeleteTarget(null); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Удалить статью?
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground py-2">
-            Статья <span className="font-semibold">&ldquo;{deleteTarget?.name}&rdquo;</span> будет удалена.
-            Платежи, связанные с ней, останутся.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setDeleteOpen(false); setDeleteTarget(null); }}>Отмена</Button>
-            <Button variant="destructive" onClick={handleDelete}>Удалить</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Modal
+        open={deleteOpen}
+        onCancel={() => { setDeleteOpen(false); setDeleteTarget(null); }}
+        onOk={handleDelete}
+        okButtonProps={{ danger: true }}
+        okText="Удалить"
+        cancelText="Отмена"
+        title={
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            Удалить статью?
+          </span>
+        }
+      >
+        <p className="text-sm text-muted-foreground py-2">
+          Статья <span className="font-semibold">&ldquo;{deleteTarget?.name}&rdquo;</span> будет удалена.
+          Платежи, связанные с ней, останутся.
+        </p>
+      </Modal>
     </div>
   );
 }

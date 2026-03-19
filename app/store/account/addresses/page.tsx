@@ -8,13 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "antd";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { toast } from "sonner";
 
 type Address = {
@@ -257,14 +251,16 @@ export default function AddressesPage() {
       )}
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingAddress ? "Редактировать адрес" : "Добавить адрес"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Modal
+        open={dialogOpen}
+        onCancel={() => setDialogOpen(false)}
+        onOk={handleSave}
+        okButtonProps={{ disabled: saving, loading: saving }}
+        okText={saving ? "Сохранение..." : "Сохранить"}
+        cancelText="Отмена"
+        title={editingAddress ? "Редактировать адрес" : "Добавить адрес"}
+      >
+        <div className="space-y-4">
             <div>
               <Label htmlFor="label">Название адреса *</Label>
               <Input
@@ -352,16 +348,7 @@ export default function AddressesPage() {
               </Label>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Сохранение..." : "Сохранить"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </Modal>
     </div>
   );
 }

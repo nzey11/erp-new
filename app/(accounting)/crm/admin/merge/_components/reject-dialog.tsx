@@ -7,14 +7,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Modal } from "antd";
 import { Button } from "@/components/ui/button";
 import { rejectMerge } from "../_lib/actions";
 
@@ -40,31 +33,18 @@ export function RejectDialog({ open, onOpenChange, requestId }: RejectDialogProp
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Отклонить запрос?</DialogTitle>
-          <DialogDescription>
-            Запрос на слияние будет отклонён и больше не появится в списке.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isProcessing}
-          >
-            Отмена
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleReject}
-            disabled={isProcessing}
-          >
-            Отклонить
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Modal
+      open={open}
+      onCancel={() => onOpenChange(false)}
+      onOk={handleReject}
+      okButtonProps={{ disabled: isProcessing, loading: isProcessing, danger: true }}
+      okText={isProcessing ? "Отклонение..." : "Отклонить"}
+      cancelText="Отмена"
+      title="Отклонить запрос?"
+    >
+      <p className="text-muted-foreground py-2">
+        Запрос на слияние будет отклонён и больше не появится в списке.
+      </p>
+    </Modal>
   );
 }
