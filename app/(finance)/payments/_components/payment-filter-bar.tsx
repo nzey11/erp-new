@@ -96,6 +96,7 @@ export function PaymentFilterBar({ initialFilters }: PaymentFilterBarProps) {
       return;
     }
     updateUrl({ search: debouncedSearch || undefined });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]); // intentionally omit updateUrl — we only want this on debouncedSearch change
 
   const handleTypeChange = (value: "income" | "expense" | null) => {

@@ -205,7 +205,7 @@ export function SalesPageClient({
     } catch {
       message.error("Ошибка экспорта");
     }
-  }, [activeTab]);
+  }, [activeTab, message]);
 
   // ─── Table props (simple tabs) ───────────────────────────────────────────────
 
