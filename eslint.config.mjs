@@ -4,6 +4,11 @@ import nextTs from "eslint-config-next/typescript";
 import nxPlugin from "@nx/eslint-plugin";
 
 const eslintConfig = defineConfig([
+  globalIgnores([
+    "scripts/**",
+    "prisma/seed*.ts",
+    "proxy.ts",
+  ]),
   ...nextVitals,
   ...nextTs,
   {
