@@ -11,7 +11,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "antd";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
@@ -334,16 +334,12 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
               </Table>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="updateExisting"
-                checked={updateExisting}
-                onCheckedChange={(c) => setUpdateExisting(c === true)}
-              />
-              <label htmlFor="updateExisting" className="text-sm cursor-pointer">
-                Обновлять существующие товары (по артикулу)
-              </label>
-            </div>
+            <Checkbox
+              checked={updateExisting}
+              onChange={(e) => setUpdateExisting(e.target.checked)}
+            >
+              Обновлять существующие товары (по артикулу)
+            </Checkbox>
 
             {!hasNameMapping && (
               <div className="flex items-center gap-2 text-amber-600 text-sm">

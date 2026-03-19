@@ -10,7 +10,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import { cn } from "@/lib/shared/utils";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "antd";
 import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { DataGridToolbar } from "./data-grid-toolbar";
 import { DataGridPaginationBar } from "./data-grid-pagination";
@@ -115,8 +115,9 @@ export function DataGrid<TData>({
           const someSelected = data.some((row) => selection.selectedIds.has(selection.getRowId(row)));
           return (
             <Checkbox
-              checked={allSelected ? true : someSelected ? "indeterminate" : false}
-              onCheckedChange={() => {
+              checked={allSelected}
+              indeterminate={someSelected && !allSelected}
+              onChange={() => {
                 if (allSelected) {
                   selection.onSelectionChange(new Set());
                 } else {
@@ -133,7 +134,7 @@ export function DataGrid<TData>({
             <div onClick={(e) => e.stopPropagation()}>
               <Checkbox
                 checked={selection.selectedIds.has(rowId)}
-                onCheckedChange={() => {
+                onChange={() => {
                   const next = new Set(selection.selectedIds);
                   if (next.has(rowId)) next.delete(rowId);
                   else next.add(rowId);

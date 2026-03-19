@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "antd";
 import { Label } from "@/components/ui/label";
 import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -153,16 +153,12 @@ export function ProductFiltersBar({
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="hasDiscount"
-              checked={filters.hasDiscount}
-              onCheckedChange={(checked) => updateFilter("hasDiscount", checked === true)}
-            />
-            <Label htmlFor="hasDiscount" className="text-sm cursor-pointer">
-              Со скидкой
-            </Label>
-          </div>
+          <Checkbox
+            checked={filters.hasDiscount}
+            onChange={(e) => updateFilter("hasDiscount", e.target.checked)}
+          >
+            Со скидкой
+          </Checkbox>
         </div>
       )}
     </div>
