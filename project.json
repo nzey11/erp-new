@@ -41,7 +41,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vitest run tests/integration/api tests/unit --passWithNoTests"
+        "command": "vitest run tests/integration/api tests/unit --config tests/config/vitest.integration.config.ts --passWithNoTests"
       }
     },
     "lint": {
