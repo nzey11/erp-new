@@ -5,9 +5,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "antd";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Modal } from "antd";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -217,6 +216,66 @@ export default function ReferencesPage() {
     boolean: "Да/Нет",
   };
 
+  const unitColumns: TableColumnsType<Unit> = [
+    { key: "name", dataIndex: "name", title: "Название", render: (name: string) => <span className="font-medium">{name}</span> },
+    { key: "shortName", dataIndex: "shortName", title: "Сокращение" },
+    {
+      key: "actions",
+      title: "",
+      width: 48,
+      render: (_, unit) => (
+        <Button variant="ghost" size="icon" onClick={() => openEditUnit(unit)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  const priceListColumns: TableColumnsType<PriceList> = [
+    { key: "name", dataIndex: "name", title: "Название", render: (name: string) => <span className="font-medium">{name}</span> },
+    { key: "description", dataIndex: "description", title: "Описание", render: (desc: string | null) => <span className="text-muted-foreground">{desc || "—"}</span> },
+    { key: "prices", dataIndex: ["_count", "prices"], title: "Кол-во цен", align: "right", render: (count: number) => count ?? 0 },
+    {
+      key: "actions",
+      title: "",
+      width: 48,
+      render: (_, pl) => (
+        <Button variant="ghost" size="icon" onClick={() => openEditPriceList(pl)}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  const customFieldColumns: TableColumnsType<CustomFieldDef> = [
+    { key: "name", dataIndex: "name", title: "Название", render: (name: string) => <span className="font-medium">{name}</span> },
+    { key: "fieldType", dataIndex: "fieldType", title: "Тип", render: (type: string) => FIELD_TYPE_LABELS[type] || type },
+    {
+      key: "options",
+      dataIndex: "options",
+      title: "Опции",
+      render: (options: string | null, cf) =>
+        cf.fieldType === "select" && options
+          ? (JSON.parse(options) as string[]).join(", ")
+          : "—",
+    },
+    {
+      key: "actions",
+      title: "",
+      width: 80,
+      render: (_, cf) => (
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" onClick={() => openEditCf(cf)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => deleteCf(cf.id)}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader title="Справочники" />
@@ -241,34 +300,13 @@ export default function ReferencesPage() {
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
-                <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Название</TableHead>
-                        <TableHead>Сокращение</TableHead>
-                        <TableHead className="w-12" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {units.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground py-8">Нет единиц измерения</TableCell>
-                        </TableRow>
-                      ) : (
-                        units.map((unit) => (
-                          <TableRow key={unit.id}>
-                            <TableCell className="font-medium">{unit.name}</TableCell>
-                            <TableCell>{unit.shortName}</TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="icon" onClick={() => openEditUnit(unit)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                <Table
+                  columns={unitColumns}
+                  dataSource={units}
+                  rowKey="id"
+                  pagination={false}
+                  locale={{ emptyText: "Нет единиц измерения" }}
+                />
               </Card>
             ),
           },
@@ -281,36 +319,13 @@ export default function ReferencesPage() {
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
-                <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Название</TableHead>
-                        <TableHead>Описание</TableHead>
-                        <TableHead className="text-right">Кол-во цен</TableHead>
-                        <TableHead className="w-12" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {priceLists.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Нет прайс-листов</TableCell>
-                        </TableRow>
-                      ) : (
-                        priceLists.map((pl) => (
-                          <TableRow key={pl.id}>
-                            <TableCell className="font-medium">{pl.name}</TableCell>
-                            <TableCell className="text-muted-foreground">{pl.description || "—"}</TableCell>
-                            <TableCell className="text-right">{pl._count?.prices ?? 0}</TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="icon" onClick={() => openEditPriceList(pl)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                <Table
+                  columns={priceListColumns}
+                  dataSource={priceLists}
+                  rowKey="id"
+                  pagination={false}
+                  locale={{ emptyText: "Нет прайс-листов" }}
+                />
               </Card>
             ),
           },
@@ -323,45 +338,13 @@ export default function ReferencesPage() {
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
-                <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Название</TableHead>
-                        <TableHead>Тип</TableHead>
-                        <TableHead>Опции</TableHead>
-                        <TableHead className="w-20" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {customFields.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Нет характеристик</TableCell>
-                        </TableRow>
-                      ) : (
-                        customFields.map((cf) => (
-                          <TableRow key={cf.id}>
-                            <TableCell className="font-medium">{cf.name}</TableCell>
-                            <TableCell>{FIELD_TYPE_LABELS[cf.fieldType] || cf.fieldType}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {cf.fieldType === "select" && cf.options
-                                ? (JSON.parse(cf.options) as string[]).join(", ")
-                                : "—"}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => openEditCf(cf)}>
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => deleteCf(cf.id)}>
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                <Table
+                  columns={customFieldColumns}
+                  dataSource={customFields}
+                  rowKey="id"
+                  pagination={false}
+                  locale={{ emptyText: "Нет характеристик" }}
+                />
               </Card>
             ),
           },

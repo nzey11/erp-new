@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tag } from "antd";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Modal } from "antd";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
@@ -159,64 +160,70 @@ export default function CategoriesPage() {
   const income = categories.filter((c) => c.type === "income");
   const expense = categories.filter((c) => c.type === "expense");
 
+  const getCategoryColumns = (colorClass: string): TableColumnsType<FinanceCategory> => [
+    { key: "name", dataIndex: "name", title: "Название" },
+    {
+      key: "account",
+      title: "Счёт по умолчанию",
+      render: (_, cat) => (
+        <span className="font-mono text-sm text-muted-foreground">
+          {getAccountLabel(cat.defaultAccountCode) ?? (
+            <span className="text-xs italic text-muted-foreground/60">не задан</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "type",
+      title: "Тип",
+      width: 96,
+      render: (_, cat) =>
+        cat.isSystem ? (
+          <Tag color="default" className="text-xs">Системная</Tag>
+        ) : (
+          <Tag className="text-xs">Своя</Tag>
+        ),
+    },
+    {
+      key: "actions",
+      title: "",
+      width: 64,
+      render: (_, cat) => (
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => openEdit(cat)}
+            title="Назначить счёт"
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+          {!cat.isSystem && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={() => confirmDelete(cat)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   const CategoryTable = ({ items, title, colorClass }: { items: FinanceCategory[]; title: string; colorClass: string }) => (
     <div>
       <h2 className={`text-base font-semibold mb-3 ${colorClass}`}>{title}</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Название</TableHead>
-            <TableHead>Счёт по умолчанию</TableHead>
-            <TableHead className="w-24">Тип</TableHead>
-            <TableHead className="w-16"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((cat) => (
-            <TableRow key={cat.id}>
-              <TableCell>{cat.name}</TableCell>
-              <TableCell className="font-mono text-sm text-muted-foreground">
-                {getAccountLabel(cat.defaultAccountCode) ?? (
-                  <span className="text-xs italic text-muted-foreground/60">не задан</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {cat.isSystem ? (
-                  <Tag color="default" className="text-xs">Системная</Tag>
-                ) : (
-                  <Tag className="text-xs">Своя</Tag>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => openEdit(cat)}
-                    title="Назначить счёт"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  {!cat.isSystem && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => confirmDelete(cat)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {items.length === 0 && (
-            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Нет статей</TableCell></TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <Table
+        columns={getCategoryColumns(colorClass)}
+        dataSource={items}
+        rowKey="id"
+        pagination={false}
+        locale={{ emptyText: "Нет статей" }}
+      />
     </div>
   );
 

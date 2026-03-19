@@ -3,9 +3,8 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "antd";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -182,6 +181,48 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
 
   const hasNameMapping = mappings.some((m) => m.productField === "name");
 
+  const mappingColumns: TableColumnsType<ColumnMapping> = [
+    { key: "csvColumn", dataIndex: "csvColumn", title: "Колонка в файле", render: (val: string) => <span className="font-medium">{val}</span> },
+    {
+      key: "example",
+      title: "Пример значения",
+      render: (_, mapping) => (
+        <span className="text-muted-foreground max-w-[200px] truncate block">
+          {csvRows[0]?.[mapping.csvColumn] || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "productField",
+      title: "Поле товара",
+      render: (_, mapping) => (
+        <Select
+          value={mapping.productField}
+          onValueChange={(v) => updateMapping(mapping.csvColumn, v)}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Выберите поле" />
+          </SelectTrigger>
+          <SelectContent>
+            {PRODUCT_FIELDS.map((f) => (
+              <SelectItem key={f.key} value={f.key}>
+                {f.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ),
+    },
+  ];
+
+  const previewColumns: TableColumnsType<Record<string, string>> = [
+    { key: "index", title: "#", width: 50, render: (_, __, index) => <span className="text-muted-foreground">{index + 1}</span> },
+    { key: "name", dataIndex: "name", title: "Название", render: (val: string) => <span className="font-medium">{val || "—"}</span> },
+    { key: "sku", dataIndex: "sku", title: "Артикул", render: (val: string) => val || "—" },
+    { key: "categoryName", dataIndex: "categoryName", title: "Категория", render: (val: string) => val || "—" },
+    { key: "salePrice", dataIndex: "salePrice", title: "Цена продажи", align: "right", render: (val: string) => val || "—" },
+  ];
+
   const getPreviewData = () => {
     return csvRows.slice(0, 10).map((row) => {
       const product: Record<string, string> = {};
@@ -330,42 +371,12 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
             </p>
 
             <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Колонка в файле</TableHead>
-                    <TableHead>Пример значения</TableHead>
-                    <TableHead>Поле товара</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mappings.map((mapping) => (
-                    <TableRow key={mapping.csvColumn}>
-                      <TableCell className="font-medium">{mapping.csvColumn}</TableCell>
-                      <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                        {csvRows[0]?.[mapping.csvColumn] || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={mapping.productField}
-                          onValueChange={(v) => updateMapping(mapping.csvColumn, v)}
-                        >
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Выберите поле" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {PRODUCT_FIELDS.map((f) => (
-                              <SelectItem key={f.key} value={f.key}>
-                                {f.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <Table
+                columns={mappingColumns}
+                dataSource={mappings}
+                rowKey="csvColumn"
+                pagination={false}
+              />
             </div>
 
             <Checkbox
@@ -392,28 +403,12 @@ export function CSVImportWizard({ open, onOpenChange, onImported }: CSVImportWiz
             </p>
 
             <div className="border rounded-lg overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Название</TableHead>
-                    <TableHead>Артикул</TableHead>
-                    <TableHead>Категория</TableHead>
-                    <TableHead className="text-right">Цена продажи</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {getPreviewData().map((product, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
-                      <TableCell className="font-medium">{product.name || "—"}</TableCell>
-                      <TableCell>{product.sku || "—"}</TableCell>
-                      <TableCell>{product.categoryName || "—"}</TableCell>
-                      <TableCell className="text-right">{product.salePrice || "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <Table
+                columns={previewColumns}
+                dataSource={getPreviewData()}
+                rowKey={(_, index) => String(index)}
+                pagination={false}
+              />
             </div>
 
             {updateExisting && (

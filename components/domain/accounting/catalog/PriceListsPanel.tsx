@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "antd";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Label } from "@/components/ui/label";
 import { Input as AntdInput } from "antd";
 const { TextArea } = AntdInput;
@@ -102,6 +101,48 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
     }
   };
 
+  const columns: TableColumnsType<PriceList> = [
+    {
+      key: "name",
+      dataIndex: "name",
+      title: "Название",
+      render: (name: string) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{name}</span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </div>
+      ),
+    },
+    {
+      key: "description",
+      dataIndex: "description",
+      title: "Описание",
+      render: (desc: string | null) => <span className="text-muted-foreground">{desc || "—"}</span>,
+    },
+    {
+      key: "prices",
+      dataIndex: ["_count", "prices"],
+      title: "Товаров",
+      align: "right",
+      render: (count: number) => count || 0,
+    },
+    {
+      key: "actions",
+      title: "",
+      width: 100,
+      render: (_, pl) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => openEdit(pl, e)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => handleDelete(pl, e)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   const handleDelete = async (pl: PriceList, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm(`Удалить прайс-лист "${pl.name}"?`)) return;
@@ -138,61 +179,16 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
         </div>
       ) : (
         <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Название</TableHead>
-                <TableHead>Описание</TableHead>
-                <TableHead className="text-right">Товаров</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {priceLists.map((pl) => (
-                <TableRow
-                  key={pl.id}
-                  className={cn(
-                    "cursor-pointer",
-                    selectedPriceListId === pl.id && "bg-muted/50"
-                  )}
-                  onClick={() => onSelectPriceList(pl)}
-                >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {pl.name}
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {pl.description || "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {pl._count?.prices || 0}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => openEdit(pl, e)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={(e) => handleDelete(pl, e)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Table
+            columns={columns}
+            dataSource={priceLists}
+            rowKey="id"
+            pagination={false}
+            onRow={(pl) => ({
+              onClick: () => onSelectPriceList(pl),
+              className: cn("cursor-pointer", selectedPriceListId === pl.id && "bg-muted/50"),
+            })}
+          />
         </div>
       )}
 

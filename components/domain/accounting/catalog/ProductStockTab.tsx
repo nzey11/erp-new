@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { formatRub, formatNumber } from "@/lib/shared/utils";
 
 interface StockRecord {
@@ -83,6 +82,16 @@ export function ProductStockTab({ productId, isActive }: ProductStockTabProps) {
     );
   }
 
+  const columns: TableColumnsType<StockRecord> = [
+    { key: "warehouse", dataIndex: "warehouseName", title: "Склад", render: (name: string) => <span className="font-medium">{name}</span> },
+    { key: "quantity", dataIndex: "quantity", title: "Кол-во", align: "right", render: (qty: number) => formatNumber(qty, 0) },
+    { key: "reserve", dataIndex: "reserve", title: "Резерв", align: "right", render: (reserve: number) => (reserve > 0 ? <span className="text-orange-600">{formatNumber(reserve, 0)}</span> : "—") },
+    { key: "available", dataIndex: "available", title: "Доступно", align: "right", render: (avail: number) => <span className="text-green-600">{formatNumber(avail, 0)}</span> },
+    { key: "purchasePrice", dataIndex: "purchasePrice", title: "Себест.", align: "right", render: (price: number | null) => (price != null ? formatRub(price) : "—") },
+    { key: "costValue", dataIndex: "costValue", title: "Сумма себест.", align: "right", render: (val: number | null) => (val != null ? formatRub(val) : "—") },
+    { key: "saleValue", dataIndex: "saleValue", title: "Сумма продажи", align: "right", render: (val: number | null) => (val != null ? formatRub(val) : "—") },
+  ];
+
   if (records.length === 0) {
     return (
       <div className="py-8 text-center text-muted-foreground">
@@ -94,62 +103,37 @@ export function ProductStockTab({ productId, isActive }: ProductStockTabProps) {
   return (
     <div className="space-y-4 py-4">
       <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Склад</TableHead>
-              <TableHead className="text-right">Кол-во</TableHead>
-              <TableHead className="text-right">Резерв</TableHead>
-              <TableHead className="text-right">Доступно</TableHead>
-              <TableHead className="text-right">Себест.</TableHead>
-              <TableHead className="text-right">Сумма себест.</TableHead>
-              <TableHead className="text-right">Сумма продажи</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {records.map((record, idx) => (
-              <TableRow key={`${record.warehouseId}-${idx}`}>
-                <TableCell className="font-medium">{record.warehouseName}</TableCell>
-                <TableCell className="text-right">{formatNumber(record.quantity, 0)}</TableCell>
-                <TableCell className="text-right text-orange-600">
-                  {record.reserve > 0 ? formatNumber(record.reserve, 0) : "—"}
-                </TableCell>
-                <TableCell className="text-right text-green-600">
-                  {formatNumber(record.available, 0)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {record.purchasePrice != null ? formatRub(record.purchasePrice) : "—"}
-                </TableCell>
-                <TableCell className="text-right">
-                  {record.costValue != null ? formatRub(record.costValue) : "—"}
-                </TableCell>
-                <TableCell className="text-right">
-                  {record.saleValue != null ? formatRub(record.saleValue) : "—"}
-                </TableCell>
-              </TableRow>
-            ))}
-            {/* Totals row */}
-            {totals && (
-              <TableRow className="bg-muted/50 font-medium">
-                <TableCell>Итого</TableCell>
-                <TableCell className="text-right">{formatNumber(totals.totalQuantity, 0)}</TableCell>
-                <TableCell className="text-right text-orange-600">
+        <Table
+          columns={columns}
+          dataSource={records}
+          rowKey={(record, index) => `${record.warehouseId}-${index}`}
+          pagination={false}
+          summary={() =>
+            totals ? (
+              <Table.Summary.Row className="bg-muted/50 font-medium">
+                <Table.Summary.Cell index={0}>Итого</Table.Summary.Cell>
+                <Table.Summary.Cell index={1} align="right">
+                  {formatNumber(totals.totalQuantity, 0)}
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={2} align="right" className="text-orange-600">
                   {totals.totalReserve > 0 ? formatNumber(totals.totalReserve, 0) : "—"}
-                </TableCell>
-                <TableCell className="text-right text-green-600">
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={3} align="right" className="text-green-600">
                   {formatNumber(totals.totalAvailable, 0)}
-                </TableCell>
-                <TableCell className="text-right">—</TableCell>
-                <TableCell className="text-right">
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={4} align="right">
+                  —
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={5} align="right">
                   {totals.totalCostValue != null ? formatRub(totals.totalCostValue) : "—"}
-                </TableCell>
-                <TableCell className="text-right">
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={6} align="right">
                   {totals.totalSaleValue != null ? formatRub(totals.totalSaleValue) : "—"}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                </Table.Summary.Cell>
+              </Table.Summary.Row>
+            ) : null
+          }
+        />
       </div>
       <p className="text-xs text-muted-foreground">
         Резерв — товары в незавершённых документах (отгрузки, возвраты, заказы).

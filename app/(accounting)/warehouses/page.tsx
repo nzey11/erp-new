@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Tag } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -150,6 +149,19 @@ export default function WarehousesPage() {
     }
   };
 
+  const stockColumns: TableColumnsType<StockRecord> = [
+    { key: "product", dataIndex: ["product", "name"], title: "Товар", render: (name: string) => <span className="font-medium">{name}</span> },
+    { key: "sku", dataIndex: ["product", "sku"], title: "Артикул", render: (sku: string | null) => <span className="text-muted-foreground">{sku || "—"}</span> },
+    { key: "quantity", dataIndex: "quantity", title: "Количество", align: "right", render: (qty: number) => formatNumber(qty) },
+    { key: "averageCost", dataIndex: "averageCost", title: "Средн. себест.", align: "right", render: (cost: number) => (cost > 0 ? formatRub(cost) : "—") },
+    {
+      key: "totalCost",
+      title: "Стоимость",
+      align: "right",
+      render: (_, r) => (r.averageCost > 0 ? formatRub(r.quantity * r.averageCost) : "—"),
+    },
+  ];
+
   const columns: DataGridColumn<Warehouse>[] = [
     {
       accessorKey: "name",
@@ -279,40 +291,13 @@ export default function WarehousesPage() {
         width={700}
       >
         <div className="max-h-96 overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Товар</TableHead>
-                <TableHead>Артикул</TableHead>
-                <TableHead className="text-right">Количество</TableHead>
-                <TableHead className="text-right">Средн. себест.</TableHead>
-                <TableHead className="text-right">Стоимость</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stockRecords.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
-                    Нет остатков
-                  </TableCell>
-                </TableRow>
-              ) : (
-                stockRecords.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.product.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{r.product.sku || "—"}</TableCell>
-                    <TableCell className="text-right">{formatNumber(r.quantity)}</TableCell>
-                    <TableCell className="text-right">
-                      {r.averageCost > 0 ? formatRub(r.averageCost) : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {r.averageCost > 0 ? formatRub(r.quantity * r.averageCost) : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <Table
+            columns={stockColumns}
+            dataSource={stockRecords}
+            rowKey="id"
+            pagination={false}
+            locale={{ emptyText: "Нет остатков" }}
+          />
         </div>
       </Modal>
     </div>

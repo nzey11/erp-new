@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "antd";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -53,6 +54,28 @@ export default function BalancesPage() {
     );
   }
 
+  const receivableColumns: TableColumnsType<Balance> = [
+    { key: "counterparty", dataIndex: ["counterparty", "name"], title: "Контрагент" },
+    {
+      key: "balance",
+      dataIndex: "balanceRub",
+      title: "Сумма",
+      align: "right",
+      render: (balance: number) => <span className="text-green-600">{formatRub(balance)}</span>,
+    },
+  ];
+
+  const payableColumns: TableColumnsType<Balance> = [
+    { key: "counterparty", dataIndex: ["counterparty", "name"], title: "Контрагент" },
+    {
+      key: "balance",
+      dataIndex: "balanceRub",
+      title: "Сумма",
+      align: "right",
+      render: (balance: number) => <span className="text-red-600">{formatRub(Math.abs(balance))}</span>,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader title="Взаиморасчёты" />
@@ -75,44 +98,24 @@ export default function BalancesPage() {
       {/* Receivable Table */}
       {balances.receivable.length > 0 && (
         <Card title={<span className="text-lg">Нам должны</span>}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Контрагент</TableHead>
-                <TableHead className="text-right">Сумма</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {balances.receivable.map((b) => (
-                <TableRow key={b.id}>
-                  <TableCell>{b.counterparty.name}</TableCell>
-                  <TableCell className="text-right text-green-600">{formatRub(b.balanceRub)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Table
+            columns={receivableColumns}
+            dataSource={balances.receivable}
+            rowKey="id"
+            pagination={false}
+          />
         </Card>
       )}
 
       {/* Payable Table */}
       {balances.payable.length > 0 && (
         <Card title={<span className="text-lg">Мы должны</span>}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Контрагент</TableHead>
-                <TableHead className="text-right">Сумма</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {balances.payable.map((b) => (
-                <TableRow key={b.id}>
-                  <TableCell>{b.counterparty.name}</TableCell>
-                  <TableCell className="text-right text-red-600">{formatRub(Math.abs(b.balanceRub))}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Table
+            columns={payableColumns}
+            dataSource={balances.payable}
+            rowKey="id"
+            pagination={false}
+          />
         </Card>
       )}
 

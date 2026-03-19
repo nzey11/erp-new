@@ -8,9 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tag } from "antd";
 import { Card } from "antd";
 import { Modal } from "antd";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -168,6 +167,102 @@ export default function PromoBlocksPage() {
     }
   };
 
+  const columns: TableColumnsType<PromoBlock> = [
+    {
+      key: "image",
+      dataIndex: "imageUrl",
+      title: "Изображение",
+      width: 100,
+      render: (imageUrl: string, block) =>
+        imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt={block.title}
+            className="w-16 h-16 object-cover rounded border"
+          />
+        ) : (
+          <div className="w-16 h-16 flex items-center justify-center bg-muted rounded border">
+            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+          </div>
+        ),
+    },
+    {
+      key: "title",
+      dataIndex: "title",
+      title: "Заголовок",
+      render: (title: string) => <span className="font-medium">{title}</span>,
+    },
+    {
+      key: "subtitle",
+      dataIndex: "subtitle",
+      title: "Подзаголовок",
+      render: (subtitle: string | null) => (
+        <span className="text-sm text-muted-foreground">{subtitle || "—"}</span>
+      ),
+    },
+    {
+      key: "linkUrl",
+      dataIndex: "linkUrl",
+      title: "Ссылка",
+      render: (linkUrl: string | null) =>
+        linkUrl ? (
+          <a
+            href={linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline text-sm"
+          >
+            {linkUrl.length > 30 ? `${linkUrl.substring(0, 30)}...` : linkUrl}
+          </a>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "order",
+      dataIndex: "order",
+      title: "Порядок",
+      width: 80,
+      align: "center",
+    },
+    {
+      key: "status",
+      dataIndex: "isActive",
+      title: "Статус",
+      width: 100,
+      render: (isActive: boolean, block) => (
+        <Tag
+          color={isActive ? "blue" : "default"}
+          className="cursor-pointer"
+          onClick={() => toggleActive(block)}
+        >
+          {isActive ? "Активен" : "Неактивен"}
+        </Tag>
+      ),
+    },
+    {
+      key: "actions",
+      title: "Действия",
+      width: 150,
+      render: (_, block) => (
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => openEditDialog(block)}>
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => handleDelete(block.id)}
+            disabled={deleting === block.id}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -182,104 +277,14 @@ export default function PromoBlocksPage() {
       />
 
       <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Изображение</TableHead>
-              <TableHead>Заголовок</TableHead>
-              <TableHead>Подзаголовок</TableHead>
-              <TableHead>Ссылка</TableHead>
-              <TableHead className="w-[80px] text-center">Порядок</TableHead>
-              <TableHead className="w-[100px]">Статус</TableHead>
-              <TableHead className="w-[150px]">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              [...Array(3)].map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={7}>
-                    <div className="h-12 bg-muted animate-pulse rounded" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : promoBlocks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Промо-блоки не найдены
-                </TableCell>
-              </TableRow>
-            ) : (
-              promoBlocks.map((block) => (
-                <TableRow key={block.id}>
-                  <TableCell>
-                    {block.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={block.imageUrl}
-                        alt={block.title}
-                        className="w-16 h-16 object-cover rounded border"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 flex items-center justify-center bg-muted rounded border">
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{block.title}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {block.subtitle || "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {block.linkUrl ? (
-                      <a
-                        href={block.linkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {block.linkUrl.length > 30
-                          ? `${block.linkUrl.substring(0, 30)}...`
-                          : block.linkUrl}
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">{block.order}</TableCell>
-                  <TableCell>
-                    <Tag
-                      color={block.isActive ? "blue" : "default"}
-                      className="cursor-pointer"
-                      onClick={() => toggleActive(block)}
-                    >
-                      {block.isActive ? "Активен" : "Неактивен"}
-                    </Tag>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditDialog(block)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(block.id)}
-                        disabled={deleting === block.id}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <Table
+          columns={columns}
+          dataSource={promoBlocks}
+          rowKey="id"
+          pagination={false}
+          loading={loading}
+          locale={{ emptyText: "Промо-блоки не найдены" }}
+        />
       </Card>
 
       {/* Create/Edit Dialog */}

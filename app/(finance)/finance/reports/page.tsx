@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "antd";
 import { Tabs, Tag } from "antd";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { formatRub, formatDate } from "@/lib/shared/utils";
@@ -302,33 +303,26 @@ export default function ReportsPage() {
                     </div>
 
                     <Card title="Отчёт о прибылях и убытках">
-                      <Table>
-                          <TableBody>
-                            <TableRow className="bg-muted/50"><TableCell className="font-bold">ВЫРУЧКА</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("grossRevenue")}><TableCell className="pl-6">Выручка от продаж</TableCell><TableCell className="text-right">{formatRub(profitLoss.revenue)}</TableCell></TableRow>
-                            {profitLoss.vatOnSales > 0 && <TableRow><TableCell className="pl-6 text-muted-foreground">НДС с продаж</TableCell><TableCell className="text-right text-red-600">-{formatRub(profitLoss.vatOnSales)}</TableCell></TableRow>}
-                            <TableRow className="font-medium"><TableCell>Чистая выручка</TableCell><TableCell className="text-right font-bold">{formatRub(profitLoss.netRevenue)}</TableCell></TableRow>
-
-                            <TableRow className="bg-muted/50"><TableCell className="font-bold">СЕБЕСТОИМОСТЬ</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("cogs")}><TableCell className="pl-6">Себестоимость продаж (Дт 90.2)</TableCell><TableCell className="text-right text-red-600">-{formatRub(profitLoss.cogs)}</TableCell></TableRow>
-                            <TableRow className="font-medium"><TableCell>Валовая прибыль</TableCell><TableCell className={`text-right font-bold ${profitLoss.grossProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.grossProfit)}</TableCell></TableRow>
-
-                            <TableRow className="bg-muted/50"><TableCell className="font-bold">ОПЕРАЦИОННЫЕ РАСХОДЫ</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("sellingExpenses")}><TableCell className="pl-6">Расходы на продажу (Дт 44)</TableCell><TableCell className="text-right text-red-600">-{formatRub(profitLoss.sellingExpenses)}</TableCell></TableRow>
-                            <TableRow className="font-medium"><TableCell>Операционная прибыль</TableCell><TableCell className={`text-right font-bold ${profitLoss.operatingProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.operatingProfit)}</TableCell></TableRow>
-
-                            <TableRow className="bg-muted/50"><TableCell className="font-bold">ПРОЧИЕ ДОХОДЫ И РАСХОДЫ</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Прочие доходы (Кт 91.1)</TableCell><TableCell className="text-right text-green-600">+{formatRub(profitLoss.otherIncome)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Прочие расходы (Дт 91.2)</TableCell><TableCell className="text-right text-red-600">-{formatRub(profitLoss.otherExpenses)}</TableCell></TableRow>
-                            <TableRow className="font-medium"><TableCell>Прибыль до налогообложения</TableCell><TableCell className={`text-right font-bold ${profitLoss.profitBeforeTax >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.profitBeforeTax)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Налог на прибыль (Дт 68.04)</TableCell><TableCell className="text-right text-red-600">-{formatRub(profitLoss.incomeTax)}</TableCell></TableRow>
-
-                            <TableRow className="bg-primary/10">
-                              <TableCell className="font-bold text-lg">ЧИСТАЯ ПРИБЫЛЬ</TableCell>
-                              <TableCell className={`text-right font-bold text-lg ${profitLoss.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.netProfit)}</TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr className="bg-muted/50"><td className="font-bold p-2">ВЫРУЧКА</td><td></td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("grossRevenue")}><td className="pl-6 p-2">Выручка от продаж</td><td className="text-right p-2">{formatRub(profitLoss.revenue)}</td></tr>
+                          {profitLoss.vatOnSales > 0 && <tr><td className="pl-6 p-2 text-muted-foreground">НДС с продаж</td><td className="text-right p-2 text-red-600">-{formatRub(profitLoss.vatOnSales)}</td></tr>}
+                          <tr className="font-medium"><td className="p-2">Чистая выручка</td><td className="text-right p-2 font-bold">{formatRub(profitLoss.netRevenue)}</td></tr>
+                          <tr className="bg-muted/50"><td className="font-bold p-2">СЕБЕСТОИМОСТЬ</td><td></td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("cogs")}><td className="pl-6 p-2">Себестоимость продаж (Дт 90.2)</td><td className="text-right p-2 text-red-600">-{formatRub(profitLoss.cogs)}</td></tr>
+                          <tr className="font-medium"><td className="p-2">Валовая прибыль</td><td className={`text-right p-2 font-bold ${profitLoss.grossProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.grossProfit)}</td></tr>
+                          <tr className="bg-muted/50"><td className="font-bold p-2">ОПЕРАЦИОННЫЕ РАСХОДЫ</td><td></td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("sellingExpenses")}><td className="pl-6 p-2">Расходы на продажу (Дт 44)</td><td className="text-right p-2 text-red-600">-{formatRub(profitLoss.sellingExpenses)}</td></tr>
+                          <tr className="font-medium"><td className="p-2">Операционная прибыль</td><td className={`text-right p-2 font-bold ${profitLoss.operatingProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.operatingProfit)}</td></tr>
+                          <tr className="bg-muted/50"><td className="font-bold p-2">ПРОЧИЕ ДОХОДЫ И РАСХОДЫ</td><td></td></tr>
+                          <tr><td className="pl-6 p-2">Прочие доходы (Кт 91.1)</td><td className="text-right p-2 text-green-600">+{formatRub(profitLoss.otherIncome)}</td></tr>
+                          <tr><td className="pl-6 p-2">Прочие расходы (Дт 91.2)</td><td className="text-right p-2 text-red-600">-{formatRub(profitLoss.otherExpenses)}</td></tr>
+                          <tr className="font-medium"><td className="p-2">Прибыль до налогообложения</td><td className={`text-right p-2 font-bold ${profitLoss.profitBeforeTax >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.profitBeforeTax)}</td></tr>
+                          <tr><td className="pl-6 p-2">Налог на прибыль (Дт 68.04)</td><td className="text-right p-2 text-red-600">-{formatRub(profitLoss.incomeTax)}</td></tr>
+                          <tr className="bg-primary/10"><td className="font-bold text-lg p-2">ЧИСТАЯ ПРИБЫЛЬ</td><td className={`text-right font-bold text-lg p-2 ${profitLoss.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(profitLoss.netProfit)}</td></tr>
+                        </tbody>
+                      </table>
                     </Card>
                   </div>
                 ) : (
@@ -360,35 +354,23 @@ export default function ReportsPage() {
                 ) : cashFlow ? (
                   <div className="space-y-4">
                     <Card title="Отчёт о движении денежных средств">
-                      <Table>
-                          <TableBody>
-                            <TableRow className="bg-muted/50">
-                              <TableCell className="font-bold">Остаток на начало периода</TableCell>
-                              <TableCell className="text-right font-bold">{formatRub(cashFlow.openingBalance)}</TableCell>
-                            </TableRow>
-
-                            <TableRow className="bg-muted/30"><TableCell className="font-bold">Поступления денежных средств</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.cash")}><TableCell className="pl-6">Касса (Дт 50)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.cash)}</TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.bank")}><TableCell className="pl-6">Расчётный счёт (Дт 51)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.bank)}</TableCell></TableRow>
-                            {cashFlow.inflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.forex")}><TableCell className="pl-6">Валютный счёт (Дт 52)</TableCell><TableCell className="text-right text-green-600">+{formatRub(cashFlow.inflows.forex)}</TableCell></TableRow>}
-                            <TableRow className="font-medium"><TableCell>Итого поступления</TableCell><TableCell className="text-right font-bold text-green-600">+{formatRub(cashFlow.inflows.total)}</TableCell></TableRow>
-
-                            <TableRow className="bg-muted/30"><TableCell className="font-bold">Выплаты денежных средств</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.cash")}><TableCell className="pl-6">Касса (Кт 50)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.cash)}</TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.bank")}><TableCell className="pl-6">Расчётный счёт (Кт 51)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.bank)}</TableCell></TableRow>
-                            {cashFlow.outflows.forex > 0 && <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.forex")}><TableCell className="pl-6">Валютный счёт (Кт 52)</TableCell><TableCell className="text-right text-red-600">-{formatRub(cashFlow.outflows.forex)}</TableCell></TableRow>}
-                            <TableRow className="font-medium"><TableCell>Итого выплаты</TableCell><TableCell className="text-right font-bold text-red-600">-{formatRub(cashFlow.outflows.total)}</TableCell></TableRow>
-
-                            <TableRow className="font-bold bg-muted/50">
-                              <TableCell>Чистый денежный поток</TableCell>
-                              <TableCell className={`text-right ${cashFlow.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(cashFlow.netCashFlow)}</TableCell>
-                            </TableRow>
-                            <TableRow className="bg-primary/10">
-                              <TableCell className="font-bold text-lg">Остаток на конец периода</TableCell>
-                              <TableCell className="text-right font-bold text-lg">{formatRub(cashFlow.closingBalance)}</TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr className="bg-muted/50"><td className="font-bold p-2">Остаток на начало периода</td><td className="text-right p-2 font-bold">{formatRub(cashFlow.openingBalance)}</td></tr>
+                          <tr className="bg-muted/30"><td className="font-bold p-2">Поступления денежных средств</td><td></td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.cash")}><td className="pl-6 p-2">Касса (Дт 50)</td><td className="text-right p-2 text-green-600">+{formatRub(cashFlow.inflows.cash)}</td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.bank")}><td className="pl-6 p-2">Расчётный счёт (Дт 51)</td><td className="text-right p-2 text-green-600">+{formatRub(cashFlow.inflows.bank)}</td></tr>
+                          {cashFlow.inflows.forex > 0 && <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.in.forex")}><td className="pl-6 p-2">Валютный счёт (Дт 52)</td><td className="text-right p-2 text-green-600">+{formatRub(cashFlow.inflows.forex)}</td></tr>}
+                          <tr className="font-medium"><td className="p-2">Итого поступления</td><td className="text-right p-2 font-bold text-green-600">+{formatRub(cashFlow.inflows.total)}</td></tr>
+                          <tr className="bg-muted/30"><td className="font-bold p-2">Выплаты денежных средств</td><td></td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.cash")}><td className="pl-6 p-2">Касса (Кт 50)</td><td className="text-right p-2 text-red-600">-{formatRub(cashFlow.outflows.cash)}</td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.bank")}><td className="pl-6 p-2">Расчётный счёт (Кт 51)</td><td className="text-right p-2 text-red-600">-{formatRub(cashFlow.outflows.bank)}</td></tr>
+                          {cashFlow.outflows.forex > 0 && <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("operating.out.forex")}><td className="pl-6 p-2">Валютный счёт (Кт 52)</td><td className="text-right p-2 text-red-600">-{formatRub(cashFlow.outflows.forex)}</td></tr>}
+                          <tr className="font-medium"><td className="p-2">Итого выплаты</td><td className="text-right p-2 font-bold text-red-600">-{formatRub(cashFlow.outflows.total)}</td></tr>
+                          <tr className="font-bold bg-muted/50"><td className="p-2">Чистый денежный поток</td><td className={`text-right p-2 ${cashFlow.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>{formatRub(cashFlow.netCashFlow)}</td></tr>
+                          <tr className="bg-primary/10"><td className="font-bold text-lg p-2">Остаток на конец периода</td><td className="text-right font-bold text-lg p-2">{formatRub(cashFlow.closingBalance)}</td></tr>
+                        </tbody>
+                      </table>
                     </Card>
                   </div>
                 ) : (
@@ -419,63 +401,45 @@ export default function ReportsPage() {
                 ) : balanceSheet ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     <Card title="АКТИВ">
-                      <Table>
-                          <TableBody>
-                            <TableRow className="bg-muted/30"><TableCell className="font-bold">Оборотные активы</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Денежные средства (50+51+52)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.assets.current.cash)}</TableCell></TableRow>
-                            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("assets.receivables")}><TableCell className="pl-6">Дебиторская задолженность (62)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.assets.current.receivables)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Товарные запасы (41)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.assets.current.inventory)}</TableCell></TableRow>
-                            {balanceSheet.assets.current.vatReceivable > 0 && <TableRow><TableCell className="pl-6">НДС к возмещению (19)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.assets.current.vatReceivable)}</TableCell></TableRow>}
-                            <TableRow className="font-medium"><TableCell>Итого оборотные активы</TableCell><TableCell className="text-right font-bold">{formatRub(balanceSheet.assets.current.total)}</TableCell></TableRow>
-
-                            <TableRow className="bg-muted/30"><TableCell className="font-bold">Внеоборотные активы</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Основные средства</TableCell><TableCell className="text-right">{formatRub(balanceSheet.assets.nonCurrent.fixedAssets)}</TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Нематериальные активы</TableCell><TableCell className="text-right">{formatRub(balanceSheet.assets.nonCurrent.intangibleAssets)}</TableCell></TableRow>
-                            <TableRow className="font-medium"><TableCell>Итого внеоборотные активы</TableCell><TableCell className="text-right font-bold">{formatRub(balanceSheet.assets.nonCurrent.total)}</TableCell></TableRow>
-
-                            <TableRow className="bg-primary/10">
-                              <TableCell className="font-bold text-lg">ВСЕГО АКТИВ</TableCell>
-                              <TableCell className="text-right font-bold text-lg">{formatRub(balanceSheet.assets.total)}</TableCell>
-                            </TableRow>
-                          </TableBody>
-                      </Table>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr className="bg-muted/30"><td className="font-bold p-2">Оборотные активы</td><td></td></tr>
+                          <tr><td className="pl-6 p-2">Денежные средства (50+51+52)</td><td className="text-right p-2">{formatRub(balanceSheet.assets.current.cash)}</td></tr>
+                          <tr className="cursor-pointer hover:bg-muted/50" onClick={() => openDrillDown("assets.receivables")}><td className="pl-6 p-2">Дебиторская задолженность (62)</td><td className="text-right p-2">{formatRub(balanceSheet.assets.current.receivables)}</td></tr>
+                          <tr><td className="pl-6 p-2">Товарные запасы (41)</td><td className="text-right p-2">{formatRub(balanceSheet.assets.current.inventory)}</td></tr>
+                          {balanceSheet.assets.current.vatReceivable > 0 && <tr><td className="pl-6 p-2">НДС к возмещению (19)</td><td className="text-right p-2">{formatRub(balanceSheet.assets.current.vatReceivable)}</td></tr>}
+                          <tr className="font-medium"><td className="p-2">Итого оборотные активы</td><td className="text-right p-2 font-bold">{formatRub(balanceSheet.assets.current.total)}</td></tr>
+                          <tr className="bg-muted/30"><td className="font-bold p-2">Внеоборотные активы</td><td></td></tr>
+                          <tr><td className="pl-6 p-2">Основные средства</td><td className="text-right p-2">{formatRub(balanceSheet.assets.nonCurrent.fixedAssets)}</td></tr>
+                          <tr><td className="pl-6 p-2">Нематериальные активы</td><td className="text-right p-2">{formatRub(balanceSheet.assets.nonCurrent.intangibleAssets)}</td></tr>
+                          <tr className="font-medium"><td className="p-2">Итого внеоборотные активы</td><td className="text-right p-2 font-bold">{formatRub(balanceSheet.assets.nonCurrent.total)}</td></tr>
+                          <tr className="bg-primary/10"><td className="font-bold text-lg p-2">ВСЕГО АКТИВ</td><td className="text-right font-bold text-lg p-2">{formatRub(balanceSheet.assets.total)}</td></tr>
+                        </tbody>
+                      </table>
                     </Card>
 
                     <Card title="ПАССИВ">
-                      <Table>
-                        <TableBody>
-                            <TableRow className="bg-muted/30"><TableCell className="font-bold">Краткосрочные обязательства</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Кредиторская задолженность (60)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.liabilities.current.payables)}</TableCell></TableRow>
-                            {balanceSheet.liabilities.current.customerAdvances > 0 && <TableRow><TableCell className="pl-6">Авансы покупателей (62)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.liabilities.current.customerAdvances)}</TableCell></TableRow>}
-                            <TableRow><TableCell className="pl-6">Краткосрочные кредиты (66)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.liabilities.current.shortTermDebt)}</TableCell></TableRow>
-                            {balanceSheet.liabilities.current.taxPayable > 0 && <TableRow><TableCell className="pl-6">Налоги к уплате (68)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.liabilities.current.taxPayable)}</TableCell></TableRow>}
-                            <TableRow className="font-medium"><TableCell>Итого краткосрочные</TableCell><TableCell className="text-right font-bold">{formatRub(balanceSheet.liabilities.current.total)}</TableCell></TableRow>
-
-                            <TableRow className="bg-muted/30"><TableCell className="font-bold">Долгосрочные обязательства</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Долгосрочные кредиты</TableCell><TableCell className="text-right">{formatRub(balanceSheet.liabilities.nonCurrent.longTermDebt)}</TableCell></TableRow>
-                            <TableRow className="font-medium"><TableCell>Итого долгосрочные</TableCell><TableCell className="text-right font-bold">{formatRub(balanceSheet.liabilities.nonCurrent.total)}</TableCell></TableRow>
-
-                            <TableRow className="bg-muted/50">
-                              <TableCell className="font-bold">ИТОГО ОБЯЗАТЕЛЬСТВА</TableCell>
-                              <TableCell className="text-right font-bold">{formatRub(balanceSheet.liabilities.total)}</TableCell>
-                            </TableRow>
-
-                            <TableRow className="bg-muted/30"><TableCell className="font-bold">Собственный капитал</TableCell><TableCell></TableCell></TableRow>
-                            <TableRow><TableCell className="pl-6">Уставный капитал (80)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.equity.shareCapital)}</TableCell></TableRow>
-                            {balanceSheet.equity.additionalCapital > 0 && <TableRow><TableCell className="pl-6">Добавочный капитал (83)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.equity.additionalCapital)}</TableCell></TableRow>}
-                            {balanceSheet.equity.reserveCapital > 0 && <TableRow><TableCell className="pl-6">Резервный капитал (82)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.equity.reserveCapital)}</TableCell></TableRow>}
-                            <TableRow><TableCell className="pl-6">Нераспределённая прибыль (84+99)</TableCell><TableCell className="text-right">{formatRub(balanceSheet.equity.retainedEarnings)}</TableCell></TableRow>
-                            <TableRow className="font-medium">
-                              <TableCell>Итого капитал</TableCell>
-                              <TableCell className="text-right font-bold">{formatRub(balanceSheet.equity.total)}</TableCell>
-                            </TableRow>
-
-                            <TableRow className="bg-primary/10">
-                              <TableCell className="font-bold text-lg">ВСЕГО ПАССИВ</TableCell>
-                              <TableCell className="text-right font-bold text-lg">{formatRub(balanceSheet.totalPassive)}</TableCell>
-                            </TableRow>
-                          </TableBody>
-                      </Table>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr className="bg-muted/30"><td className="font-bold p-2">Краткосрочные обязательства</td><td></td></tr>
+                          <tr><td className="pl-6 p-2">Кредиторская задолженность (60)</td><td className="text-right p-2">{formatRub(balanceSheet.liabilities.current.payables)}</td></tr>
+                          {balanceSheet.liabilities.current.customerAdvances > 0 && <tr><td className="pl-6 p-2">Авансы покупателей (62)</td><td className="text-right p-2">{formatRub(balanceSheet.liabilities.current.customerAdvances)}</td></tr>}
+                          <tr><td className="pl-6 p-2">Краткосрочные кредиты (66)</td><td className="text-right p-2">{formatRub(balanceSheet.liabilities.current.shortTermDebt)}</td></tr>
+                          {balanceSheet.liabilities.current.taxPayable > 0 && <tr><td className="pl-6 p-2">Налоги к уплате (68)</td><td className="text-right p-2">{formatRub(balanceSheet.liabilities.current.taxPayable)}</td></tr>}
+                          <tr className="font-medium"><td className="p-2">Итого краткосрочные</td><td className="text-right p-2 font-bold">{formatRub(balanceSheet.liabilities.current.total)}</td></tr>
+                          <tr className="bg-muted/30"><td className="font-bold p-2">Долгосрочные обязательства</td><td></td></tr>
+                          <tr><td className="pl-6 p-2">Долгосрочные кредиты</td><td className="text-right p-2">{formatRub(balanceSheet.liabilities.nonCurrent.longTermDebt)}</td></tr>
+                          <tr className="font-medium"><td className="p-2">Итого долгосрочные</td><td className="text-right p-2 font-bold">{formatRub(balanceSheet.liabilities.nonCurrent.total)}</td></tr>
+                          <tr className="bg-muted/50"><td className="font-bold p-2">ИТОГО ОБЯЗАТЕЛЬСТВА</td><td className="text-right p-2 font-bold">{formatRub(balanceSheet.liabilities.total)}</td></tr>
+                          <tr className="bg-muted/30"><td className="font-bold p-2">Собственный капитал</td><td></td></tr>
+                          <tr><td className="pl-6 p-2">Уставный капитал (80)</td><td className="text-right p-2">{formatRub(balanceSheet.equity.shareCapital)}</td></tr>
+                          {balanceSheet.equity.additionalCapital > 0 && <tr><td className="pl-6 p-2">Добавочный капитал (83)</td><td className="text-right p-2">{formatRub(balanceSheet.equity.additionalCapital)}</td></tr>}
+                          {balanceSheet.equity.reserveCapital > 0 && <tr><td className="pl-6 p-2">Резервный капитал (82)</td><td className="text-right p-2">{formatRub(balanceSheet.equity.reserveCapital)}</td></tr>}
+                          <tr><td className="pl-6 p-2">Нераспределённая прибыль (84+99)</td><td className="text-right p-2">{formatRub(balanceSheet.equity.retainedEarnings)}</td></tr>
+                          <tr className="font-medium"><td className="p-2">Итого капитал</td><td className="text-right p-2 font-bold">{formatRub(balanceSheet.equity.total)}</td></tr>
+                          <tr className="bg-primary/10"><td className="font-bold text-lg p-2">ВСЕГО ПАССИВ</td><td className="text-right font-bold text-lg p-2">{formatRub(balanceSheet.totalPassive)}</td></tr>
+                        </tbody>
+                      </table>
                     </Card>
                   </div>
                 ) : (
@@ -536,79 +500,35 @@ export default function ReportsPage() {
             )}
             {getAllDrillDownItems().length === 0 ? (
               <p className="text-center text-muted-foreground py-4">Нет данных за период</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Дата</TableHead>
-                    <TableHead>Номер</TableHead>
-                    <TableHead>Тип</TableHead>
-                    <TableHead>Контрагент</TableHead>
-                    <TableHead className="text-right">Сумма</TableHead>
-                    <TableHead>Связ. документ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {getAllDrillDownItems().map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDate(item.date)}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {item.isBalance ? (
-                          item.number
-                        ) : item.isPayment ? (
-                          <Link
-                            href="/finance/payments"
-                            className="text-primary hover:underline inline-flex items-center gap-1"
-                            onClick={() => setDrillDownOpen(false)}
-                          >
-                            {item.number}
-                            <ExternalLink className="h-3 w-3" />
-                          </Link>
-                        ) : (
-                          <Link
-                            href={`/documents/${item.id}`}
-                            className="text-primary hover:underline inline-flex items-center gap-1"
-                            onClick={() => setDrillDownOpen(false)}
-                          >
-                            {item.number}
-                            <ExternalLink className="h-3 w-3" />
-                          </Link>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Tag>
-                          {item.isBalance
-                            ? DOC_TYPE_LABELS["counterparty_balance"]
-                            : item.isPayment
-                            ? (item.type === "income" ? "Входящий платёж" : "Исходящий платёж")
-                            : (DOC_TYPE_LABELS[item.type] || item.type)}
-                        </Tag>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {item.counterparty || "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatRub(item.amount)}
-                      </TableCell>
-                      <TableCell>
-                        {item.isPayment && item.linkedDocument && (
-                          <Link
-                            href={`/documents/${item.linkedDocument.id}`}
-                            className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
-                            onClick={() => setDrillDownOpen(false)}
-                          >
-                            <span className="font-mono">{item.linkedDocument.number}</span>
-                            <ExternalLink className="h-3 w-3" />
-                          </Link>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            ) : (() => {
+              const drillColumns: TableColumnsType<DrillDownItem> = [
+                { key: "date", title: "Дата", render: (_, item) => <span className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(item.date)}</span> },
+                { key: "number", title: "Номер", render: (_, item) => (
+                  <span className="font-mono text-sm">
+                    {item.isBalance ? item.number : item.isPayment ? (
+                      <Link href="/finance/payments" className="text-primary hover:underline inline-flex items-center gap-1" onClick={() => setDrillDownOpen(false)}>
+                        {item.number}<ExternalLink className="h-3 w-3" />
+                      </Link>
+                    ) : (
+                      <Link href={`/documents/${item.id}`} className="text-primary hover:underline inline-flex items-center gap-1" onClick={() => setDrillDownOpen(false)}>
+                        {item.number}<ExternalLink className="h-3 w-3" />
+                      </Link>
+                    )}
+                  </span>
+                )},
+                { key: "type", title: "Тип", render: (_, item) => (
+                  <Tag>{item.isBalance ? DOC_TYPE_LABELS["counterparty_balance"] : item.isPayment ? (item.type === "income" ? "Входящий платёж" : "Исходящий платёж") : (DOC_TYPE_LABELS[item.type] || item.type)}</Tag>
+                )},
+                { key: "counterparty", title: "Контрагент", render: (_, item) => <span className="text-sm">{item.counterparty || "—"}</span> },
+                { key: "amount", title: "Сумма", align: "right", render: (_, item) => <span className="font-medium">{formatRub(item.amount)}</span> },
+                { key: "linked", title: "Связ. документ", render: (_, item) => item.isPayment && item.linkedDocument ? (
+                  <Link href={`/documents/${item.linkedDocument.id}`} className="text-primary hover:underline inline-flex items-center gap-1 text-sm" onClick={() => setDrillDownOpen(false)}>
+                    <span className="font-mono">{item.linkedDocument.number}</span><ExternalLink className="h-3 w-3" />
+                  </Link>
+                ) : null },
+              ];
+              return <Table columns={drillColumns} dataSource={getAllDrillDownItems()} rowKey="id" pagination={false} size="small" />;
+            })()}
           </div>
         ) : null}
       </Modal>

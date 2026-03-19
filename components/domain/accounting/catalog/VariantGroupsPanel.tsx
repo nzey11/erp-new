@@ -4,9 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Tag } from "antd";
 import { Input } from "@/components/ui/input";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -101,6 +100,85 @@ export function VariantGroupsPanel() {
 
   const totalPages = Math.ceil(total / 20);
 
+  const columns: TableColumnsType<VariantGroup> = [
+    {
+      key: "expand",
+      width: 40,
+      render: (_, group) => (
+        expandedGroups.has(group.id) ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        )
+      ),
+    },
+    {
+      key: "image",
+      width: 48,
+      render: (_, group) =>
+        group.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={group.imageUrl} alt="" className="h-8 w-8 rounded object-cover" />
+        ) : (
+          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          </div>
+        ),
+    },
+    {
+      key: "name",
+      title: "Мастер-товар",
+      render: (_, group) => (
+        <div className="flex items-center gap-2">
+          <Crown className="h-4 w-4 text-blue-500 shrink-0" />
+          <span className="font-medium">{group.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: "sku",
+      title: "Артикул",
+      render: (_, group) => <span className="text-muted-foreground">{group.sku || "—"}</span>,
+    },
+    {
+      key: "category",
+      title: "Категория",
+      render: (_, group) => group.category?.name || "—",
+    },
+    {
+      key: "variants",
+      title: "Вариантов",
+      align: "center",
+      render: (_, group) => (
+        <Tag color="default">
+          {group.totalVariants}
+          {group.publishedVariants > 0 && (
+            <span className="text-green-600 ml-1">({group.publishedVariants} на сайте)</span>
+          )}
+        </Tag>
+      ),
+    },
+    {
+      key: "priceRange",
+      title: "Диапазон цен",
+      align: "right",
+      render: (_, group) =>
+        group.priceRange ? (
+          <span>
+            {formatRub(group.priceRange.min)} — {formatRub(group.priceRange.max)}
+          </span>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "stock",
+      title: "Остаток",
+      align: "right",
+      render: (_, group) => (group.totalStock > 0 ? group.totalStock : "—"),
+    },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -156,126 +234,54 @@ export function VariantGroupsPanel() {
       {/* Table */}
       {(loading || groups.length > 0) && (
         <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10"></TableHead>
-                <TableHead className="w-12">Фото</TableHead>
-                <TableHead>Мастер-товар</TableHead>
-                <TableHead>Артикул</TableHead>
-                <TableHead>Категория</TableHead>
-                <TableHead className="text-center">Вариантов</TableHead>
-                <TableHead className="text-right">Диапазон цен</TableHead>
-                <TableHead className="text-right">Остаток</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    Загрузка...
-                  </TableCell>
-                </TableRow>
-              ) : (
-                groups.map((group) => (
-                  <>
-                    <TableRow
-                      key={group.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => toggleExpanded(group.id)}
-                    >
-                      <TableCell>
-                        {expandedGroups.has(group.id) ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {group.imageUrl ? (
+          <Table
+            columns={columns}
+            dataSource={groups}
+            rowKey="id"
+            pagination={false}
+            loading={loading}
+            expandable={{
+              expandedRowKeys: Array.from(expandedGroups),
+              onExpand: (_, record) => toggleExpanded(record.id),
+              expandedRowRender: (group) => (
+                <div className="bg-muted/30">
+                  {group.variants.map((variant) => (
+                    <div key={variant.id} className="flex items-center py-2 px-4 border-b border-muted last:border-0">
+                      <div className="w-10"></div>
+                      <div className="w-12">
+                        {variant.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={group.imageUrl} alt="" className="h-8 w-8 rounded object-cover" />
+                          <img src={variant.imageUrl} alt="" className="h-6 w-6 rounded object-cover" />
                         ) : (
-                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
-                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          <div className="h-6 w-6 rounded bg-muted flex items-center justify-center">
+                            <ImageIcon className="h-3 w-3 text-muted-foreground" />
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Crown className="h-4 w-4 text-blue-500 shrink-0" />
-                          {group.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {group.sku || "—"}
-                      </TableCell>
-                      <TableCell>{group.category?.name || "—"}</TableCell>
-                      <TableCell className="text-center">
-                        <Tag color="default">
-                          {group.totalVariants}
-                          {group.publishedVariants > 0 && (
-                            <span className="text-green-600 ml-1">
-                              ({group.publishedVariants} на сайте)
-                            </span>
-                          )}
-                        </Tag>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {group.priceRange ? (
-                          <span>
-                            {formatRub(group.priceRange.min)} — {formatRub(group.priceRange.max)}
-                          </span>
-                        ) : (
-                          "—"
+                      </div>
+                      <div className="flex-1 pl-4 text-sm">
+                        <span className="text-muted-foreground">└</span> {variant.name}
+                      </div>
+                      <div className="w-32 text-muted-foreground text-sm">{variant.sku || "—"}</div>
+                      <div className="w-32"></div>
+                      <div className="w-32 text-center">
+                        {variant.publishedToStore && (
+                          <Tag color="green" className="text-xs">
+                            На сайте
+                          </Tag>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {group.totalStock > 0 ? group.totalStock : "—"}
-                      </TableCell>
-                    </TableRow>
-
-                    {/* Expanded variants */}
-                    {expandedGroups.has(group.id) && group.variants.map((variant) => (
-                      <TableRow key={variant.id} className="bg-muted/30">
-                        <TableCell></TableCell>
-                        <TableCell>
-                          {variant.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={variant.imageUrl} alt="" className="h-6 w-6 rounded object-cover" />
-                          ) : (
-                            <div className="h-6 w-6 rounded bg-muted flex items-center justify-center">
-                              <ImageIcon className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="pl-8 text-sm">
-                          <span className="text-muted-foreground">└</span> {variant.name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {variant.sku || "—"}
-                        </TableCell>
-                        <TableCell></TableCell>
-                        <TableCell className="text-center">
-                          {variant.publishedToStore && (
-                            <Tag color="green" className="text-xs">
-                              На сайте
-                            </Tag>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right text-sm">
-                          {variant.salePrice != null ? formatRub(variant.salePrice) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right text-sm">
-                          {variant.stock > 0 ? variant.stock : "—"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      </div>
+                      <div className="w-32 text-right text-sm">
+                        {variant.salePrice != null ? formatRub(variant.salePrice) : "—"}
+                      </div>
+                      <div className="w-24 text-right text-sm">
+                        {variant.stock > 0 ? variant.stock : "—"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ),
+            }}
+          />
         </div>
       )}
 

@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Search, Plus, Trash2, Save } from "lucide-react";
@@ -158,6 +157,82 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
     }
   };
 
+  const columns: TableColumnsType<PriceRecord> = [
+    {
+      key: "product",
+      title: "Товар",
+      render: (_, record) => (
+        <div className="flex items-center gap-3">
+          {record.product.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={record.product.imageUrl} alt="" className="h-8 w-8 rounded object-cover" />
+          ) : (
+            <div className="h-8 w-8 rounded bg-muted" />
+          )}
+          <span className="font-medium">{record.product.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: "sku",
+      title: "Артикул",
+      render: (_, record) => <span className="text-muted-foreground">{record.product.sku || "—"}</span>,
+    },
+    {
+      key: "price",
+      title: "Цена",
+      align: "right",
+      render: (_, record) =>
+        editingId === record.id ? (
+          <div className="flex items-center justify-end gap-1">
+            <Input
+              type="number"
+              value={editPrice}
+              onChange={(e) => setEditPrice(e.target.value)}
+              className="w-28 h-8 text-right"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveEdit(record);
+                if (e.key === "Escape") cancelEdit();
+              }}
+            />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => saveEdit(record)}>
+              <Save className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <button className="hover:underline" onClick={() => startEdit(record)}>
+            {formatRub(record.price)}
+          </button>
+        ),
+    },
+    {
+      key: "minQuantity",
+      title: "Мин. кол-во",
+      align: "right",
+      render: (_, record) => (
+        <span className="text-muted-foreground">
+          {record.minQuantity} {record.product.unit?.shortName || "шт."}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      title: "",
+      width: 80,
+      render: (_, record) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive"
+          onClick={() => handleDeletePrice(record)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
+
   const startEdit = (record: PriceRecord) => {
     setEditingId(record.id);
     setEditPrice(String(record.price));
@@ -235,86 +310,12 @@ export function PriceListDetail({ priceList, onBack }: PriceListDetailProps) {
         </div>
       ) : (
         <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Товар</TableHead>
-                <TableHead>Артикул</TableHead>
-                <TableHead className="text-right">Цена</TableHead>
-                <TableHead className="text-right">Мин. кол-во</TableHead>
-                <TableHead className="w-[80px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {prices.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {record.product.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={record.product.imageUrl}
-                          alt=""
-                          className="h-8 w-8 rounded object-cover"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded bg-muted" />
-                      )}
-                      <span className="font-medium">{record.product.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {record.product.sku || "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {editingId === record.id ? (
-                      <div className="flex items-center justify-end gap-1">
-                        <Input
-                          type="number"
-                          value={editPrice}
-                          onChange={(e) => setEditPrice(e.target.value)}
-                          className="w-28 h-8 text-right"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") saveEdit(record);
-                            if (e.key === "Escape") cancelEdit();
-                          }}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => saveEdit(record)}
-                        >
-                          <Save className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <button
-                        className="hover:underline"
-                        onClick={() => startEdit(record)}
-                      >
-                        {formatRub(record.price)}
-                      </button>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {record.minQuantity} {record.product.unit?.shortName || "шт."}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => handleDeletePrice(record)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Table
+            columns={columns}
+            dataSource={prices}
+            rowKey="id"
+            pagination={false}
+          />
         </div>
       )}
 

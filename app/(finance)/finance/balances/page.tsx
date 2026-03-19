@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "antd";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,25 @@ export default function BalancesPage() {
   const [docs, setDocs] = useState<CounterpartyDoc[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
 
+  const docsColumns: TableColumnsType<CounterpartyDoc> = [
+    { key: "number", dataIndex: "number", title: "Номер", render: (num: string) => <span className="font-mono text-sm">{num}</span> },
+    { key: "type", dataIndex: "typeName", title: "Тип", render: (type: string) => <span className="text-sm">{type}</span> },
+    { key: "date", dataIndex: "date", title: "Дата", render: (date: string) => <span className="text-sm">{new Date(date).toLocaleDateString("ru-RU")}</span> },
+    { key: "totalAmount", dataIndex: "totalAmount", title: "Сумма", align: "right", render: (amount: number) => <span className="font-semibold">{formatRub(amount)}</span> },
+    {
+      key: "actions",
+      title: "",
+      width: 40,
+      render: (_, doc) => (
+        <Link href={`/documents/${doc.id}`}>
+          <Button variant="ghost" size="icon" className="h-7 w-7">
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+        </Link>
+      ),
+    },
+  ];
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -99,50 +119,53 @@ export default function BalancesPage() {
     }
   };
 
+  const getBalanceColumns = (colorClass: string): TableColumnsType<Balance> => [
+    {
+      key: "counterparty",
+      title: "Контрагент",
+      render: (_, b) => (
+        <Link href={`/counterparties/${b.counterparty.id}`} className="hover:underline text-primary font-medium">
+          {b.counterparty.name}
+        </Link>
+      ),
+    },
+    {
+      key: "type",
+      title: "Тип",
+      render: (_, b) => <Tag>{COUNTERPARTY_TYPE_LABELS[b.counterparty.type] ?? b.counterparty.type}</Tag>,
+    },
+    {
+      key: "balance",
+      dataIndex: "balanceRub",
+      title: "Сумма",
+      align: "right",
+      render: (balance: number) => <span className={`font-semibold ${colorClass}`}>{formatRub(Math.abs(balance))}</span>,
+    },
+    {
+      key: "actions",
+      title: "",
+      width: 40,
+      render: (_, b) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          title="Документы контрагента"
+          onClick={() => openDocs(b.counterparty)}
+        >
+          <FileText className="h-3.5 w-3.5" />
+        </Button>
+      ),
+    },
+  ];
+
   const BalanceTable = ({ items, colorClass }: { items: Balance[]; colorClass: string }) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Контрагент</TableHead>
-          <TableHead>Тип</TableHead>
-          <TableHead className="text-right">Сумма</TableHead>
-          <TableHead className="w-10"></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((b) => (
-          <TableRow key={b.id}>
-            <TableCell className="font-medium">
-              <Link
-                href={`/counterparties/${b.counterparty.id}`}
-                className="hover:underline text-primary"
-              >
-                {b.counterparty.name}
-              </Link>
-            </TableCell>
-            <TableCell>
-              <Tag>
-                {COUNTERPARTY_TYPE_LABELS[b.counterparty.type] ?? b.counterparty.type}
-              </Tag>
-            </TableCell>
-            <TableCell className={`text-right font-semibold ${colorClass}`}>
-              {formatRub(Math.abs(b.balanceRub))}
-            </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                title="Документы контрагента"
-                onClick={() => openDocs(b.counterparty)}
-              >
-                <FileText className="h-3.5 w-3.5" />
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <Table
+      columns={getBalanceColumns(colorClass)}
+      dataSource={items}
+      rowKey="id"
+      pagination={false}
+    />
   );
 
   return (
@@ -230,34 +253,12 @@ export default function BalancesPage() {
         ) : docs.length === 0 ? (
           <div className="py-6 text-center text-muted-foreground text-sm">Подтверждённых документов нет</div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Номер</TableHead>
-                <TableHead>Тип</TableHead>
-                <TableHead>Дата</TableHead>
-                <TableHead className="text-right">Сумма</TableHead>
-                <TableHead className="w-10"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {docs.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell className="font-mono text-sm">{doc.number}</TableCell>
-                  <TableCell className="text-sm">{doc.typeName}</TableCell>
-                  <TableCell className="text-sm">{new Date(doc.date).toLocaleDateString("ru-RU")}</TableCell>
-                  <TableCell className="text-right font-semibold">{formatRub(doc.totalAmount)}</TableCell>
-                  <TableCell>
-                    <Link href={`/documents/${doc.id}`}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Table
+            columns={docsColumns}
+            dataSource={docs}
+            rowKey="id"
+            pagination={false}
+          />
         )}
       </Modal>
     </div>

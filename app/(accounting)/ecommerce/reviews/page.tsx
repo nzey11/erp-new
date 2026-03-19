@@ -8,9 +8,8 @@ import { Card } from "antd";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Star, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -142,6 +141,108 @@ export default function ReviewsPage() {
     );
   };
 
+  const columns: TableColumnsType<Review> = [
+    {
+      key: "product",
+      title: "Товар",
+      render: (_, review) => (
+        <div>
+          <p className="font-medium">{review.product.name}</p>
+          {review.product.sku && (
+            <p className="text-xs text-muted-foreground">{review.product.sku}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "customer",
+      title: "Покупатель",
+      render: (_, review) => (
+        <div>
+          <p>{getCustomerDisplay(review)}</p>
+          {review.isVerifiedPurchase && (
+            <Tag color="default" className="mt-1 text-xs">
+              Подтверждённая покупка
+            </Tag>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "rating",
+      dataIndex: "rating",
+      title: "Оценка",
+      render: (rating: number) => renderStars(rating),
+    },
+    {
+      key: "review",
+      title: "Отзыв",
+      render: (_, review) => (
+        <div className="max-w-xs">
+          {review.title && <p className="font-medium text-sm mb-1">{review.title}</p>}
+          {review.comment && (
+            <p className="text-sm text-muted-foreground line-clamp-2">{review.comment}</p>
+          )}
+          {!review.title && !review.comment && (
+            <span className="text-sm text-muted-foreground">—</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      dataIndex: "isPublished",
+      title: "Статус",
+      render: (isPublished: boolean) => (
+        <Tag color={isPublished ? "blue" : "default"}>
+          {isPublished ? "Опубликован" : "Не опубликован"}
+        </Tag>
+      ),
+    },
+    {
+      key: "createdAt",
+      dataIndex: "createdAt",
+      title: "Дата",
+      render: (createdAt: string) => (
+        <span className="text-sm text-muted-foreground">{formatDateTime(createdAt)}</span>
+      ),
+    },
+    {
+      key: "actions",
+      title: "Действия",
+      render: (_, review) => (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => togglePublished(review)}
+            disabled={updating === review.id}
+          >
+            {review.isPublished ? (
+              <>
+                <EyeOff className="h-3 w-3 mr-1" />
+                Скрыть
+              </>
+            ) : (
+              <>
+                <Eye className="h-3 w-3 mr-1" />
+                Опубликовать
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => handleDelete(review.id)}
+            disabled={deleting === review.id}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -166,113 +267,14 @@ export default function ReviewsPage() {
 
       {/* Reviews table */}
       <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Товар</TableHead>
-              <TableHead>Покупатель</TableHead>
-              <TableHead>Оценка</TableHead>
-              <TableHead>Отзыв</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead>Дата</TableHead>
-              <TableHead>Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={7}>
-                    <div className="h-8 bg-muted animate-pulse rounded" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : filteredReviews.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Отзывы не найдены
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredReviews.map((review) => (
-                <TableRow key={review.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{review.product.name}</p>
-                      {review.product.sku && (
-                        <p className="text-xs text-muted-foreground">{review.product.sku}</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p>{getCustomerDisplay(review)}</p>
-                      {review.isVerifiedPurchase && (
-                        <Tag color="default" className="mt-1 text-xs">
-                          Подтверждённая покупка
-                        </Tag>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{renderStars(review.rating)}</TableCell>
-                  <TableCell className="max-w-xs">
-                    {review.title && (
-                      <p className="font-medium text-sm mb-1">{review.title}</p>
-                    )}
-                    {review.comment && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {review.comment}
-                      </p>
-                    )}
-                    {!review.title && !review.comment && (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Tag
-                      color={review.isPublished ? "blue" : "default"}
-                    >
-                      {review.isPublished ? "Опубликован" : "Не опубликован"}
-                    </Tag>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDateTime(review.createdAt)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => togglePublished(review)}
-                        disabled={updating === review.id}
-                      >
-                        {review.isPublished ? (
-                          <>
-                            <EyeOff className="h-3 w-3 mr-1" />
-                            Скрыть
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="h-3 w-3 mr-1" />
-                            Опубликовать
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(review.id)}
-                        disabled={deleting === review.id}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <Table
+          columns={columns}
+          dataSource={filteredReviews}
+          rowKey="id"
+          pagination={false}
+          loading={loading}
+          locale={{ emptyText: "Отзывы не найдены" }}
+        />
       </Card>
     </div>
   );

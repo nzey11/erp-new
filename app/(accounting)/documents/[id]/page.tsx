@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tag } from "antd";
 import { Card } from "antd";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+import { Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { Modal } from "antd";
 import { Label } from "@/components/ui/label";
 import {
@@ -599,6 +598,180 @@ export default function DocumentDetailPage() {
 
   const linkedOptions = LINKED_DOC_TYPES[doc.type] || [];
 
+  // Items table component with dynamic columns based on doc type
+  const ItemsTable = () => {
+    const isInventory = doc!.type === "inventory_count";
+    const isDraft = doc!.status === "draft";
+
+    const baseColumns = [
+      { key: "index", title: "#", width: 40, render: (_: unknown, __: DocumentItem, index: number) => <span className="text-muted-foreground">{index + 1}</span> },
+      { key: "name", title: "Товар", render: (_: unknown, item: DocumentItem) => <span className="font-medium">{item.product.name}</span> },
+      { key: "sku", title: "Артикул", render: (_: unknown, item: DocumentItem) => <span className="text-muted-foreground">{item.product.sku || "—"}</span> },
+      { key: "unit", title: "Ед.", render: (_: unknown, item: DocumentItem) => <span className="text-muted-foreground text-xs">{item.product.unit?.shortName || "—"}</span> },
+    ];
+
+    const inventoryColumns = isInventory ? [
+      { key: "expectedQty", title: "По учёту", align: "right" as const, render: (_: unknown, item: DocumentItem) => <span className="text-muted-foreground">{item.expectedQty ?? 0}</span> },
+      {
+        key: "actualQty",
+        title: "Факт",
+        align: "right" as const,
+        render: (_: unknown, item: DocumentItem, index: number) =>
+          isDraft ? (
+            <Input
+              type="number"
+              min="0"
+              step="0.001"
+              className="w-24 h-7 text-right text-sm"
+              value={editingActualQty[index] ?? String(item.actualQty ?? 0)}
+              onChange={(e) => setEditingActualQty((prev) => ({ ...prev, [index]: e.target.value }))}
+              onBlur={() => {
+                const raw = editingActualQty[index];
+                if (raw !== undefined) handleUpdateActualQty(index, parseFloat(raw) || 0);
+              }}
+            />
+          ) : (
+            <span>{item.actualQty ?? 0}</span>
+          ),
+      },
+      {
+        key: "difference",
+        title: "Отклонение",
+        align: "right" as const,
+        render: (_: unknown, item: DocumentItem, index: number) => {
+          const actual = isDraft && editingActualQty[index] !== undefined ? (parseFloat(editingActualQty[index]) || 0) : (item.actualQty ?? 0);
+          const diff = actual - (item.expectedQty ?? 0);
+          return (
+            <span className="font-medium" style={{ color: diff < 0 ? "#ef4444" : diff > 0 ? "#22c55e" : undefined }}>
+              {diff > 0 ? "+" : ""}{diff % 1 === 0 ? diff : diff.toFixed(3)}
+            </span>
+          );
+        },
+      },
+    ] : [];
+
+    const quantityColumn = !isInventory ? [
+      {
+        key: "quantity",
+        title: "Кол-во",
+        align: "right" as const,
+        render: (_: unknown, item: DocumentItem, index: number) =>
+          isDraft ? (
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              className="w-20 h-7 text-right text-sm"
+              value={editingItems[index]?.quantity ?? String(item.quantity)}
+              onChange={(e) => setEditingItems((prev) => ({ ...prev, [index]: { quantity: e.target.value, price: prev[index]?.price ?? String(item.price) } }))}
+              onBlur={() => {
+                const ed = editingItems[index];
+                if (ed) handleUpdateItem(index, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
+              }}
+            />
+          ) : (
+            <span>{item.quantity}</span>
+          ),
+      },
+    ] : [];
+
+    const priceColumn = [
+      {
+        key: "price",
+        title: "Цена",
+        align: "right" as const,
+        render: (_: unknown, item: DocumentItem, index: number) =>
+          isDraft && !isInventory ? (
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              className="w-28 h-7 text-right text-sm"
+              value={editingItems[index]?.price ?? String(item.price)}
+              onChange={(e) => setEditingItems((prev) => ({ ...prev, [index]: { quantity: prev[index]?.quantity ?? String(item.quantity), price: e.target.value } }))}
+              onBlur={() => {
+                const ed = editingItems[index];
+                if (ed) handleUpdateItem(index, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
+              }}
+            />
+          ) : (
+            <span>{formatRub(item.price)}</span>
+          ),
+      },
+    ];
+
+    const inventoryTotalColumns = isInventory ? [
+      {
+        key: "actualTotal",
+        title: "Сумма факта",
+        align: "right" as const,
+        render: (_: unknown, item: DocumentItem, index: number) => {
+          const actual = isDraft && editingActualQty[index] !== undefined ? (parseFloat(editingActualQty[index]) || 0) : (item.actualQty ?? 0);
+          return <span className="font-medium">{formatRub(actual * Number(item.price))}</span>;
+        },
+      },
+      {
+        key: "diffTotal",
+        title: "Сумма отклонения",
+        align: "right" as const,
+        render: (_: unknown, item: DocumentItem, index: number) => {
+          const actual = isDraft && editingActualQty[index] !== undefined ? (parseFloat(editingActualQty[index]) || 0) : (item.actualQty ?? 0);
+          const diff = Math.abs(actual - (item.expectedQty ?? 0));
+          return <span className="font-medium" style={{ color: diff > 0 ? "#ef4444" : undefined }}>{formatRub(diff * Number(item.price))}</span>;
+        },
+      },
+    ] : [];
+
+    const totalColumn = !isInventory ? [
+      { key: "total", title: "Сумма", align: "right" as const, render: (_: unknown, item: DocumentItem) => <span className="font-medium">{formatRub(Number(item.price) * Number(item.quantity))}</span> },
+    ] : [];
+
+    const actionsColumn = isDraft ? [
+      {
+        key: "actions",
+        title: "",
+        width: 60,
+        render: (_: unknown, __: DocumentItem, index: number) => (
+          <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(index)}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        ),
+      },
+    ] : [];
+
+    const columns = [...baseColumns, ...inventoryColumns, ...quantityColumn, ...priceColumn, ...inventoryTotalColumns, ...totalColumn, ...actionsColumn];
+
+    const emptyText = isInventory && isDraft
+      ? "Нет позиций. Используйте «Заполнить» или добавьте позиции вручную"
+      : ["write_off", "stock_receipt"].includes(doc!.type) && isDraft
+      ? "Нет позиций. Нажмите «Добавить позицию» для добавления товаров"
+      : "Нет позиций";
+
+    return <Table columns={columns} dataSource={doc!.items} rowKey="id" pagination={false} locale={{ emptyText }} />;
+  };
+
+  // Journal entries table component
+  const JournalEntryTable = ({ entry, entryIndex }: { entry: JournalEntryDisplay; entryIndex: number }) => {
+    const lineColumns: TableColumnsType<JournalLine> = [
+      { key: "accountCode", dataIndex: "accountCode", title: "Счёт", render: (v: string) => <span className="font-mono text-sm">{v}</span> },
+      { key: "accountName", dataIndex: "accountName", title: "Название", render: (v: string) => <span className="text-sm">{v}</span> },
+      { key: "debit", dataIndex: "debit", title: "Дебет", align: "right" as const, render: (v: number) => <span className="text-sm">{v > 0 ? formatRub(v) : "—"}</span> },
+      { key: "credit", dataIndex: "credit", title: "Кредит", align: "right" as const, render: (v: number) => <span className="text-sm">{v > 0 ? formatRub(v) : "—"}</span> },
+    ];
+
+    return (
+      <div className={entryIndex > 0 ? "mt-4" : ""}>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="font-mono text-sm font-medium">{entry.number}</span>
+          <span className="text-xs text-muted-foreground">{formatDate(entry.date)}</span>
+          {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
+          {entry.isReversed && <span className="text-xs text-destructive font-medium">СТОРНО</span>}
+        </div>
+        <Table columns={lineColumns} dataSource={entry.lines} rowKey="id" pagination={false} />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -790,191 +963,7 @@ export default function DocumentDetailPage() {
             label: `Позиции (${doc.items.length})`,
             children: (
               <Card>
-                <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-8">#</TableHead>
-                        <TableHead>Товар</TableHead>
-                        <TableHead>Артикул</TableHead>
-                        <TableHead>Ед.</TableHead>
-                        {doc.type === "inventory_count" ? (
-                          <>
-                            <TableHead className="text-right">По учёту</TableHead>
-                            <TableHead className="text-right">Факт</TableHead>
-                            <TableHead className="text-right">Отклонение</TableHead>
-                          </>
-                        ) : (
-                          <TableHead className="text-right">Кол-во</TableHead>
-                        )}
-                        <TableHead className="text-right">Цена</TableHead>
-                        {doc.type === "inventory_count" ? (
-                          <>
-                            <TableHead className="text-right">Сумма факта</TableHead>
-                            <TableHead className="text-right">Сумма отклонения</TableHead>
-                          </>
-                        ) : (
-                          <TableHead className="text-right">Сумма</TableHead>
-                        )}
-                        {doc.status === "draft" && <TableHead className="w-20" />}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {doc.items.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={doc.type === "inventory_count" ? (doc.status === "draft" ? 10 : 9) : (doc.status === "draft" ? 8 : 7)}
-                            className="text-center text-muted-foreground py-8"
-                          >
-                            {doc.type === "inventory_count" && doc.status === "draft"
-                              ? "Нет позиций. Используйте «Заполнить» или добавьте позиции вручную"
-                              : ["write_off", "stock_receipt"].includes(doc.type) && doc.status === "draft"
-                              ? "Нет позиций. Нажмите «Добавить позицию» для добавления товаров"
-                              : "Нет позиций"
-                            }
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        doc.items.map((item, i) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                            <TableCell className="font-medium">{item.product.name}</TableCell>
-                            <TableCell className="text-muted-foreground">{item.product.sku || "—"}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs">{item.product.unit?.shortName || "—"}</TableCell>
-
-                            {doc.type === "inventory_count" ? (
-                              <>
-                                {/* По учёту: expectedQty (read-only) */}
-                                <TableCell className="text-right text-muted-foreground">
-                                  {item.expectedQty ?? 0}
-                                </TableCell>
-
-                                {/* Факт: actualQty (editable in draft) */}
-                                <TableCell className="text-right">
-                                  {doc.status === "draft" ? (
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.001"
-                                      className="w-24 h-7 text-right text-sm"
-                                      value={editingActualQty[i] ?? String(item.actualQty ?? 0)}
-                                      onChange={(e) =>
-                                        setEditingActualQty((prev) => ({ ...prev, [i]: e.target.value }))
-                                      }
-                                      onBlur={() => {
-                                        const raw = editingActualQty[i];
-                                        if (raw !== undefined) {
-                                          handleUpdateActualQty(i, parseFloat(raw) || 0);
-                                        }
-                                      }}
-                                    />
-                                  ) : (
-                                    <span>{item.actualQty ?? 0}</span>
-                                  )}
-                                </TableCell>
-
-                                {/* Отклонение: computed from actualQty - expectedQty */}
-                                <TableCell className="text-right">
-                                  {(() => {
-                                    const actual = doc.status === "draft" && editingActualQty[i] !== undefined
-                                      ? (parseFloat(editingActualQty[i]) || 0)
-                                      : (item.actualQty ?? 0);
-                                    const diff = actual - (item.expectedQty ?? 0);
-                                    return (
-                                      <span
-                                        className="font-medium"
-                                        style={{
-                                          color: diff < 0 ? "#ef4444" : diff > 0 ? "#22c55e" : undefined,
-                                        }}
-                                      >
-                                        {diff > 0 ? "+" : ""}{diff % 1 === 0 ? diff : diff.toFixed(3)}
-                                      </span>
-                                    );
-                                  })()}
-                                </TableCell>
-                              </>
-                            ) : (
-                              /* Standard quantity column for non-inventory docs */
-                              <TableCell className="text-right">
-                                {doc.status === "draft" ? (
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    className="w-20 h-7 text-right text-sm"
-                                    value={editingItems[i]?.quantity ?? String(item.quantity)}
-                                    onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: e.target.value, price: prev[i]?.price ?? String(item.price) } }))}
-                                    onBlur={() => {
-                                      const ed = editingItems[i];
-                                      if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
-                                    }}
-                                  />
-                                ) : item.quantity}
-                              </TableCell>
-                            )}
-
-                            <TableCell className="text-right">
-                              {doc.status === "draft" && doc.type !== "inventory_count" ? (
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  className="w-28 h-7 text-right text-sm"
-                                  value={editingItems[i]?.price ?? String(item.price)}
-                                  onChange={(e) => setEditingItems((prev) => ({ ...prev, [i]: { quantity: prev[i]?.quantity ?? String(item.quantity), price: e.target.value } }))}
-                                  onBlur={() => {
-                                    const ed = editingItems[i];
-                                    if (ed) handleUpdateItem(i, parseFloat(ed.quantity) || item.quantity, parseFloat(ed.price) || item.price);
-                                  }}
-                                />
-                              ) : formatRub(item.price)}
-                            </TableCell>
-                            {doc.type === "inventory_count" ? (
-                              <>
-                                {/* Сумма факта = actualQty * price */}
-                                <TableCell className="text-right font-medium">
-                                  {(() => {
-                                    const actual = doc.status === "draft" && editingActualQty[i] !== undefined
-                                      ? (parseFloat(editingActualQty[i]) || 0)
-                                      : (item.actualQty ?? 0);
-                                    return formatRub(actual * Number(item.price));
-                                  })()}
-                                </TableCell>
-                                {/* Сумма отклонения = |actualQty - expectedQty| * price */}
-                                <TableCell className="text-right font-medium">
-                                  {(() => {
-                                    const actual = doc.status === "draft" && editingActualQty[i] !== undefined
-                                      ? (parseFloat(editingActualQty[i]) || 0)
-                                      : (item.actualQty ?? 0);
-                                    const diff = Math.abs(actual - (item.expectedQty ?? 0));
-                                    return (
-                                      <span style={{ color: diff > 0 ? "#ef4444" : undefined }}>
-                                        {formatRub(diff * Number(item.price))}
-                                      </span>
-                                    );
-                                  })()}
-                                </TableCell>
-                              </>
-                            ) : (
-                              <TableCell className="text-right font-medium">
-                                {formatRub(Number(item.price) * Number(item.quantity))}
-                              </TableCell>
-                            )}
-                            {doc.status === "draft" && (
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleRemoveItem(i)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                <ItemsTable />
               </Card>
             ),
           },
@@ -996,41 +985,10 @@ export default function DocumentDetailPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {journalEntries.map((entry) => (
-                        <div key={entry.id}>
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="font-mono text-sm font-medium">{entry.number}</span>
-                            <span className="text-xs text-muted-foreground">{formatDate(entry.date)}</span>
-                            {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
-                            {entry.isReversed && <span className="text-xs text-destructive font-medium">СТОРНО</span>}
-                          </div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Счёт</TableHead>
-                                <TableHead>Название</TableHead>
-                                <TableHead className="text-right">Дебет</TableHead>
-                                <TableHead className="text-right">Кредит</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {entry.lines.map((line) => (
-                                <TableRow key={line.id}>
-                                  <TableCell className="font-mono text-sm">{line.accountCode}</TableCell>
-                                  <TableCell className="text-sm">{line.accountName}</TableCell>
-                                  <TableCell className="text-right text-sm">
-                                    {line.debit > 0 ? formatRub(line.debit) : "—"}
-                                  </TableCell>
-                                  <TableCell className="text-right text-sm">
-                                    {line.credit > 0 ? formatRub(line.credit) : "—"}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      ))}
-                    </div>
+                    {journalEntries.map((entry, entryIndex) => (
+                      <JournalEntryTable key={entry.id} entry={entry} entryIndex={entryIndex} />
+                    ))}
+                  </div>
                   )}
               </Card>
             ),
