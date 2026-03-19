@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "antd";
-import { DataGrid } from "@/components/ui/data-grid";
-import type { DataGridColumn } from "@/components/ui/data-grid";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
+import { ERPToolbar } from "@/components/erp/erp-toolbar";
 import { Tag, Table, type TableColumnsType, Modal, Input, Typography } from "antd";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNumber, formatRub } from "@/lib/shared/utils";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -157,59 +158,41 @@ export default function WarehousesPage() {
     },
   ];
 
-  const columns: DataGridColumn<Warehouse>[] = [
+  const columns: ERPColumn<Warehouse>[] = [
     {
-      accessorKey: "name",
-      header: "Название",
-      size: 200,
-      meta: { canHide: false },
-      cell: ({ row }) => (
-        <button className="font-medium hover:underline text-left" onClick={(e) => { e.stopPropagation(); viewStock(row.original); }}>
-          {row.original.name}
+      key: "name",
+      dataIndex: "name",
+      title: "Название",
+      width: 200,
+      render: (_, row) => (
+        <button className="font-medium hover:underline text-left" onClick={(e) => { e.stopPropagation(); viewStock(row); }}>
+          {row.name}
         </button>
       ),
     },
     {
-      accessorKey: "address",
-      header: "Адрес",
-      size: 250,
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.address || "—"}</span>,
+      key: "address",
+      dataIndex: "address",
+      title: "Адрес",
+      width: 250,
+      render: (_, row) => <span className="text-muted-foreground">{row.address || "—"}</span>,
     },
     {
-      accessorKey: "responsibleName",
-      header: "Ответственный",
-      size: 200,
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.responsibleName || "—"}</span>,
+      key: "responsibleName",
+      dataIndex: "responsibleName",
+      title: "Ответственный",
+      width: 200,
+      render: (_, row) => <span className="text-muted-foreground">{row.responsibleName || "—"}</span>,
     },
     {
-      accessorKey: "isActive",
-      header: "Статус",
-      size: 120,
-      cell: ({ row }) => (
-        <Tag color={row.original.isActive ? "blue" : "default"}>
-          {row.original.isActive ? "Активен" : "Неактивен"}
+      key: "isActive",
+      dataIndex: "isActive",
+      title: "Статус",
+      width: 120,
+      render: (_, row) => (
+        <Tag color={row.isActive ? "blue" : "default"}>
+          {row.isActive ? "Активен" : "Неактивен"}
         </Tag>
-      ),
-    },
-    {
-      id: "actions",
-      size: 100,
-      enableResizing: false,
-      meta: { canHide: false },
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          <Button type="text" size="small" onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            type="text"
-            size="small"
-            className="text-destructive hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); openDelete(row.original); }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
       ),
     },
   ];
@@ -219,20 +202,35 @@ export default function WarehousesPage() {
       <PageHeader
         title="Склады"
         description={`Всего: ${grid.data.length}`}
-        actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Добавить склад
-          </Button>
-        }
       />
 
-      <DataGrid
-        {...grid.gridProps}
+      <ERPToolbar
+        onCreateClick={openCreate}
+        createLabel="Добавить склад"
+      />
+
+      <ERPTable
+        data={grid.data}
         columns={columns}
-        emptyMessage="Нет складов"
-        persistenceKey="warehouses"
-        stickyHeader={false}
+        loading={grid.loading}
+        emptyText="Нет складов"
+        rowActions={(row) => (
+          <div className="flex items-center gap-1">
+            <Button
+              type="text"
+              size="small"
+              onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+              icon={<Pencil className="h-4 w-4" />}
+            />
+            <Button
+              type="text"
+              size="small"
+              className="text-destructive hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); openDelete(row); }}
+              icon={<Trash2 className="h-4 w-4" />}
+            />
+          </div>
+        )}
       />
 
       {/* Create/Edit Dialog */}

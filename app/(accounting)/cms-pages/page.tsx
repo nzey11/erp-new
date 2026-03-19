@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button, Tag } from "antd";
-import { DataGrid } from "@/components/ui/data-grid";
-import type { DataGridColumn } from "@/components/ui/data-grid";
-import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { Button, Input, Tag } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
+import { ERPToolbar } from "@/components/erp/erp-toolbar";
+import { Pencil, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
 import { formatDate } from "@/lib/shared/utils";
@@ -66,85 +67,88 @@ export default function CmsPagesListPage() {
     }
   };
 
-  const columns: DataGridColumn<StorePage>[] = [
+  const columns: ERPColumn<StorePage>[] = [
     {
-      accessorKey: "title",
-      header: "Заголовок",
-      size: 250,
-      meta: { canHide: false },
-      cell: ({ row }) => <span className="font-medium">{row.original.title}</span>,
+      key: "title",
+      dataIndex: "title",
+      title: "Заголовок",
+      width: 250,
+      render: (_, row) => <span className="font-medium">{row.title}</span>,
     },
     {
-      accessorKey: "slug",
-      header: "Slug",
-      size: 220,
-      cell: ({ row }) => (
+      key: "slug",
+      dataIndex: "slug",
+      title: "Slug",
+      width: 220,
+      render: (_, row) => (
         <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-          /store/pages/{row.original.slug}
+          /store/pages/{row.slug}
         </code>
       ),
     },
     {
-      accessorKey: "sortOrder",
-      header: "Порядок",
-      size: 80,
-      meta: { align: "center" as const },
-      cell: ({ row }) => row.original.sortOrder,
+      key: "sortOrder",
+      dataIndex: "sortOrder",
+      title: "Порядок",
+      width: 80,
+      align: "center",
+      render: (_, row) => row.sortOrder,
     },
     {
-      accessorKey: "isPublished",
-      header: "Статус",
-      size: 120,
-      cell: ({ row }) => (
+      key: "isPublished",
+      dataIndex: "isPublished",
+      title: "Статус",
+      width: 120,
+      render: (_, row) => (
         <Tag
-          color={row.original.isPublished ? "blue" : "default"}
+          color={row.isPublished ? "blue" : "default"}
           className="cursor-pointer"
-          onClick={(e) => { e.stopPropagation(); handleTogglePublish(row.original); }}
+          onClick={(e) => { e.stopPropagation(); handleTogglePublish(row); }}
         >
-          {row.original.isPublished ? "Опубликовано" : "Черновик"}
+          {row.isPublished ? "Опубликовано" : "Черновик"}
         </Tag>
       ),
     },
     {
-      accessorKey: "showInFooter",
-      header: "Футер",
-      size: 80,
-      cell: ({ row }) => (
+      key: "showInFooter",
+      dataIndex: "showInFooter",
+      title: "Футер",
+      width: 80,
+      render: (_, row) => (
         <span className="text-sm text-muted-foreground">
-          {row.original.showInFooter ? "Да" : "Нет"}
+          {row.showInFooter ? "Да" : "Нет"}
         </span>
       ),
     },
     {
-      accessorKey: "updatedAt",
-      header: "Дата",
-      size: 120,
-      cell: ({ row }) => (
+      key: "updatedAt",
+      dataIndex: "updatedAt",
+      title: "Дата",
+      width: 120,
+      render: (_, row) => (
         <span className="text-sm text-muted-foreground">
-          {formatDate(row.original.updatedAt)}
+          {formatDate(row.updatedAt)}
         </span>
       ),
     },
     {
-      id: "actions",
-      header: "Действия",
-      size: 150,
-      enableResizing: false,
-      meta: { canHide: false },
-      cell: ({ row }) => (
+      key: "actions",
+      title: "Действия",
+      width: 150,
+      render: (_, row) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             size="small"
             variant="outlined"
-            onClick={() => router.push(`/cms-pages/${row.original.id}`)}
+            onClick={() => router.push(`/cms-pages/${row.id}`)}
             title="Редактировать"
             icon={<Pencil className="h-3 w-3" />}
           />
-          {row.original.isPublished && (
+          {row.isPublished && (
             <Button
               size="small"
               variant="outlined"
-              onClick={() => window.open(`/store/pages/${row.original.slug}`, "_blank")}
+              onClick={() => window.open(`/store/pages/${row.slug}`, "_blank")}
               title="Открыть на сайте"
               icon={<ExternalLink className="h-3 w-3" />}
             />
@@ -152,8 +156,8 @@ export default function CmsPagesListPage() {
           <Button
             size="small"
             danger
-            onClick={() => handleDelete(row.original.id)}
-            disabled={deleting === row.original.id}
+            onClick={() => handleDelete(row.id)}
+            disabled={deleting === row.id}
             title="Удалить"
             icon={<Trash2 className="h-3 w-3" />}
           />
@@ -167,26 +171,26 @@ export default function CmsPagesListPage() {
       <PageHeader
         title="CMS-страницы"
         description="Управление статическими страницами магазина"
-        actions={
-          <Button type="primary" onClick={() => router.push("/cms-pages/new")} icon={<Plus className="h-4 w-4" />}>
-            Новая страница
-          </Button>
+      />
+
+      <ERPToolbar
+        onCreateClick={() => router.push("/cms-pages/new")}
+        createLabel="Новая страница"
+        extraActions={
+          <Input
+            placeholder="Поиск по заголовку..."
+            value={grid.search}
+            onChange={(e) => grid.setSearch(e.target.value)}
+            style={{ width: 250 }}
+          />
         }
       />
 
-      <DataGrid
-        {...grid.gridProps}
+      <ERPTable
+        data={grid.data}
         columns={columns}
-        emptyMessage={grid.search ? "Страницы не найдены" : "Нет созданных страниц"}
-        persistenceKey="cms-pages"
-        toolbar={{
-          ...grid.gridProps.toolbar,
-          search: {
-            value: grid.search,
-            onChange: grid.setSearch,
-            placeholder: "Поиск по заголовку...",
-          },
-        }}
+        loading={grid.loading}
+        emptyText={grid.search ? "Страницы не найдены" : "Нет созданных страниц"}
       />
     </div>
   );

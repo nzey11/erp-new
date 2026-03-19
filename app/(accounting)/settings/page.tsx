@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "antd";
 import { Tag, Card, Modal, Select, Input, Typography } from "antd";
-import type { DataGridColumn } from "@/components/ui/data-grid";
-import { DataGrid } from "@/components/ui/data-grid";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
@@ -129,47 +129,48 @@ export default function SettingsPage() {
     }
   };
 
-  const columns: DataGridColumn<User>[] = [
+  const columns: ERPColumn<User>[] = [
     {
-      accessorKey: "username",
-      header: "Логин",
-      size: 180,
-      meta: { canHide: false },
-      cell: ({ row }) => <span className="font-medium">{row.original.username}</span>,
+      key: "username",
+      dataIndex: "username",
+      title: "Логин",
+      width: 180,
+      render: (_, row) => <span className="font-medium">{row.username}</span>,
     },
     {
-      accessorKey: "email",
-      header: "Email",
-      size: 220,
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.email || "—"}</span>,
+      key: "email",
+      dataIndex: "email",
+      title: "Email",
+      width: 220,
+      render: (_, row) => <span className="text-muted-foreground">{row.email || "—"}</span>,
     },
     {
-      accessorKey: "role",
-      header: "Роль",
-      size: 150,
-      cell: ({ row }) => (
-        <Tag>{ROLE_LABELS[row.original.role] || row.original.role}</Tag>
+      key: "role",
+      dataIndex: "role",
+      title: "Роль",
+      width: 150,
+      render: (_, row) => (
+        <Tag>{ROLE_LABELS[row.role] || row.role}</Tag>
       ),
     },
     {
-      accessorKey: "isActive",
-      header: "Статус",
-      size: 120,
-      cell: ({ row }) => (
-        <Tag color={row.original.isActive ? "blue" : "default"}>
-          {row.original.isActive ? "Активен" : "Неактивен"}
+      key: "isActive",
+      dataIndex: "isActive",
+      title: "Статус",
+      width: 120,
+      render: (_, row) => (
+        <Tag color={row.isActive ? "blue" : "default"}>
+          {row.isActive ? "Активен" : "Неактивен"}
         </Tag>
       ),
     },
     {
-      id: "actions",
-      size: 50,
-      enableResizing: false,
-      meta: { canHide: false },
-      cell: ({ row }) => (
-        <Button type="text" size="small" onClick={(e) => { e.stopPropagation(); openEditUser(row.original); }}>
-          <Pencil className="h-4 w-4" />
-        </Button>
+      key: "actions",
+      title: "",
+      width: 50,
+      align: "center",
+      render: (_, row) => (
+        <Button type="text" size="small" onClick={(e) => { e.stopPropagation(); openEditUser(row); }} icon={<Pencil className="h-4 w-4" />} />
       ),
     },
   ];
@@ -252,17 +253,16 @@ export default function SettingsPage() {
       </Card>
 
       <Card title={<span>Пользователи ({grid.data.length})</span>} extra={
-        <Button size="small" onClick={openCreateUser}>
-          <UserPlus className="h-4 w-4 mr-2" />
+        <Button size="small" onClick={openCreateUser} icon={<UserPlus className="h-4 w-4" />}>
           Добавить
         </Button>
       }>
-        <DataGrid
-          {...grid.gridProps}
+        <ERPTable
+          data={grid.data}
           columns={columns}
-          emptyMessage="Нет пользователей"
-          persistenceKey="settings-users"
-          stickyHeader={false}
+          loading={grid.loading}
+          emptyText="Нет пользователей"
+          size="small"
         />
       </Card>
 

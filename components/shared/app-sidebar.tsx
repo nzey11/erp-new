@@ -89,6 +89,9 @@ export function AppSidebar() {
     () => false,
   );
 
+  // Debug logging
+  console.log("[DEBUG] sidebar rendered, collapsed:", collapsed, "mounted:", mounted, "mobileOpen:", mobileOpen);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.ok ? r.json() : null)
@@ -307,11 +310,11 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
+      {/* Mobile toggle - only visible on small screens */}
       <Button
         type="text"
         shape="circle"
-        className="fixed top-3 left-3 z-50 md:hidden"
+        className="fixed top-3 left-3 z-30 hidden md:hidden"
         onClick={() => setMobileOpen(!mobileOpen)}
         icon={<Menu className="h-5 w-5" />}
       />
