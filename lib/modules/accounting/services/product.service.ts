@@ -40,9 +40,9 @@ export const ProductService = {
     const where: Record<string, unknown> = { tenantId }
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { sku: { contains: search } },
-        { barcode: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+        { barcode: { contains: search, mode: 'insensitive' } },
       ]
     }
     if (categoryId) where.categoryId = categoryId
