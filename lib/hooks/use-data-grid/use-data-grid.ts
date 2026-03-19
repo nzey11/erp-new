@@ -284,7 +284,7 @@ export function useDataGrid<TData extends { id: string }>(
     } : undefined,
     toolbar: {
       search: enableSearch ? { value: searchInput, onChange: setSearch } : undefined,
-    } as import("@/components/ui/data-grid").DataGridToolbarConfig,
+    },
     sorting: sort ? [{ id: sort.field, desc: sort.order === "desc" }] : undefined,
     onSortingChange: sortable ? setSort : undefined,
   }), [data, loading, enablePagination, page, pageSize, total, setPage, enablePageSizeChange, setPageSize, pageSizeOptions, enableSearch, searchInput, setSearch, sort, sortable, setSort]);

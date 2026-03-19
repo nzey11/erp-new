@@ -1,5 +1,3 @@
-import type { DataGridPagination, DataGridToolbarConfig } from "@/components/ui/data-grid";
-
 export interface UseDataGridConfig<TData> {
   /** API endpoint, e.g. "/api/accounting/products" */
   endpoint: string;
@@ -61,12 +59,21 @@ export interface UseDataGridReturn<TData> {
     refresh: () => Promise<void>;
   };
 
-  // Spread into <DataGrid> directly
+  // Legacy gridProps for backward compatibility with existing code
   gridProps: {
     data: TData[];
     loading: boolean;
-    pagination?: DataGridPagination;
-    toolbar: DataGridToolbarConfig;
+    pagination?: {
+      page: number;
+      pageSize: number;
+      total: number;
+      onPageChange: (page: number) => void;
+      onPageSizeChange?: (size: number) => void;
+      pageSizeOptions?: number[];
+    };
+    toolbar: {
+      search?: { value: string; onChange: (value: string) => void };
+    };
     sorting?: { id: string; desc: boolean }[];
     onSortingChange?: (sortBy: string, sortOrder: "asc" | "desc") => void;
   };
