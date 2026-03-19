@@ -11,7 +11,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { Input as AntdInput } from "antd";
+const { TextArea } = AntdInput;
 import { Search, Upload, Wand2, Plus, X, ImageIcon, ExternalLink, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatRub } from "@/lib/shared/utils";
@@ -526,7 +527,7 @@ export function ProductFormContent({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="desc">Описание</Label>
-              <Textarea id="desc" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+              <TextArea id="desc" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
             </div>
             <div className="flex items-center gap-3 pt-2 border-t">
               <button type="button" role="switch" aria-checked={formPublishedToStore}
@@ -639,7 +640,7 @@ export function ProductFormContent({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="seoDesc">SEO описание</Label>
-              <Textarea id="seoDesc" value={formSeoDescription} onChange={(e) => setFormSeoDescription(e.target.value)}
+              <TextArea id="seoDesc" value={formSeoDescription} onChange={(e) => setFormSeoDescription(e.target.value)}
                 placeholder="Описание для поисковых систем" rows={3} />
               <p className="text-xs text-muted-foreground">{formSeoDescription.length}/160 символов</p>
             </div>

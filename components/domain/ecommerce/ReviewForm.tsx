@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Input as AntdInput } from "antd";
+const { TextArea } = AntdInput;
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -173,7 +174,7 @@ export function ReviewForm({
 
               <div className="grid gap-2">
                 <Label htmlFor="review-comment">Комментарий</Label>
-                <Textarea
+                <TextArea
                   id="review-comment"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}

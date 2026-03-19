@@ -10,7 +10,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input as AntdInput } from "antd";
+const { TextArea } = AntdInput;
 import { Plus, Pencil, Trash2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -215,7 +216,7 @@ export function PriceListsPanel({ onSelectPriceList, selectedPriceListId }: Pric
             </div>
             <div className="grid gap-2">
               <Label>Описание</Label>
-              <Textarea
+              <TextArea
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Описание прайс-листа"

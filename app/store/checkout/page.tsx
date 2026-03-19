@@ -8,7 +8,7 @@ import { ChevronLeft, Plus, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/shared/utils";
@@ -278,7 +278,7 @@ export default function CheckoutPage() {
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Комментарий к заказу</h2>
             <Label htmlFor="notes" className="sr-only">Примечания</Label>
-            <Textarea
+            <Input.TextArea
               id="notes"
               placeholder="Добавьте комментарий к заказу (необязательно)"
               value={notes}

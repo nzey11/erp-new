@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input as AntdInput } from "antd";
+const { TextArea } = AntdInput;
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -350,7 +351,7 @@ function CounterpartyDetailPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label>Заметки</Label>
-                  <Textarea value={form.notes} onChange={(e) => setField("notes", e.target.value)} rows={3} />
+                  <TextArea value={form.notes} onChange={(e) => setField("notes", e.target.value)} rows={3} />
                 </div>
               </div>
             ) : (
