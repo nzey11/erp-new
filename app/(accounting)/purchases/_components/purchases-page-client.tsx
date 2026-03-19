@@ -9,9 +9,8 @@ import { Label } from "@/components/ui/label";
 import { DownloadOutlined, PlusOutlined, MoreOutlined, CheckOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/shared/page-header";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataGrid } from "@/components/ui/data-grid";
-import type { DataGridColumn } from "@/components/ui/data-grid";
 import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { ERPToolbar } from "@/components/erp/erp-toolbar";
 import type { ERPPagination, ERPSelection } from "@/components/erp/erp-table.types";
 import { CreateDocumentDialog, DOC_TYPE_OPTIONS } from "@/components/domain/accounting";
@@ -68,49 +67,53 @@ interface PurchasesPageClientProps {
   analyticsInitialDateTo: string;
 }
 
-const supplierColumns: DataGridColumn<SupplierRow>[] = [
+const supplierColumns: ERPColumn<SupplierRow>[] = [
   {
-    accessorKey: "supplierName",
-    header: "Поставщик",
-    size: 280,
-    meta: { canHide: false },
+    key: "supplierName",
+    dataIndex: "supplierName",
+    title: "Поставщик",
+    width: 280,
   },
   {
-    accessorKey: "docCount",
-    header: "Приёмок",
-    size: 100,
-    meta: { align: "right" as const },
-    cell: ({ row }) => <span className="font-mono">{row.original.docCount}</span>,
+    key: "docCount",
+    dataIndex: "docCount",
+    title: "Приёмок",
+    width: 100,
+    align: "right",
+    render: (_, row) => <span className="font-mono">{row.docCount}</span>,
   },
   {
-    accessorKey: "totalAmount",
-    header: "Сумма закупок",
-    size: 160,
-    meta: { align: "right" as const },
-    cell: ({ row }) => formatRub(row.original.totalAmount),
+    key: "totalAmount",
+    dataIndex: "totalAmount",
+    title: "Сумма закупок",
+    width: 160,
+    align: "right",
+    render: (value) => formatRub(value as number),
   },
 ];
 
-const monthColumns: DataGridColumn<MonthRow>[] = [
+const monthColumns: ERPColumn<MonthRow>[] = [
   {
-    accessorKey: "month",
-    header: "Месяц",
-    size: 130,
-    meta: { canHide: false },
+    key: "month",
+    dataIndex: "month",
+    title: "Месяц",
+    width: 130,
   },
   {
-    accessorKey: "docCount",
-    header: "Приёмок",
-    size: 100,
-    meta: { align: "right" as const },
-    cell: ({ row }) => <span className="font-mono">{row.original.docCount}</span>,
+    key: "docCount",
+    dataIndex: "docCount",
+    title: "Приёмок",
+    width: 100,
+    align: "right",
+    render: (_, row) => <span className="font-mono">{row.docCount}</span>,
   },
   {
-    accessorKey: "totalAmount",
-    header: "Сумма",
-    size: 160,
-    meta: { align: "right" as const },
-    cell: ({ row }) => formatRub(row.original.totalAmount),
+    key: "totalAmount",
+    dataIndex: "totalAmount",
+    title: "Сумма",
+    width: 160,
+    align: "right",
+    render: (value) => formatRub(value as number),
   },
 ];
 
@@ -123,8 +126,8 @@ const monthColumns: DataGridColumn<MonthRow>[] = [
  * - Row selection and bulk actions
  * - Analytics data fetching (legacy)
  *
- * Document tabs → new ERPTable architecture
- * Analytics tab → legacy DataGrid (unchanged)
+ * Document tabs → ERPTable architecture
+ * Analytics tab → ERPTable (migrated)
  */
 export function PurchasesPageClient({
   initialData,
@@ -498,13 +501,12 @@ export function PurchasesPageClient({
             <h3 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
               Топ поставщики
             </h3>
-            <DataGrid
+            <ERPTable<SupplierRow>
               data={analyticsData?.bySupplier ?? []}
               columns={supplierColumns}
               loading={analyticsLoading}
-              emptyMessage="Нет данных за выбранный период"
-              persistenceKey="purchases-analytics-suppliers"
-              stickyHeader={false}
+              emptyText="Нет данных за выбранный период"
+              rowKey="supplierId"
             />
           </div>
 
@@ -513,13 +515,12 @@ export function PurchasesPageClient({
             <h3 className="text-sm font-semibold mb-2 text-muted-foreground uppercase tracking-wide">
               Динамика расходов по месяцам
             </h3>
-            <DataGrid
+            <ERPTable<MonthRow>
               data={analyticsData?.byMonth ?? []}
               columns={monthColumns}
               loading={analyticsLoading}
-              emptyMessage="Нет данных за выбранный период"
-              persistenceKey="purchases-analytics-months"
-              stickyHeader={false}
+              emptyText="Нет данных за выбранный период"
+              rowKey="month"
             />
           </div>
         </div>
