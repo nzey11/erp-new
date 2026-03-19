@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataGrid } from "@/components/ui/data-grid";
@@ -36,12 +36,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   expense: "Расходы",
 };
 
-const CATEGORY_COLORS: Record<string, "default" | "secondary" | "outline"> = {
-  asset: "default",
-  liability: "secondary",
-  equity: "outline",
-  income: "default",
-  expense: "secondary",
+const CATEGORY_COLORS: Record<string, string> = {
+  asset: "blue",
+  liability: "default",
+  equity: "",
+  income: "blue",
+  expense: "default",
 };
 
 export default function AccountsPage() {
@@ -102,9 +102,9 @@ export default function AccountsPage() {
       header: "Раздел",
       size: 120,
       cell: ({ row }) => (
-        <Badge variant={CATEGORY_COLORS[row.original.category] ?? "outline"}>
+        <Tag color={CATEGORY_COLORS[row.original.category] ?? ""}>
           {CATEGORY_LABELS[row.original.category] ?? row.original.category}
-        </Badge>
+        </Tag>
       ),
     },
     {
@@ -127,9 +127,9 @@ export default function AccountsPage() {
       header: "Тип",
       size: 100,
       cell: ({ row }) => (
-        <Badge variant={row.original.isSystem ? "secondary" : "outline"}>
+        <Tag color={row.original.isSystem ? "default" : ""}>
           {row.original.isSystem ? "Системный" : "Пользов."}
-        </Badge>
+        </Tag>
       ),
     },
   ];

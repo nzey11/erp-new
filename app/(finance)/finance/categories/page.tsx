@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -182,9 +182,9 @@ export default function CategoriesPage() {
               </TableCell>
               <TableCell>
                 {cat.isSystem ? (
-                  <Badge variant="secondary" className="text-xs">Системная</Badge>
+                  <Tag color="default" className="text-xs">Системная</Tag>
                 ) : (
-                  <Badge variant="outline" className="text-xs">Своя</Badge>
+                  <Tag className="text-xs">Своя</Tag>
                 )}
               </TableCell>
               <TableCell>

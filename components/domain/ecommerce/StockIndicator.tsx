@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 
 interface StockIndicatorProps {
   quantity: number;
@@ -10,23 +10,23 @@ interface StockIndicatorProps {
 export function StockIndicator({ quantity, unitShortName }: StockIndicatorProps) {
   if (quantity <= 0) {
     return (
-      <Badge variant="secondary" className="text-red-600 bg-red-50">
+      <Tag color="red">
         Нет в наличии
-      </Badge>
+      </Tag>
     );
   }
 
   if (quantity <= 10) {
     return (
-      <Badge variant="secondary" className="text-amber-600 bg-amber-50">
+      <Tag color="orange">
         Мало на складе ({quantity} {unitShortName})
-      </Badge>
+      </Tag>
     );
   }
 
   return (
-    <Badge variant="secondary" className="text-green-600 bg-green-50">
+    <Tag color="green">
       В наличии ({quantity} {unitShortName})
-    </Badge>
+    </Tag>
   );
 }

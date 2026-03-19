@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ShoppingBag, Heart, MapPin, LogOut, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";
 import { ProfileEditForm } from "@/components/domain/ecommerce/ProfileEditForm";
@@ -37,12 +37,12 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  paid: "bg-blue-100 text-blue-800",
-  processing: "bg-purple-100 text-purple-800",
-  shipped: "bg-indigo-100 text-indigo-800",
-  delivered: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
+  pending: "orange",
+  paid: "blue",
+  processing: "purple",
+  shipped: "geekblue",
+  delivered: "green",
+  cancelled: "red",
 };
 
 export default function AccountPage() {
@@ -206,9 +206,9 @@ export default function AccountPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <Badge className={statusColors[order.status] || ""}>
+                    <Tag color={statusColors[order.status] ?? ""}>
                       {statusLabels[order.status] || order.status}
-                    </Badge>
+                    </Tag>
                     <p className="text-lg font-bold mt-2">
                       {formatRub(order.totalAmount)}
                     </p>

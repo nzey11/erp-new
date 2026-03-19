@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import {
@@ -181,9 +181,9 @@ export default function WarehousesPage() {
       header: "Статус",
       size: 120,
       cell: ({ row }) => (
-        <Badge variant={row.original.isActive ? "default" : "secondary"}>
+        <Tag color={row.original.isActive ? "blue" : "default"}>
           {row.original.isActive ? "Активен" : "Неактивен"}
-        </Badge>
+        </Tag>
       ),
     },
     {

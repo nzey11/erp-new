@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
@@ -97,13 +97,13 @@ export default function CmsPagesListPage() {
       header: "Статус",
       size: 120,
       cell: ({ row }) => (
-        <Badge
-          variant={row.original.isPublished ? "default" : "secondary"}
+        <Tag
+          color={row.original.isPublished ? "blue" : "default"}
           className="cursor-pointer"
           onClick={(e) => { e.stopPropagation(); handleTogglePublish(row.original); }}
         >
           {row.original.isPublished ? "Опубликовано" : "Черновик"}
-        </Badge>
+        </Tag>
       ),
     },
     {

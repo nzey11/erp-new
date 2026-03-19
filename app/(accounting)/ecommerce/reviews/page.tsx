@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Card } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -208,9 +208,9 @@ export default function ReviewsPage() {
                     <div>
                       <p>{getCustomerDisplay(review)}</p>
                       {review.isVerifiedPurchase && (
-                        <Badge variant="secondary" className="mt-1 text-xs">
+                        <Tag color="default" className="mt-1 text-xs">
                           Подтверждённая покупка
-                        </Badge>
+                        </Tag>
                       )}
                     </div>
                   </TableCell>
@@ -229,11 +229,11 @@ export default function ReviewsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={review.isPublished ? "default" : "secondary"}
+                    <Tag
+                      color={review.isPublished ? "blue" : "default"}
                     >
                       {review.isPublished ? "Опубликован" : "Не опубликован"}
-                    </Badge>
+                    </Tag>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatDateTime(review.createdAt)}

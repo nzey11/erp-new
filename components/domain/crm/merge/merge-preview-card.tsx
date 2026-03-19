@@ -6,7 +6,7 @@
 
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PartyListItemDto } from "@/lib/domain/party/dto";
 
@@ -24,9 +24,9 @@ export function MergePreviewCard({ party, role }: MergePreviewCardProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{party.displayName}</CardTitle>
-          <Badge variant="outline">
+          <Tag>
             {party.type === "person" ? "Person" : "Organization"}
-          </Badge>
+          </Tag>
         </div>
         <p className={`text-sm font-medium ${roleColor}`}>{roleLabel}</p>
       </CardHeader>
@@ -48,10 +48,10 @@ export function MergePreviewCard({ party, role }: MergePreviewCardProps) {
             <span className="text-muted-foreground">Links</span>
             <div className="flex gap-1">
               {party.links.includes("customer") && (
-                <Badge variant="secondary" className="text-xs">Customer</Badge>
+                <Tag color="default" className="text-xs">Customer</Tag>
               )}
               {party.links.includes("counterparty") && (
-                <Badge variant="secondary" className="text-xs">Counterparty</Badge>
+                <Tag color="default" className="text-xs">Counterparty</Tag>
               )}
               {party.links.length === 0 && (
                 <span className="text-muted-foreground">None</span>

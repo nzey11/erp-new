@@ -12,7 +12,7 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { PartyListItemDto } from "@/lib/domain/party/dto";
 import { usePresetTable, showBothTables } from "@/lib/table-system/feature-flags";
 import { PresetPartyListTable } from "./preset-party-list-table";
@@ -102,9 +102,9 @@ function LegacyPartyListTable({ parties }: PartyListTableProps) {
               <td className="py-3 px-4">
                 <div className="flex gap-1 flex-wrap">
                   {party.links.map((link, index) => (
-                    <Badge key={index} variant="secondary">
+                    <Tag key={index} color="default">
                       {link === "customer" ? "Покупатель" : "Контрагент"}
-                    </Badge>
+                    </Tag>
                   ))}
                 </div>
               </td>

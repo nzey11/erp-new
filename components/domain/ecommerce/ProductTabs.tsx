@@ -4,7 +4,7 @@ import { Tabs } from "antd";
 import { Card } from "@/components/ui/card";
 import { Star } from "lucide-react";
 import { cn, formatDate } from "@/lib/shared/utils";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import type { TabsProps } from "antd";
 
 type Characteristic = { name: string; value: string };
@@ -81,9 +81,9 @@ export function ProductTabs({
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-sm">{review.customerName}</span>
                     {review.isVerifiedPurchase && (
-                      <Badge variant="secondary" className="text-xs">
+                      <Tag color="default" className="text-xs">
                         Проверенная покупка
-                      </Badge>
+                      </Tag>
                     )}
                   </div>
                   <div className="flex items-center gap-0.5">

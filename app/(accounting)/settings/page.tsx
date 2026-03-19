@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
@@ -157,7 +157,7 @@ export default function SettingsPage() {
       header: "Роль",
       size: 150,
       cell: ({ row }) => (
-        <Badge variant="outline">{ROLE_LABELS[row.original.role] || row.original.role}</Badge>
+        <Tag>{ROLE_LABELS[row.original.role] || row.original.role}</Tag>
       ),
     },
     {
@@ -165,9 +165,9 @@ export default function SettingsPage() {
       header: "Статус",
       size: 120,
       cell: ({ row }) => (
-        <Badge variant={row.original.isActive ? "default" : "secondary"}>
+        <Tag color={row.original.isActive ? "blue" : "default"}>
           {row.original.isActive ? "Активен" : "Неактивен"}
-        </Badge>
+        </Tag>
       ),
     },
     {

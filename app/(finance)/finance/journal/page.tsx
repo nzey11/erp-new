@@ -3,7 +3,7 @@
 import { useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,8 +108,8 @@ function EntryRow({
         </td>
         <td className="px-3 py-2">
           <div className="flex gap-1 flex-wrap">
-            {entry.isManual && <Badge variant="outline">Ручная</Badge>}
-            {entry.isReversed && <Badge variant="secondary">Сторно</Badge>}
+            {entry.isManual && <Tag>Ручная</Tag>}
+            {entry.isReversed && <Tag color="default">Сторно</Tag>}
             {sourceLabel && entry.sourceNumber && (
               <>
                 {sourceIsDoc && entry.sourceId ? (
@@ -117,23 +117,23 @@ function EntryRow({
                     href={`/documents/${entry.sourceId}`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Badge variant="default" className="text-xs hover:bg-primary/80 cursor-pointer">
+                    <Tag color="blue" className="text-xs cursor-pointer">
                       {sourceLabel} №{entry.sourceNumber}
-                    </Badge>
+                    </Tag>
                   </Link>
                 ) : sourceIsPayment ? (
                   <Link
                     href="/finance/payments"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Badge variant="default" className="text-xs hover:bg-primary/80 cursor-pointer">
+                    <Tag color="blue" className="text-xs cursor-pointer">
                       {sourceLabel} №{entry.sourceNumber}
-                    </Badge>
+                    </Tag>
                   </Link>
                 ) : (
-                  <Badge variant="default" className="text-xs">
+                  <Tag color="blue" className="text-xs">
                     {sourceLabel} №{entry.sourceNumber}
-                  </Badge>
+                  </Tag>
                 )}
               </>
             )}

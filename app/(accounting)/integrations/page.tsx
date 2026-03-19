@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "antd";
 import { Tabs } from "antd";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Bot, Save, ExternalLink, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -136,15 +136,15 @@ export default function IntegrationsPage() {
                         </CardDescription>
                       </div>
                       {telegram.isConfigured ? (
-                        <Badge variant="default" className="gap-1">
+                        <Tag color="green" className="gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Подключен
-                        </Badge>
+                        </Tag>
                       ) : (
-                        <Badge variant="secondary" className="gap-1">
+                        <Tag color="default" className="gap-1">
                           <AlertCircle className="h-3 w-3" />
                           Не настроен
-                        </Badge>
+                        </Tag>
                       )}
                     </div>
                   </CardHeader>

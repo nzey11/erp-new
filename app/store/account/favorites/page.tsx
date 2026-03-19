@@ -7,7 +7,7 @@ import Image from "next/image";
 import { ChevronLeft, Heart, X, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -142,11 +142,11 @@ export default function FavoritesPage() {
                     </div>
                   )}
                   {item.discount && (
-                    <Badge className="absolute top-2 right-2 bg-destructive text-white">
+                    <Tag color="red" className="absolute top-2 right-2">
                       {item.discount.type === "percentage"
                         ? `-${item.discount.value}%`
                         : `-${formatRub(item.discount.value)}`}
-                    </Badge>
+                    </Tag>
                   )}
                 </div>
               </Link>

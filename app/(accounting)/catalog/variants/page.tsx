@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { DataGrid } from "@/components/ui/data-grid";
 import type { DataGridColumn } from "@/components/ui/data-grid";
 import {
@@ -172,16 +172,16 @@ export default function VariantGroupsPage() {
         const r = row.original;
         if (r.type !== "group") {
           return r.variant.publishedToStore ? (
-            <Badge variant="outline" className="text-xs text-green-600">На сайте</Badge>
+            <Tag color="green" className="text-xs">На сайте</Tag>
           ) : null;
         }
         return (
-          <Badge variant="secondary">
+          <Tag color="default">
             {r.group.totalVariants}
             {r.group.publishedVariants > 0 && (
               <span className="text-green-600 ml-1">({r.group.publishedVariants} на сайте)</span>
             )}
-          </Badge>
+          </Tag>
         );
       },
     },

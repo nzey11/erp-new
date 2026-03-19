@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -212,14 +212,14 @@ export function VariantGroupsPanel() {
                       </TableCell>
                       <TableCell>{group.category?.name || "—"}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="secondary">
+                        <Tag color="default">
                           {group.totalVariants}
                           {group.publishedVariants > 0 && (
                             <span className="text-green-600 ml-1">
                               ({group.publishedVariants} на сайте)
                             </span>
                           )}
-                        </Badge>
+                        </Tag>
                       </TableCell>
                       <TableCell className="text-right">
                         {group.priceRange ? (
@@ -258,9 +258,9 @@ export function VariantGroupsPanel() {
                         <TableCell></TableCell>
                         <TableCell className="text-center">
                           {variant.publishedToStore && (
-                            <Badge variant="outline" className="text-xs text-green-600">
+                            <Tag color="green" className="text-xs">
                               На сайте
-                            </Badge>
+                            </Tag>
                           )}
                         </TableCell>
                         <TableCell className="text-right text-sm">

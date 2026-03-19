@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 
 export type ProductCardData = {
@@ -42,11 +42,11 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
           {product.discount && (
-            <Badge className="absolute top-2 right-2 bg-destructive text-white">
+            <Tag color="red" className="absolute top-2 right-2">
               {product.discount.type === "percentage"
                 ? `-${product.discount.value}%`
                 : `-${formatRub(product.discount.value)}`}
-            </Badge>
+            </Tag>
           )}
         </div>
         <div className="p-4 flex flex-col flex-1">

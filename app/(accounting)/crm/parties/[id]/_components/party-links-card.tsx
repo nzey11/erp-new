@@ -5,7 +5,7 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Link2 } from "lucide-react";
 import type { PartyProfileLinkDto } from "@/lib/domain/party";
 
@@ -26,9 +26,9 @@ export function PartyLinksCard({ links }: PartyLinksCardProps) {
         {links.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {links.map((link, index) => (
-              <Badge key={index} variant="secondary">
+              <Tag color="default" key={index}>
                 {getLinkLabel(link.type)}
-              </Badge>
+              </Tag>
             ))}
           </div>
         ) : (

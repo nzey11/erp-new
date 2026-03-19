@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Star, ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -194,11 +194,11 @@ export default function ProductDetailPage() {
         <div className="relative">
           <ProductImageGallery images={galleryImages} productName={product.name} />
           {product.discount && (
-            <Badge className="absolute top-4 right-4 z-10 bg-destructive text-white text-lg">
+            <Tag color="red" className="absolute top-4 right-4 z-10 text-lg">
               {product.discount.type === "percentage"
                 ? `-${product.discount.value}%`
                 : `-${formatRub(product.discount.value)}`}
-            </Badge>
+            </Tag>
           )}
         </div>
 

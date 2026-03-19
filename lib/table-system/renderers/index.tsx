@@ -6,7 +6,7 @@
  */
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { cn } from "@/lib/shared/utils";
 import type { CellRendererId } from "@/lib/table-system/types";
 
@@ -105,13 +105,13 @@ export function NumberCell({ value, props }: CellRendererProps<number | null>) {
 export function BadgeCell({ value, props }: CellRendererProps<string | null>) {
   if (!value) return <span className="text-muted-foreground">—</span>;
 
-  const variantMap = props.variantMap as Record<string, "default" | "secondary" | "destructive" | "outline"> | undefined;
+  const colorMap = props.variantMap as Record<string, string> | undefined;
   const labelMap = props.labelMap as Record<string, string> | undefined;
 
-  const variant = variantMap?.[value] ?? "outline";
+  const color = colorMap?.[value] ?? "";
   const label = labelMap?.[value] ?? value;
 
-  return <Badge variant={variant}>{label}</Badge>;
+  return <Tag color={color}>{label}</Tag>;
 }
 
 // === STATUS BADGE RENDERER ===
@@ -123,13 +123,13 @@ export function BadgeCell({ value, props }: CellRendererProps<string | null>) {
 export function StatusBadgeCell({ value, props }: CellRendererProps<string | null>) {
   if (!value) return <span className="text-muted-foreground">—</span>;
 
-  const variantMap = props.variantMap as Record<string, "default" | "secondary" | "destructive" | "outline"> | undefined;
+  const colorMap = props.variantMap as Record<string, string> | undefined;
   const labelMap = props.labelMap as Record<string, string> | undefined;
 
-  const variant = variantMap?.[value] ?? "secondary";
+  const color = colorMap?.[value] ?? "default";
   const label = labelMap?.[value] ?? value;
 
-  return <Badge variant={variant}>{label}</Badge>;
+  return <Tag color={color}>{label}</Tag>;
 }
 
 // === PARTY LINK RENDERER ===
@@ -172,9 +172,9 @@ export function LinkBadgesCell({ value, props }: CellRendererProps<Array<"custom
       {value.map((link, index) => {
         const label = labelMap?.[link] ?? link;
         return (
-          <Badge key={index} variant="secondary">
+          <Tag key={index} color="default">
             {label}
-          </Badge>
+          </Tag>
         );
       })}
     </div>
@@ -208,9 +208,9 @@ export function BooleanCell({ value, props }: CellRendererProps<boolean | null>)
   const falseLabel = (props.falseLabel as string) ?? "No";
 
   return (
-    <Badge variant={value ? "default" : "secondary"}>
+    <Tag color={value ? "blue" : "default"}>
       {value ? trueLabel : falseLabel}
-    </Badge>
+    </Tag>
   );
 }
 

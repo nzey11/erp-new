@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Input as AntdInput } from "antd";
@@ -281,10 +281,10 @@ function CounterpartyDetailPage() {
       {/* Status badge */}
       {!isNew && counterparty && (
         <div className="flex items-center gap-2">
-          <Badge variant={counterparty.isActive ? "default" : "secondary"}>
+          <Tag color={counterparty.isActive ? "blue" : "default"}>
             {counterparty.isActive ? "Активен" : "Неактивен"}
-          </Badge>
-          <Badge variant="outline">{TYPE_LABELS[counterparty.type] || counterparty.type}</Badge>
+          </Tag>
+          <Tag>{TYPE_LABELS[counterparty.type] || counterparty.type}</Tag>
           <span className="text-sm text-muted-foreground">
             Создан {formatDate(counterparty.createdAt)}
           </span>
@@ -442,9 +442,9 @@ function CounterpartyDetailPage() {
                   {counterparty.interactions.map((item) => (
                     <div key={item.id} className="text-sm">
                       <div className="flex items-center justify-between gap-2">
-                        <Badge variant="outline" className="text-xs">
+                        <Tag>
                           {INTERACTION_TYPE_LABELS[item.type] || item.type}
-                        </Badge>
+                        </Tag>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {formatDate(item.createdAt)}
                         </span>

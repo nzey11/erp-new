@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { PartyListItemDto } from "@/lib/domain/party/dto";
 
 interface MergePartyPickerProps {
@@ -71,9 +71,9 @@ export function MergePartyPicker({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-medium">{selectedParty.displayName}</span>
-            <Badge variant="outline">
+            <Tag>
               {selectedParty.type === "person" ? "Person" : "Organization"}
-            </Badge>
+            </Tag>
           </div>
           <button
             onClick={handleClear}
@@ -111,9 +111,9 @@ export function MergePartyPicker({
               >
                 <span className="font-medium">{party.displayName}</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
+                  <Tag className="text-xs">
                     {party.type === "person" ? "Person" : "Org"}
-                  </Badge>
+                  </Tag>
                   {party.ownerName && (
                     <span className="text-xs text-muted-foreground">
                       {party.ownerName}

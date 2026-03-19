@@ -7,7 +7,7 @@ import Image from "next/image";
 import { ChevronLeft, Package, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { formatRub, formatDate } from "@/lib/shared/utils";
 import { toast } from "sonner";
 import { OrderTimeline } from "@/components/domain/ecommerce/OrderTimeline";
@@ -57,12 +57,12 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  paid: "bg-blue-100 text-blue-800",
-  processing: "bg-purple-100 text-purple-800",
-  shipped: "bg-indigo-100 text-indigo-800",
-  delivered: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
+  pending: "orange",
+  paid: "blue",
+  processing: "purple",
+  shipped: "geekblue",
+  delivered: "green",
+  cancelled: "red",
 };
 
 const deliveryTypeLabels: Record<string, string> = {
@@ -176,9 +176,9 @@ export default function OrdersPage() {
                         {formatDate(order.createdAt)}
                       </p>
                     </div>
-                    <Badge className={statusColors[order.status] || ""}>
+                    <Tag color={statusColors[order.status] ?? ""}>
                       {statusLabels[order.status] || order.status}
-                    </Badge>
+                    </Tag>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="text-sm">

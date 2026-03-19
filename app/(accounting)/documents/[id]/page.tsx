@@ -6,7 +6,7 @@ import { csrfFetch } from "@/lib/client/csrf";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -82,10 +82,10 @@ interface DocumentDetail {
 
 interface Product { id: string; name: string; sku: string | null; purchasePrice: number | null; salePrice: number | null }
 
-const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  draft: "secondary",
-  confirmed: "default",
-  cancelled: "destructive",
+const STATUS_TAG_COLORS: Record<string, string> = {
+  draft: "default",
+  confirmed: "green",
+  cancelled: "red",
 };
 
 // Linked document type mapping: source type -> possible next document types
@@ -733,16 +733,16 @@ export default function DocumentDetailPage() {
           <CardContent className="flex flex-wrap gap-2">
             {doc.linkedDocument && (
               <Link href={`/documents/${doc.linkedDocument.id}`}>
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
+                <Tag className="cursor-pointer hover:bg-accent">
                   Основание: {doc.linkedDocument.typeName || doc.linkedDocument.type} {doc.linkedDocument.number}
-                </Badge>
+                </Tag>
               </Link>
             )}
             {doc.linkedFrom.map((linked) => (
               <Link key={linked.id} href={`/documents/${linked.id}`}>
-                <Badge variant="outline" className="cursor-pointer hover:bg-accent">
+                <Tag className="cursor-pointer hover:bg-accent">
                   {linked.typeName || linked.type} {linked.number}
-                </Badge>
+                </Tag>
               </Link>
             ))}
           </CardContent>
@@ -756,9 +756,9 @@ export default function DocumentDetailPage() {
             <CardTitle className="text-sm text-muted-foreground">Статус</CardTitle>
           </CardHeader>
           <CardContent>
-            <Badge variant={STATUS_COLORS[doc.status] || "outline"} className="text-sm">
+            <Tag color={STATUS_TAG_COLORS[doc.status] || "default"} className="text-sm">
               {doc.statusName}
-            </Badge>
+            </Tag>
           </CardContent>
         </Card>
         <Card>

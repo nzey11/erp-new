@@ -5,7 +5,7 @@ import Link from "next/link";
 import { csrfFetch } from "@/lib/client/csrf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -682,7 +682,7 @@ export function ProductFormContent({
                         <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs shrink-0">{vl.groupName}</Badge>
+                            <Tag>{vl.groupName}</Tag>
                             <span className="font-medium truncate">{vl.linkedProduct.name}</span>
                           </div>
                           <div className="text-xs text-muted-foreground">
@@ -766,11 +766,11 @@ export function ProductFormContent({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium truncate">{s.product.name}</span>
-                          <Badge variant={s.confidence >= 80 ? "default" : s.confidence >= 60 ? "secondary" : "outline"}
-                            className="text-[10px] px-1 py-0 shrink-0">{s.confidence}%</Badge>
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+                          <Tag color={s.confidence >= 80 ? "blue" : s.confidence >= 60 ? "default" : ""}
+                            className="text-[10px] px-1 py-0 shrink-0">{s.confidence}%</Tag>
+                          <Tag className="text-[10px] px-1 py-0 shrink-0">
                             {s.matchType === "sku" ? "Артикул" : s.matchType === "name" ? "Название" : "Характеристики"}
-                          </Badge>
+                          </Tag>
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {s.product.sku && <span>Арт: {s.product.sku}</span>}

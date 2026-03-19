@@ -7,7 +7,7 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { PartyProfileDto } from "@/lib/domain/party/dto";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -42,9 +42,9 @@ export function PartyProfileLinks({ party }: PartyProfileLinksProps) {
               className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
             >
               <div className="flex items-center gap-2">
-                <Badge variant="secondary">
+                <Tag color="default">
                   {link.type === "customer" ? "Customer" : "Counterparty"}
-                </Badge>
+                </Tag>
                 <span className="font-medium">{link.label}</span>
               </div>
               <Link

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,9 +121,9 @@ export default function BalancesPage() {
               </Link>
             </TableCell>
             <TableCell>
-              <Badge variant="outline" className="text-xs">
+              <Tag>
                 {COUNTERPARTY_TYPE_LABELS[b.counterparty.type] ?? b.counterparty.type}
-              </Badge>
+              </Tag>
             </TableCell>
             <TableCell className={`text-right font-semibold ${colorClass}`}>
               {formatRub(Math.abs(b.balanceRub))}

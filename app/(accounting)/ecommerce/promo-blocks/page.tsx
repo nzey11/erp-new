@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { Card } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -250,13 +250,13 @@ export default function PromoBlocksPage() {
                   </TableCell>
                   <TableCell className="text-center">{block.order}</TableCell>
                   <TableCell>
-                    <Badge
-                      variant={block.isActive ? "default" : "secondary"}
+                    <Tag
+                      color={block.isActive ? "blue" : "default"}
                       className="cursor-pointer"
                       onClick={() => toggleActive(block)}
                     >
                       {block.isActive ? "Активен" : "Неактивен"}
-                    </Badge>
+                    </Tag>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

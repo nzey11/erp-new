@@ -5,9 +5,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs } from "antd";
+import { Tabs, Tag } from "antd";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { formatRub, formatDate } from "@/lib/shared/utils";
@@ -625,13 +624,13 @@ export default function ReportsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
+                        <Tag>
                           {item.isBalance
                             ? DOC_TYPE_LABELS["counterparty_balance"]
                             : item.isPayment
                             ? (item.type === "income" ? "Входящий платёж" : "Исходящий платёж")
                             : (DOC_TYPE_LABELS[item.type] || item.type)}
-                        </Badge>
+                        </Tag>
                       </TableCell>
                       <TableCell className="text-sm">
                         {item.counterparty || "—"}

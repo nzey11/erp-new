@@ -5,7 +5,7 @@
  * Displays displayName and type badge.
  */
 
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import type { PartyProfileDto } from "@/lib/domain/party";
 
 interface PartyProfileHeaderProps {
@@ -20,9 +20,9 @@ export function PartyProfileHeader({ profile }: PartyProfileHeaderProps) {
           {profile.displayName}
         </h1>
         <div className="flex items-center gap-2 mt-1">
-          <Badge variant="secondary">
+          <Tag color="default">
             {profile.type === "person" ? "Физ. лицо" : "Организация"}
-          </Badge>
+          </Tag>
         </div>
       </div>
     </div>

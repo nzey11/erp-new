@@ -6,7 +6,7 @@
 
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Tag } from "antd";
 import { PartyProfileDto } from "@/lib/domain/party/dto";
 
 interface PartyProfileHeaderProps {
@@ -17,9 +17,9 @@ export function PartyProfileHeader({ party }: PartyProfileHeaderProps) {
   return (
     <div className="flex items-center gap-4">
       <h1 className="text-2xl font-bold">{party.displayName}</h1>
-      <Badge variant="outline">
+      <Tag>
         {party.type === "person" ? "Person" : "Organization"}
-      </Badge>
+      </Tag>
     </div>
   );
 }
