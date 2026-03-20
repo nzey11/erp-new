@@ -35,6 +35,7 @@ const {
 
 const mockTx = {
   outboxEvent: mockOutboxEvent,
+  $queryRaw: vi.fn().mockResolvedValue([{ now: new Date("2026-03-13T10:00:00Z") }]),
 } as unknown as Parameters<Parameters<typeof import("@/lib/shared/db").db.$transaction>[0]>[0];
 
 const sampleEvent = {
