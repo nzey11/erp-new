@@ -4,7 +4,7 @@ import {
   isCsrfExemptPath,
   validateCsrf,
 } from "@/lib/shared/csrf";
-import { rateLimit, getClientIp } from "@/lib/shared/rate-limit";
+// import { rateLimit, getClientIp } from "@/lib/shared/rate-limit";
 import { logger } from "@/lib/shared/logger";
 import { verifySessionTokenEdge } from "@/lib/shared/auth-edge";
 

@@ -24,7 +24,7 @@ describe("API: Documents Tenant Isolation", () => {
   let tenantAWarehouse: Awaited<ReturnType<typeof createWarehouse>>;
   let tenantBWarehouse: Awaited<ReturnType<typeof createWarehouse>>;
   let tenantAProduct: Awaited<ReturnType<typeof createProduct>>;
-  let tenantBProduct: Awaited<ReturnType<typeof createProduct>>;
+  // let tenantBProduct: Awaited<ReturnType<typeof createProduct>>;
 
   // Helper to get correct tenantId for a user
   const getTenantId = (userId: string) => `tenant-${userId}`;
