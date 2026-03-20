@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { App, ConfigProvider } from "antd";
 import { AppSidebar } from "@/components/shared/app-sidebar";
-import { antdTheme } from "@/lib/antd-theme";
+import { antdTheme, antdLocale, validateMessages } from "@/lib/antd-theme";
 
 /**
  * Client shell for the finance layout.
@@ -17,7 +17,7 @@ export default function FinanceClientShell({
   children: React.ReactNode;
 }) {
   return (
-    <ConfigProvider theme={antdTheme}>
+    <ConfigProvider theme={antdTheme} locale={antdLocale} form={{ validateMessages }}>
       <App>
         <div className="min-h-screen">
           <AppSidebar />
