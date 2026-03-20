@@ -24,8 +24,6 @@ describe("API: Documents Tenant Isolation", () => {
   let tenantAWarehouse: Awaited<ReturnType<typeof createWarehouse>>;
   let tenantBWarehouse: Awaited<ReturnType<typeof createWarehouse>>;
   let tenantAProduct: Awaited<ReturnType<typeof createProduct>>;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let _tenantBProduct: Awaited<ReturnType<typeof createProduct>>;
 
   // Helper to get correct tenantId for a user
   const getTenantId = (userId: string) => `tenant-${userId}`;
@@ -50,7 +48,8 @@ describe("API: Documents Tenant Isolation", () => {
       name: "TenantA Product", 
       tenantId: getTenantId(tenantAUser.id) 
     });
-    _tenantBProduct = await createProduct({ 
+    // Create product for tenantB (needed for test data isolation)
+    await createProduct({ 
       name: "TenantB Product", 
       tenantId: getTenantId(tenantBUser.id) 
     });
