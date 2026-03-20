@@ -20,7 +20,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    await requirePermission("users:manage");
+    const actor = await requirePermission("users:manage");
 
     const data = await parseBody(request, createUserSchema);
 
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       password: hashedPassword,
       email: data.email || null,
       role: data.role as ErpRole,
+      tenantId: actor.tenantId, // Add new user to the same tenant as admin
     });
 
     return NextResponse.json(user, { status: 201 });

@@ -1,5 +1,6 @@
 import 'server-only'
 import { db } from '@/lib/shared/db'
+import type { ErpRole } from '@/lib/generated/prisma/client'
 
 const USER_SELECT = {
   id: true,
@@ -31,16 +32,41 @@ export const UserService = {
     return db.user.findUnique({ where: { id }, select: { id: true, username: true } })
   },
 
-  async create(data: { username: string; password: string; email?: string | null; role: string }) {
-    return db.user.create({
-      data: {
-        username: data.username,
-        password: data.password,
-        email: data.email || null,
-        role: data.role as never,
-      },
-      select: { id: true, username: true, email: true, role: true, isActive: true, createdAt: true },
+  /**
+   * Create a new user with tenant membership.
+   * Uses transaction to ensure atomicity.
+   */
+  async create(data: {
+    username: string
+    password: string
+    email?: string | null
+    role: ErpRole
+    tenantId: string
+  }) {
+    const result = await db.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          username: data.username,
+          password: data.password,
+          email: data.email || null,
+          role: data.role,
+        },
+        select: { id: true, username: true, email: true, role: true, isActive: true, createdAt: true },
+      })
+
+      await tx.tenantMembership.create({
+        data: {
+          userId: user.id,
+          tenantId: data.tenantId,
+          role: data.role,
+          isActive: true,
+        },
+      })
+
+      return user
     })
+
+    return result
   },
 
   async update(id: string, updateData: Record<string, unknown>) {
