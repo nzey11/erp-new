@@ -37,9 +37,8 @@ import { STOCK_INCREASE_TYPES, STOCK_DECREASE_TYPES } from "./predicates";
  *
  * @throws Error with Russian message if stock is insufficient or conflict detected
  */
-// Unused function - reserved for future optimistic locking implementation
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function decrementStockWithOptimisticLock(
+async function _decrementStockWithOptimisticLock(
   productId: string,
   warehouseId: string,
   quantity: number
@@ -149,9 +148,8 @@ interface CreateMovementInput {
 /**
  * Create a single stock movement.
  */
-// Unused function - reserved for future use
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function createMovement(input: CreateMovementInput) {
+async function _createMovement(input: CreateMovementInput) {
   return db.stockMovement.create({
     data: {
       documentId: input.documentId,
