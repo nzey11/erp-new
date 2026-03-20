@@ -4,7 +4,13 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'fix/**'
+      - 'feature/**'
+      - 'hotfix/**'
+      - 'refactor/**'
+      - 'ui/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -129,10 +135,13 @@ jobs:
         run: npx nx affected -t test --parallel=1
 
       # Build runs in CI — NOT on production server
+      # Skip build for feature branches (only run on main or PR to save CI time)
       - name: Generate Prisma client (pre-build)
+        if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
         run: npx prisma generate
 
       - name: Build
+        if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
         run: npx next build
 
       # TODO: Enable E2E tests after fixing configuration issues — target: 2026-04-01
@@ -140,7 +149,9 @@ jobs:
       # Run locally with: npm run test:e2e
 
       # Create tar archive with all deployment files while .next/ is guaranteed present
+      # Only package for main branch or PR (where build was run)
       - name: Package release archive
+        if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
         run: |
           tar -czf /tmp/release.tar.gz \
             .next/ \
@@ -157,6 +168,7 @@ jobs:
           tar -tzf /tmp/release.tar.gz | grep '.next/BUILD_ID' || echo "WARNING: .next/BUILD_ID not found in archive!"
 
       - name: Upload release archive
+        if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: release-artifact
@@ -194,6 +206,7 @@ jobs:
             "releaseId": "$RELEASE_ID",
             "gitSha": "${{ github.sha }}",
             "gitRef": "${{ github.ref }}",
+            "gitBranch": "${{ github.ref_name }}",
             "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           }
           EOF
