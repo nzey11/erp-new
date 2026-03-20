@@ -37,6 +37,8 @@ import { STOCK_INCREASE_TYPES, STOCK_DECREASE_TYPES } from "./predicates";
  *
  * @throws Error with Russian message if stock is insufficient or conflict detected
  */
+// Unused function - reserved for future optimistic locking implementation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function _decrementStockWithOptimisticLock(
   productId: string,
   warehouseId: string,
@@ -147,6 +149,8 @@ interface CreateMovementInput {
 /**
  * Create a single stock movement.
  */
+// Unused function - reserved for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function _createMovement(input: CreateMovementInput) {
   return db.stockMovement.create({
     data: {
@@ -481,6 +485,7 @@ export async function calculateStockFromMovements(
 /**
  * Reconcile StockRecord with movements.
  * Updates StockRecord to match the sum of movements.
+ * Uses OCC (Optimistic Concurrency Control) with retry logic.
  */
 export async function reconcileStockRecord(
   productId: string,
@@ -488,11 +493,55 @@ export async function reconcileStockRecord(
 ): Promise<number> {
   const quantity = await calculateStockFromMovements(productId, warehouseId);
 
-  await db.stockRecord.upsert({
-    where: { warehouseId_productId: { warehouseId, productId } },
-    update: { quantity },
-    create: { warehouseId, productId, quantity },
-  });
+  const MAX_RETRIES = 3;
+  let retries = 0;
 
-  return quantity;
+  while (retries < MAX_RETRIES) {
+    try {
+      // Try to update existing record with version check
+      const existing = await db.stockRecord.findUnique({
+        where: { warehouseId_productId: { warehouseId, productId } },
+      });
+
+      if (existing) {
+        // Update with version check (OCC)
+        // Use raw query for atomic update with version check
+        const updated = await db.$executeRaw`
+          UPDATE "StockRecord"
+          SET quantity = ${quantity}, version = version + 1, "updatedAt" = NOW()
+          WHERE id = ${existing.id} AND version = ${existing.version}
+        `;
+
+        if (updated === 0) {
+          // Version mismatch - record was modified concurrently
+          throw new Error("OCC conflict");
+        }
+      } else {
+        // Create new record
+        await db.stockRecord.create({
+          data: { warehouseId, productId, quantity, version: 0 },
+        });
+      }
+
+      return quantity;
+    } catch (e: unknown) {
+      const error = e as { message?: string };
+      // Check for OCC conflict or Prisma P2025 (record not found)
+      if (
+        (error.message === "OCC conflict" ||
+          (e as { code?: string }).code === "P2025") &&
+        retries < MAX_RETRIES - 1
+      ) {
+        retries++;
+        // Small delay before retry
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  throw new Error(
+    `Failed to reconcile StockRecord after ${MAX_RETRIES} retries`
+  );
 }

@@ -193,17 +193,31 @@ export async function autoPostDocument(
   documentDate: Date,
   createdBy?: string
 ): Promise<void> {
+  console.log(`[JOURNAL DEBUG] autoPostDocument START: doc=${documentNumber}(${documentId})`);
+  
   // Check if already posted
   const existing = await db.journalEntry.findFirst({
     where: { sourceId: documentId, isReversed: false },
   });
-  if (existing) return; // Already posted, idempotent
+  if (existing) {
+    console.log(`[JOURNAL DEBUG] autoPostDocument: JournalEntry already exists for doc=${documentNumber}, skipping`);
+    return; // Already posted, idempotent
+  }
 
+  console.log(`[JOURNAL DEBUG] autoPostDocument: No existing JournalEntry, building posting lines...`);
   const postingLines = await buildPostingLines(documentId);
-  if (!postingLines || postingLines.length === 0) return; // No posting rules for this type
+  console.log(`[JOURNAL DEBUG] autoPostDocument: buildPostingLines returned ${postingLines?.length ?? 0} lines`);
+  if (!postingLines || postingLines.length === 0) {
+    console.log(`[JOURNAL DEBUG] autoPostDocument: No posting rules for doc=${documentNumber}, returning`);
+    return; // No posting rules for this type
+  }
 
   const resolved = await resolvePostingAccounts(postingLines);
-  if (resolved.length === 0) return;
+  console.log(`[JOURNAL DEBUG] autoPostDocument: resolvePostingAccounts returned ${resolved.length} resolved lines`);
+  if (resolved.length === 0) {
+    console.log(`[JOURNAL DEBUG] autoPostDocument: No resolved accounts for doc=${documentNumber}, returning`);
+    return;
+  }
 
   const number = await getNextJournalNumber();
 
@@ -258,6 +272,8 @@ export async function autoPostDocument(
       lines: { create: ledgerLinesData },
     },
   });
+  
+  console.log(`[JOURNAL DEBUG] autoPostDocument COMPLETE: JournalEntry ${number} created for doc=${documentNumber} with ${ledgerLinesData.length} lines`);
 }
 
 /**

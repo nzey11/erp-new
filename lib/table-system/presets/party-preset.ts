@@ -5,7 +5,6 @@
  * First PoC for table system v1.
  */
 
-import type { ListTablePreset } from "@/lib/table-system/types";
 import { createListTablePreset } from "@/lib/table-system/types";
 import type { PartyListItemDto } from "@/lib/domain/party/dto";
 

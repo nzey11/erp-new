@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "antd";
-import { Card, Table, type TableColumnsType, Modal, Select, Input, Typography } from "antd";
+import { Card, Modal, Select, Input, Typography } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { Tabs } from "antd";
 import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -208,8 +210,8 @@ export default function ReferencesPage() {
     boolean: "Да/Нет",
   };
 
-  const unitColumns: TableColumnsType<Unit> = [
-    { key: "name", dataIndex: "name", title: "Название", render: (name: string) => <span className="font-medium">{name}</span> },
+  const unitColumns: ERPColumn<Unit>[] = [
+    { key: "name", dataIndex: "name", title: "Название", render: (value) => <span className="font-medium">{value as string}</span> },
     { key: "shortName", dataIndex: "shortName", title: "Сокращение" },
     {
       key: "actions",
@@ -223,10 +225,10 @@ export default function ReferencesPage() {
     },
   ];
 
-  const priceListColumns: TableColumnsType<PriceList> = [
-    { key: "name", dataIndex: "name", title: "Название", render: (name: string) => <span className="font-medium">{name}</span> },
-    { key: "description", dataIndex: "description", title: "Описание", render: (desc: string | null) => <span className="text-muted-foreground">{desc || "—"}</span> },
-    { key: "prices", dataIndex: ["_count", "prices"], title: "Кол-во цен", align: "right", render: (count: number) => count ?? 0 },
+  const priceListColumns: ERPColumn<PriceList>[] = [
+    { key: "name", dataIndex: "name", title: "Название", render: (value) => <span className="font-medium">{value as string}</span> },
+    { key: "description", dataIndex: "description", title: "Описание", render: (value) => <span className="text-muted-foreground">{(value as string | null) || "—"}</span> },
+    { key: "prices", dataIndex: "_count", title: "Кол-во цен", align: "right", render: (value) => (value as { prices?: number })?.prices ?? 0 },
     {
       key: "actions",
       title: "",
@@ -239,16 +241,16 @@ export default function ReferencesPage() {
     },
   ];
 
-  const customFieldColumns: TableColumnsType<CustomFieldDef> = [
-    { key: "name", dataIndex: "name", title: "Название", render: (name: string) => <span className="font-medium">{name}</span> },
-    { key: "fieldType", dataIndex: "fieldType", title: "Тип", render: (type: string) => FIELD_TYPE_LABELS[type] || type },
+  const customFieldColumns: ERPColumn<CustomFieldDef>[] = [
+    { key: "name", dataIndex: "name", title: "Название", render: (value) => <span className="font-medium">{value as string}</span> },
+    { key: "fieldType", dataIndex: "fieldType", title: "Тип", render: (value) => FIELD_TYPE_LABELS[value as string] || (value as string) },
     {
       key: "options",
       dataIndex: "options",
       title: "Опции",
-      render: (options: string | null, cf) =>
-        cf.fieldType === "select" && options
-          ? (JSON.parse(options) as string[]).join(", ")
+      render: (value, cf) =>
+        (cf as CustomFieldDef).fieldType === "select" && value
+          ? (JSON.parse(value as string) as string[]).join(", ")
           : "—",
     },
     {
@@ -292,12 +294,12 @@ export default function ReferencesPage() {
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
-                <Table
+                <ERPTable
+                  data={units}
                   columns={unitColumns}
-                  dataSource={units}
                   rowKey="id"
-                  pagination={false}
-                  locale={{ emptyText: "Нет единиц измерения" }}
+                  emptyText="Нет единиц измерения"
+                  onRefresh={loadAll}
                 />
               </Card>
             ),
@@ -311,12 +313,12 @@ export default function ReferencesPage() {
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
-                <Table
+                <ERPTable
+                  data={priceLists}
                   columns={priceListColumns}
-                  dataSource={priceLists}
                   rowKey="id"
-                  pagination={false}
-                  locale={{ emptyText: "Нет прайс-листов" }}
+                  emptyText="Нет прайс-листов"
+                  onRefresh={loadAll}
                 />
               </Card>
             ),
@@ -330,12 +332,12 @@ export default function ReferencesPage() {
                   <Plus className="h-4 w-4 mr-2" />Добавить
                 </Button>
               }>
-                <Table
+                <ERPTable
+                  data={customFields}
                   columns={customFieldColumns}
-                  dataSource={customFields}
                   rowKey="id"
-                  pagination={false}
-                  locale={{ emptyText: "Нет характеристик" }}
+                  emptyText="Нет характеристик"
+                  onRefresh={loadAll}
                 />
               </Card>
             ),

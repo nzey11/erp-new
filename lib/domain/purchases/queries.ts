@@ -71,10 +71,18 @@ export async function getPurchaseDocuments(
 
   // Date range filter
   if (filters.dateFrom || filters.dateTo) {
-    where.date = {
-      ...(filters.dateFrom && { gte: new Date(filters.dateFrom) }),
-      ...(filters.dateTo && { lte: new Date(filters.dateTo) }),
-    };
+    const dateFilter: Record<string, Date> = {};
+    if (filters.dateFrom) {
+      const from = new Date(filters.dateFrom);
+      from.setHours(0, 0, 0, 0);
+      dateFilter.gte = from;
+    }
+    if (filters.dateTo) {
+      const to = new Date(filters.dateTo);
+      to.setHours(23, 59, 59, 999);
+      dateFilter.lte = to;
+    }
+    where.date = dateFilter;
   }
 
   // Counterparty filter

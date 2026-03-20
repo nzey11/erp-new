@@ -119,15 +119,22 @@ describe("buildPostingLines — USN (no VAT)", () => {
     expect(lines![0].amount).toBeCloseTo(400, 2);
   });
 
-  it("write_off → Дт 94 Кт 41.1 (shortage posting)", async () => {
+  it("write_off → Дт 94 Кт 41.1 + Дт 91.2 Кт 94 (shortage posting with expense recognition)", async () => {
     const doc = await createDocument({ type: "write_off", totalAmount: 300, tenantId: taxCtx.tenantId });
 
     const lines = await buildPostingLines(doc.id);
 
-    expect(lines).toHaveLength(1);
-    expect(lines![0].debitCode).toBe("94");
-    expect(lines![0].creditCode).toBe("41.1");
-    expect(lines![0].amount).toBeCloseTo(300, 2);
+    expect(lines).toHaveLength(2);
+
+    // First posting: write off inventory to account 94
+    const writeOffLine = lines!.find((l) => l.debitCode === "94" && l.creditCode === "41.1");
+    expect(writeOffLine).toBeDefined();
+    expect(writeOffLine!.amount).toBeCloseTo(300, 2);
+
+    // Second posting: close account 94 to other expenses (91.2)
+    const expenseLine = lines!.find((l) => l.debitCode === "91.2" && l.creditCode === "94");
+    expect(expenseLine).toBeDefined();
+    expect(expenseLine!.amount).toBeCloseTo(300, 2);
   });
 
   it("inventory_count → returns null (no posting at confirm stage)", async () => {

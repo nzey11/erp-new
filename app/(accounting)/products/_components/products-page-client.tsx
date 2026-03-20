@@ -266,6 +266,7 @@ export function ProductsPageClient({
           rowKey="id"
           sticky
           onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+          onRefresh={() => router.refresh()}
         />
       )}
     </div>

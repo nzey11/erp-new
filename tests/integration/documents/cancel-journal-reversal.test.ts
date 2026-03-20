@@ -17,6 +17,13 @@ import {
   cancelDocumentTransactional,
 } from "@/lib/modules/accounting/services/document-confirm.service";
 import { autoPostDocument } from "@/lib/modules/accounting/finance/journal";
+import { processOutboxEvents } from "@/lib/events";
+import {
+  registerOutboxHandler,
+  clearOutboxHandlers,
+} from "@/lib/events/outbox";
+import { onDocumentCancelledJournal } from "@/lib/modules/accounting/handlers/cancel-journal-handler";
+import { resetOutboxHandlerRegistration } from "@/lib/events/handlers/register-outbox-handlers";
 import {
   createDocument,
   createDocumentItem,
@@ -41,6 +48,11 @@ let tenantId: string;
 beforeAll(async () => {
   accountIds = await seedTestAccounts();
   tenantId = "test-cancel-journal-tenant";
+  
+  // Register cancel handler for outbox processing
+  clearOutboxHandlers();
+  resetOutboxHandlerRegistration();
+  registerOutboxHandler("DocumentCancelled", onDocumentCancelledJournal as never);
 });
 
 beforeEach(async () => {
@@ -89,6 +101,9 @@ describe("cancelDocumentTransactional — outgoing_shipment", () => {
     // Cancel the document
     const cancelled = await cancelDocumentTransactional(doc.id, "test-user");
     expect(cancelled.status).toBe("cancelled");
+
+    // Process outbox events (handlers will reverse journal entries)
+    await processOutboxEvents(10);
 
     // Verify: original entries marked as reversed
     const originalEntries = await db.journalEntry.findMany({
@@ -147,6 +162,9 @@ describe("cancelDocumentTransactional — outgoing_shipment", () => {
     const cancelled = await cancelDocumentTransactional(doc.id, "test-user");
     expect(cancelled.status).toBe("cancelled");
 
+    // Process outbox events (handlers will auto-post and reverse)
+    await processOutboxEvents(10);
+
     // Verify: reversal entries were created
     const allEntries = await db.journalEntry.findMany({
       where: { sourceId: doc.id },
@@ -185,6 +203,7 @@ describe("cancelDocumentTransactional — outgoing_shipment", () => {
 
     // First cancel
     await cancelDocumentTransactional(doc.id, "test-user");
+    await processOutboxEvents(10);
 
     const entriesAfterFirstCancel = await db.journalEntry.findMany({
       where: { sourceId: doc.id },
@@ -193,6 +212,7 @@ describe("cancelDocumentTransactional — outgoing_shipment", () => {
 
     // Second cancel — must be idempotent (no new entries)
     await cancelDocumentTransactional(doc.id, "test-user");
+    await processOutboxEvents(10);
 
     const entriesAfterSecondCancel = await db.journalEntry.findMany({
       where: { sourceId: doc.id },
@@ -240,6 +260,9 @@ describe("cancelDocumentTransactional — incoming_shipment", () => {
     // Cancel
     const cancelled = await cancelDocumentTransactional(doc.id, "test-user");
     expect(cancelled.status).toBe("cancelled");
+
+    // Process outbox events
+    await processOutboxEvents(10);
 
     // Verify original entry is reversed
     const updatedOriginal = await db.journalEntry.findUnique({
@@ -298,6 +321,9 @@ describe("cancelDocumentTransactional — incoming_shipment", () => {
     const cancelled = await cancelDocumentTransactional(doc.id, "test-user");
     expect(cancelled.status).toBe("cancelled");
 
+    // Process outbox events
+    await processOutboxEvents(10);
+
     const allEntries = await db.journalEntry.findMany({
       where: { sourceId: doc.id },
       include: { lines: true },
@@ -312,5 +338,159 @@ describe("cancelDocumentTransactional — incoming_shipment", () => {
       .flatMap((e) => e.lines)
       .reduce((s, l) => s + Number(l.credit), 0);
     expect(totalDebit).toBe(totalCredit);
+  });
+});
+
+// =============================================
+// Phase 2: DocumentCancelled event flow tests
+// =============================================
+
+describe("DocumentCancelled — Outbox Event Flow", () => {
+  let warehouse: Awaited<ReturnType<typeof createWarehouse>>;
+  let product: Awaited<ReturnType<typeof createProduct>>;
+  let counterparty: Awaited<ReturnType<typeof createCounterparty>>;
+
+  beforeEach(async () => {
+    warehouse = await createWarehouse({ tenantId });
+    product = await createProduct({ tenantId });
+    counterparty = await createCounterparty({ tenantId });
+    await createStockRecord(warehouse.id, product.id, 100);
+  });
+
+  it("Test 1 — Cancel creates PENDING OutboxEvent that becomes PROCESSED", async () => {
+    // Create confirmed document
+    const doc = await createDocument({
+      type: "outgoing_shipment",
+      status: "confirmed",
+      warehouseId: warehouse.id,
+      counterpartyId: counterparty.id,
+      totalAmount: 5000,
+      tenantId,
+      confirmedAt: new Date(),
+    });
+    await createDocumentItem(doc.id, product.id, { quantity: 10, price: 500 });
+    await autoPostDocument(doc.id, doc.number, doc.date);
+
+    // Verify no outbox events exist before cancel
+    const eventsBefore = await db.outboxEvent.findMany({
+      where: { aggregateId: doc.id, eventType: "DocumentCancelled" },
+    });
+    expect(eventsBefore).toHaveLength(0);
+
+    // Cancel the document
+    await cancelDocumentTransactional(doc.id, "test-user");
+
+    // Verify PENDING outbox event was created
+    const pendingEvent = await db.outboxEvent.findFirst({
+      where: { aggregateId: doc.id, eventType: "DocumentCancelled" },
+    });
+    expect(pendingEvent).not.toBeNull();
+    expect(pendingEvent?.status).toBe("PENDING");
+
+    // Process outbox events
+    await processOutboxEvents(10);
+
+    // Verify event is now PROCESSED
+    const processedEvent = await db.outboxEvent.findFirst({
+      where: { aggregateId: doc.id, eventType: "DocumentCancelled" },
+    });
+    expect(processedEvent?.status).toBe("PROCESSED");
+    expect(processedEvent?.processedAt).not.toBeNull();
+  });
+
+  it("Test 2 — Cancel handler is idempotent (second run doesn't duplicate)", async () => {
+    // Create confirmed document
+    const doc = await createDocument({
+      type: "outgoing_shipment",
+      status: "confirmed",
+      warehouseId: warehouse.id,
+      counterpartyId: counterparty.id,
+      totalAmount: 5000,
+      tenantId,
+      confirmedAt: new Date(),
+    });
+    await createDocumentItem(doc.id, product.id, { quantity: 10, price: 500 });
+    await autoPostDocument(doc.id, doc.number, doc.date);
+
+    // Cancel and process outbox
+    await cancelDocumentTransactional(doc.id, "test-user");
+    await processOutboxEvents(10);
+
+    // Count entries after first cancel
+    const entriesAfterFirst = await db.journalEntry.findMany({
+      where: { sourceId: doc.id },
+    });
+    const countAfterFirst = entriesAfterFirst.length;
+    
+    // Count reversal entries (isManual = true, description contains "сторно")
+    const reversalsAfterFirst = await db.journalEntry.count({
+      where: { 
+        sourceId: doc.id, 
+        isManual: true,
+        description: { contains: "сторно" },
+      },
+    });
+    expect(reversalsAfterFirst).toBeGreaterThanOrEqual(1);
+
+    // Run processOutboxEvents again (simulating duplicate processing)
+    await processOutboxEvents(10);
+
+    // Count entries after second processing
+    const entriesAfterSecond = await db.journalEntry.findMany({
+      where: { sourceId: doc.id },
+    });
+    const countAfterSecond = entriesAfterSecond.length;
+
+    // Count reversal entries after second run
+    const reversalsAfterSecond = await db.journalEntry.count({
+      where: { 
+        sourceId: doc.id, 
+        isManual: true,
+        description: { contains: "сторно" },
+      },
+    });
+
+    // Entry count should be the same (no duplicates)
+    expect(countAfterSecond).toBe(countAfterFirst);
+    // Reversal count should be the same (no duplicate reversals)
+    expect(reversalsAfterSecond).toBe(reversalsAfterFirst);
+  });
+
+  it("Test 3 — Cancel of already-cancelled document returns early without error", async () => {
+    // Create confirmed document
+    const doc = await createDocument({
+      type: "outgoing_shipment",
+      status: "confirmed",
+      warehouseId: warehouse.id,
+      counterpartyId: counterparty.id,
+      totalAmount: 5000,
+      tenantId,
+      confirmedAt: new Date(),
+    });
+    await createDocumentItem(doc.id, product.id, { quantity: 10, price: 500 });
+    await autoPostDocument(doc.id, doc.number, doc.date);
+
+    // First cancel
+    const firstCancel = await cancelDocumentTransactional(doc.id, "test-user");
+    expect(firstCancel.status).toBe("cancelled");
+    await processOutboxEvents(10);
+
+    // Second cancel on already-cancelled document
+    // Should return early with the cancelled document (idempotent), not throw
+    const secondCancel = await cancelDocumentTransactional(doc.id, "test-user");
+    expect(secondCancel.status).toBe("cancelled");
+    
+    // Process outbox again (should be no-op since document already cancelled)
+    await processOutboxEvents(10);
+
+    // Verify no duplicate entries were created
+    const allEntries = await db.journalEntry.findMany({
+      where: { sourceId: doc.id },
+    });
+    
+    // Should have original + reversal, no duplicates
+    const reversalEntries = allEntries.filter(e => e.isManual && e.description?.includes("сторно"));
+    expect(reversalEntries.length).toBeGreaterThanOrEqual(1);
+    expect(reversalEntries.length).toBeLessThanOrEqual(2); // At most 2 (Дт + Кт lines in one entry)
   });
 });

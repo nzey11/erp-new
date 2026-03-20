@@ -51,6 +51,19 @@ export function getPaymentColumns(): ERPColumn<PaymentWithRelations>[] {
       ellipsis: true,
     },
     {
+      key: "document",
+      title: "Документ",
+      render: (_, row) =>
+        row.document ? (
+          <a href={`/documents/${row.document.id}`} className="text-blue-600 hover:underline">
+            {row.document.number}
+          </a>
+        ) : (
+          "—"
+        ),
+      ellipsis: true,
+    },
+    {
       key: "paymentMethod",
       title: "Способ оплаты",
       dataIndex: "paymentMethod",

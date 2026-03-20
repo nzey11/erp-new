@@ -14,10 +14,18 @@ export async function onDocumentConfirmedJournal(
 ): Promise<void> {
   const { documentId, documentNumber, confirmedAt, confirmedBy } = event.payload;
 
-  await autoPostDocument(
-    documentId,
-    documentNumber,
-    confirmedAt,
-    confirmedBy ?? undefined
-  );
+  console.log(`[JOURNAL DEBUG] onDocumentConfirmedJournal called: doc=${documentNumber}(${documentId})`);
+
+  try {
+    await autoPostDocument(
+      documentId,
+      documentNumber,
+      confirmedAt,
+      confirmedBy ?? undefined
+    );
+    console.log(`[JOURNAL DEBUG] autoPostDocument completed for doc=${documentNumber}`);
+  } catch (e) {
+    console.error(`[JOURNAL DEBUG] autoPostDocument FAILED for doc=${documentNumber}:`, e);
+    throw e;
+  }
 }

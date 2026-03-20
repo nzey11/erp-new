@@ -4,6 +4,7 @@ import { z } from "zod";
 import { autoPostPayment } from "@/lib/modules/accounting/finance/journal";
 import { handleAuthError } from "@/lib/shared/authorization";
 import { PaymentService } from "@/lib/modules/finance";
+import { rateLimit } from "@/lib/shared/rate-limit";
 
 const createPaymentSchema = z.object({
   type: z.enum(["income", "expense"]),
@@ -42,6 +43,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requirePermission("payments:write");
+
+    // Rate limit: 30 requests per minute per user
+    const { success: rateLimited } = rateLimit(`payments:write:${session.id}`, 30, 60 * 1000);
+    if (!rateLimited) {
+      return NextResponse.json(
+        { error: "Слишком много запросов. Попробуйте позже." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const data = createPaymentSchema.parse(body);
 

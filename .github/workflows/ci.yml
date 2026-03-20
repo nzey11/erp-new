@@ -21,6 +21,7 @@ jobs:
   verify:
     name: Verify (Lint · Test · Build)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -53,11 +54,24 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: Derive SHAs for nx affected
         uses: nrwl/nx-set-shas@v4
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -104,13 +118,12 @@ jobs:
       - name: TypeScript type check
         run: npx tsc --noEmit
 
-      # P4-07: Dead code report (soft-fail — continue-on-error).
-      # Reports unused locals/imports visible in CI logs without blocking the build.
-      # Current baseline: ~37 violations. Escalate to hard-fail after cleanup.
+      # P4-07: Dead code report (hard-fail).
+      # Reports unused locals/imports visible in CI logs and blocks the build on violations.
       # TypeScript does not detect unused exports between files — this covers unused locals/imports.
       # See: .qoder/specs/erp-normalization-roadmap.md P4-07
       - name: Dead code report (unused locals)
-        run: npx tsc --noEmit --noUnusedLocals || true
+        run: npx tsc --noEmit --noUnusedLocals
 
       - name: Unit & Integration Tests
         run: npx nx affected -t test --parallel=1
@@ -122,7 +135,8 @@ jobs:
       - name: Build
         run: npx next build
 
-      # E2E tests disabled — unstable in CI environment
+      # TODO: Enable E2E tests after fixing configuration issues — target: 2026-04-01
+      # E2E tests currently fail due to ESM/CommonJS module conflicts
       # Run locally with: npm run test:e2e
 
       # Create tar archive with all deployment files while .next/ is guaranteed present
@@ -158,6 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: verify
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 15
 
     steps:
       - name: Download release archive
@@ -192,7 +207,7 @@ jobs:
       - name: Setup SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_HOST: 5.129.252.165
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           mkdir -p ~/.ssh
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
@@ -205,7 +220,7 @@ jobs:
       - name: Test SSH connection
         run: |
           ssh -i ~/.ssh/deploy_key \
-            ${{ secrets.DEPLOY_USER }}@5.129.252.165 \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
             "echo SSH connection OK"
 
       - name: Upload archive to server
@@ -216,7 +231,7 @@ jobs:
       - name: Deploy release on server
         run: |
           ssh -i ~/.ssh/deploy_key \
-            ${{ secrets.DEPLOY_USER }}@5.129.252.165 \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
             env RELEASE_ID="${{ env.RELEASE_ID }}" bash << 'ENDSSH'
           set -euo pipefail
           BASE=/var/www/listopt-erp
@@ -247,8 +262,7 @@ jobs:
           ln -sfn "$RELEASE_DIR" "$BASE/current"
 
           echo "==> Reloading pm2"
-          pm2 delete listopt-erp 2>/dev/null || true
-          pm2 start "$BASE/current/infra/pm2/ecosystem.config.js"
+          pm2 reload "$BASE/current/infra/pm2/ecosystem.config.js" --update-env || pm2 start "$BASE/current/infra/pm2/ecosystem.config.js"
           pm2 save
 
           echo "==> Installing deployment scripts to stable bin/"
@@ -276,7 +290,7 @@ jobs:
       - name: Smoke check
         run: |
           ssh -i ~/.ssh/deploy_key \
-            ${{ secrets.DEPLOY_USER }}@5.129.252.165 \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
             env RELEASE_ID="${{ env.RELEASE_ID }}" bash << 'ENDSSH'
           set -euo pipefail
 

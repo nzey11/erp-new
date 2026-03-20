@@ -5,7 +5,6 @@
  * Level 1+ migration: columns + balance renderer + onRowClick parity.
  */
 
-import type { ListTablePreset } from "@/lib/table-system/types";
 import { createListTablePreset } from "@/lib/table-system/types";
 
 /**

@@ -214,6 +214,7 @@ export default function WarehousesPage() {
         columns={columns}
         loading={grid.loading}
         emptyText="Нет складов"
+        onRefresh={() => grid.mutate.refresh()}
         rowActions={(row) => (
           <div className="flex items-center gap-1">
             <Button

@@ -1,6 +1,7 @@
 "use client";
 
 import { ShoppingCart, User } from "lucide-react";
+import { Tag } from "antd";
 import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { createDateColumn } from "@/components/erp/columns";
 import { createMoneyColumn } from "@/components/erp/columns";
@@ -9,16 +10,16 @@ import { createStatusColumn } from "@/components/erp/columns";
 import type { SalesOrderRow, EcomStatus, PaymentStatus, DeliveryType } from "@/lib/domain/sales-orders/queries";
 
 /**
- * Ecom status map with Russian labels and Tailwind color classes.
+ * Ecom status config with Russian labels and Ant Design Tag colors.
  * Separate from DocumentStatusMap — ecom has its own workflow states.
  */
-export const EcomStatusMap: Record<EcomStatus, { label: string; color: string }> = {
-  pending: { label: "Ожидает", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-  paid: { label: "Оплачен", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  processing: { label: "В работе", color: "bg-orange-100 text-orange-800 border-orange-300" },
-  shipped: { label: "Отправлен", color: "bg-purple-100 text-purple-800 border-purple-300" },
-  delivered: { label: "Доставлен", color: "bg-green-100 text-green-800 border-green-300" },
-  cancelled: { label: "Отменён", color: "bg-red-100 text-red-800 border-red-300" },
+const ECOM_STATUS_CONFIG: Record<EcomStatus, { label: string; color: string }> = {
+  pending: { label: "Ожидает", color: "warning" },
+  paid: { label: "Оплачен", color: "processing" },
+  processing: { label: "В работе", color: "orange" },
+  shipped: { label: "Отправлен", color: "purple" },
+  delivered: { label: "Доставлен", color: "success" },
+  cancelled: { label: "Отменён", color: "error" },
 };
 
 /**
@@ -141,15 +142,9 @@ export function getSalesOrderColumns(): ERPColumn<SalesOrderRow>[] {
       sortable: true,
       render: (_value, row) => {
         const status = row.status;
-        const config = EcomStatusMap[status];
-        if (!config) return <span className="text-xs">{status}</span>;
-        return (
-          <span
-            className={`inline-block text-xs font-medium border rounded-full px-2.5 py-0.5 ${config.color}`}
-          >
-            {config.label}
-          </span>
-        );
+        const config = ECOM_STATUS_CONFIG[status];
+        if (!config) return <Tag color="default">{status}</Tag>;
+        return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
   ];

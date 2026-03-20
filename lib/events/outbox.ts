@@ -64,6 +64,13 @@ export async function createOutboxEvent(
   aggregateType: string,
   aggregateId: string
 ): Promise<void> {
+  console.log(`[OUTBOX] createOutboxEvent called: type=${event.type}, aggregateType=${aggregateType}, aggregateId=${aggregateId}`);
+  
+  // Use PostgreSQL's NOW() to avoid clock skew between JS and DB.
+  // This ensures availableAt is always <= NOW() when processing.
+  const nowResult = await tx.$queryRaw<[{ now: Date }]>`SELECT NOW() as now`;
+  const availableAt = nowResult[0].now;
+
   await tx.outboxEvent.create({
     data: {
       eventType: event.type,
@@ -72,9 +79,11 @@ export async function createOutboxEvent(
       payload: event as unknown as Prisma.JsonObject, // Prisma Json type
       status: "PENDING",
       attempts: 0,
-      availableAt: new Date(),
+      availableAt,
     },
   });
+  
+  console.log(`[OUTBOX] createOutboxEvent completed: type=${event.type}, aggregateId=${aggregateId}`);
 }
 
 /**
@@ -85,6 +94,12 @@ export async function createOutboxEvent(
  * @returns Array of claimed events
  */
 export async function claimOutboxEvents(limit: number): Promise<OutboxEventRow[]> {
+  console.log(`[OUTBOX] claimOutboxEvents called with limit=${limit}`);
+  
+  // Check how many PENDING events exist
+  const pendingCount = await db.outboxEvent.count({ where: { status: "PENDING" } });
+  console.log(`[OUTBOX] Total PENDING events in DB: ${pendingCount}`);
+  
   // PostgreSQL-specific atomic claim using UPDATE ... FROM subquery
   const result = await db.$queryRaw<OutboxEventRow[]>`
     UPDATE "OutboxEvent"
@@ -98,6 +113,8 @@ export async function claimOutboxEvents(limit: number): Promise<OutboxEventRow[]
     )
     RETURNING *
   `;
+
+  console.log(`[OUTBOX] claimOutboxEvents SQL returned ${result.length} rows`);
 
   return result;
 }
@@ -253,20 +270,19 @@ export function clearOutboxHandlers(): void {
 
 /**
  * Process a single event by calling all registered handlers.
+ * Throws error if no handlers registered - event will be marked FAILED for retry.
  */
 async function processEvent(event: OutboxEventRow): Promise<void> {
   const domainEvent = event.payload as DomainEvent;
   const handlers = handlerRegistry.get(domainEvent.type) ?? [];
 
   if (handlers.length === 0) {
-    // Warn but do NOT throw — the event will still be marked PROCESSED below.
-    // This prevents PROCESSING limbo (events claimed but never resolved) when
-    // a handler is temporarily absent (e.g., deployment gap, feature flag off).
-    logger.warn("outbox", `No handlers registered for event type "${domainEvent.type}" — marking as processed`, {
-      eventId: event.id,
-      eventType: domainEvent.type,
-    });
-    return;
+    // CRITICAL: No handlers means the event won't be processed correctly.
+    // Throw error so event gets marked FAILED and can be retried after handlers are registered.
+    throw new Error(
+      `No handlers registered for event type "${domainEvent.type}". ` +
+      `Ensure registerOutboxHandlers() is called before processing events.`
+    );
   }
 
   for (const handler of handlers) {
@@ -288,7 +304,13 @@ export async function processOutboxEvents(
   failed: number;
   errors: Array<{ eventId: string; error: string }>;
 }> {
+  console.log(`[OUTBOX] processOutboxEvents called with limit=${limit}`);
   const events = await claimOutboxEvents(limit);
+
+  console.log(`[OUTBOX] claimOutboxEvents returned ${events.length} events`);
+  if (events.length > 0) {
+    console.log(`[OUTBOX] Event types: ${events.map(e => `${e.eventType}(${e.aggregateId})`).join(', ')}`);
+  }
 
   if (events.length === 0) {
     return { claimed: 0, processed: 0, failed: 0, errors: [] };

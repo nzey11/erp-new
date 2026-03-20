@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Input, Table, Tag, Select, type TableColumnsType } from "antd";
+import { Button, Input, Table, Tag, Select, type TableColumnsType, Tooltip } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import { ERPToolbar } from "@/components/erp/erp-toolbar";
 import { ImageIcon, Crown, ChevronRight, ChevronDown } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
@@ -235,6 +236,14 @@ export default function VariantGroupsPage() {
       <ERPToolbar
         extraActions={
           <>
+            <Tooltip title="Обновить">
+              <Button
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={() => grid.mutate.refresh()}
+                loading={grid.loading}
+              />
+            </Tooltip>
             <Select
               value={grid.filters.categoryId || ALL_VALUE}
               onChange={(v: string) => grid.setFilter("categoryId", v === ALL_VALUE ? "" : v)}

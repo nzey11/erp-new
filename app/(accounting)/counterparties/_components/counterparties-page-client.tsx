@@ -202,6 +202,7 @@ export function CounterpartiesPageClient({
           rowKey="id"
           sticky
           onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+          onRefresh={() => router.refresh()}
         />
       )}
 

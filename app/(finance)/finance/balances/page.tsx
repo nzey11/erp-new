@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, Table, type TableColumnsType, Tag, Modal, Input, Typography, Button } from "antd";
+import { Card, Tag, Modal, Input, Button } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { Loader2, FileText, ExternalLink } from "lucide-react";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
@@ -52,11 +54,11 @@ export default function BalancesPage() {
   const [docs, setDocs] = useState<CounterpartyDoc[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
 
-  const docsColumns: TableColumnsType<CounterpartyDoc> = [
-    { key: "number", dataIndex: "number", title: "Номер", render: (num: string) => <span className="font-mono text-sm">{num}</span> },
-    { key: "type", dataIndex: "typeName", title: "Тип", render: (type: string) => <span className="text-sm">{type}</span> },
-    { key: "date", dataIndex: "date", title: "Дата", render: (date: string) => <span className="text-sm">{new Date(date).toLocaleDateString("ru-RU")}</span> },
-    { key: "totalAmount", dataIndex: "totalAmount", title: "Сумма", align: "right", render: (amount: number) => <span className="font-semibold">{formatRub(amount)}</span> },
+  const docsColumns: ERPColumn<CounterpartyDoc>[] = [
+    { key: "number", dataIndex: "number", title: "Номер", render: (value) => <span className="font-mono text-sm">{value as string}</span> },
+    { key: "type", dataIndex: "typeName", title: "Тип", render: (value) => <span className="text-sm">{value as string}</span> },
+    { key: "date", dataIndex: "date", title: "Дата", render: (value) => <span className="text-sm">{new Date(value as string).toLocaleDateString("ru-RU")}</span> },
+    { key: "totalAmount", dataIndex: "totalAmount", title: "Сумма", align: "right", render: (value) => <span className="font-semibold">{formatRub(value as number)}</span> },
     {
       key: "actions",
       title: "",
@@ -110,7 +112,7 @@ export default function BalancesPage() {
     }
   };
 
-  const getBalanceColumns = (colorClass: string): TableColumnsType<Balance> => [
+  const getBalanceColumns = (colorClass: string): ERPColumn<Balance>[] => [
     {
       key: "counterparty",
       title: "Контрагент",
@@ -130,7 +132,7 @@ export default function BalancesPage() {
       dataIndex: "balanceRub",
       title: "Сумма",
       align: "right",
-      render: (balance: number) => <span className={`font-semibold ${colorClass}`}>{formatRub(Math.abs(balance))}</span>,
+      render: (value) => <span className={`font-semibold ${colorClass}`}>{formatRub(Math.abs(value as number))}</span>,
     },
     {
       key: "actions",
@@ -149,11 +151,11 @@ export default function BalancesPage() {
   ];
 
   const BalanceTable = ({ items, colorClass }: { items: Balance[]; colorClass: string }) => (
-    <Table
+    <ERPTable
+      data={items}
       columns={getBalanceColumns(colorClass)}
-      dataSource={items}
       rowKey="id"
-      pagination={false}
+      onRefresh={load}
     />
   );
 
@@ -162,8 +164,8 @@ export default function BalancesPage() {
       <PageHeader
         title="Взаиморасчёты"
         actions={
-          <div className="flex items-center gap-2">
-            <Typography.Text strong className="text-sm text-muted-foreground">На дату</Typography.Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
+            <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>На дату</span>
             <Input
               type="date"
               value={asOfDate}
@@ -242,11 +244,11 @@ export default function BalancesPage() {
         ) : docs.length === 0 ? (
           <div className="py-6 text-center text-muted-foreground text-sm">Подтверждённых документов нет</div>
         ) : (
-          <Table
+          <ERPTable
+            data={docs}
             columns={docsColumns}
-            dataSource={docs}
             rowKey="id"
-            pagination={false}
+            onRefresh={() => { if (docsCounterparty) openDocs(docsCounterparty); }}
           />
         )}
       </Modal>

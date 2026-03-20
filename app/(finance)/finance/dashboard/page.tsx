@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 const PERIOD_OPTIONS = [
+  { label: "Сегодня", days: 0, today: true },
   { label: "Этот месяц", days: 0, currentMonth: true },
   { label: "7 дней", days: 7 },
   { label: "30 дней", days: 30 },
@@ -18,7 +19,9 @@ const PERIOD_OPTIONS = [
 function getPeriodDates(opt: typeof PERIOD_OPTIONS[number]) {
   const dateTo = new Date();
   let dateFrom: Date;
-  if (opt.currentMonth) {
+  if (opt.today) {
+    dateFrom = new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate());
+  } else if (opt.currentMonth) {
     dateFrom = new Date(dateTo.getFullYear(), dateTo.getMonth(), 1);
   } else {
     dateFrom = new Date();

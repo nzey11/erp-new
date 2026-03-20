@@ -13,7 +13,7 @@ vi.mock("@/lib/shared/auth", async (importOriginal) => {
 });
 
 // Import route handlers
-import { GET, POST } from "@/app/api/accounting/counterparties/route";
+import { GET } from "@/app/api/accounting/counterparties/route";
 import { GET as GET_BY_ID, PUT, DELETE } from "@/app/api/accounting/counterparties/[id]/route";
 
 describe("API: Counterparties Tenant Isolation", () => {

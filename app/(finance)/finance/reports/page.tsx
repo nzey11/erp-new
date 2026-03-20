@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, Tabs, Tag, Table, type TableColumnsType, Input, Typography } from "antd";
+import { Card, Tabs, Tag, Table, type TableColumnsType, Input } from "antd";
 import { ExternalLink, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { formatRub, formatDate } from "@/lib/shared/utils";
@@ -258,12 +258,12 @@ export default function ReportsPage() {
             children: (
               <>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Typography.Text strong>С</Typography.Text>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
+                    <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>С</span>
                     <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); scheduleApply(e.target.value, dateTo, asOfDate); }} className="w-40" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Typography.Text strong>По</Typography.Text>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
+                    <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>По</span>
                     <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); scheduleApply(dateFrom, e.target.value, asOfDate); }} className="w-40" />
                   </div>
                 </div>
@@ -332,12 +332,12 @@ export default function ReportsPage() {
             children: (
               <>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Typography.Text strong>С</Typography.Text>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
+                    <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>С</span>
                     <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); scheduleApply(e.target.value, dateTo, asOfDate); }} className="w-40" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Typography.Text strong>По</Typography.Text>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
+                    <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>По</span>
                     <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); scheduleApply(dateFrom, e.target.value, asOfDate); }} className="w-40" />
                   </div>
                 </div>
@@ -380,8 +380,8 @@ export default function ReportsPage() {
             children: (
               <>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Typography.Text strong>На дату</Typography.Text>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
+                    <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>На дату</span>
                     <Input type="date" value={asOfDate} onChange={(e) => { setAsOfDate(e.target.value); scheduleApply(dateFrom, dateTo, e.target.value); }} className="w-40" />
                   </div>
                   {balanceSheet && !balanceSheet.balanced && (

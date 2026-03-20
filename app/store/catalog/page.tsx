@@ -164,7 +164,7 @@ export default function CatalogPage() {
           onClose={() => setFiltersOpen(false)}
           placement="left"
           title="Фильтры"
-          width={320}
+          size={320}
         >
           <FilterSidebar />
         </Drawer>

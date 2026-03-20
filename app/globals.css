@@ -146,3 +146,14 @@
     margin: 0 !important;
   }
 }
+
+/* Landing Page Variables */
+:root {
+  --landing-primary: #1e6de5;
+  --landing-background: #ffffff;
+  --landing-border: #e2e8f0;
+  --landing-muted: #f8fafc;
+  --landing-radius-sm: 4px;
+  --landing-radius-md: 6px;
+  --landing-radius-lg: 8px;
+}

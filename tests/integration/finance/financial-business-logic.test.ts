@@ -24,8 +24,11 @@ import {
 } from "@/lib/modules/accounting/services/document-confirm.service";
 import { onDocumentConfirmedPayment } from "@/lib/modules/accounting/handlers/payment-handler";
 import { onDocumentConfirmedJournal } from "@/lib/modules/accounting/handlers/journal-handler";
+import { onDocumentCancelledJournal } from "@/lib/modules/accounting/handlers/cancel-journal-handler";
 import {
   clearOutboxHandlers,
+  registerOutboxHandler,
+  processOutboxEvents,
 } from "@/lib/events/outbox";
 import {
   resetOutboxHandlerRegistration,
@@ -62,6 +65,9 @@ beforeAll(async () => {
 
   clearOutboxHandlers();
   resetOutboxHandlerRegistration();
+  
+  // Register cancel handlers for cancellation tests
+  registerOutboxHandler("DocumentCancelled", onDocumentCancelledJournal as never);
 });
 
 afterAll(async () => {
@@ -243,6 +249,9 @@ describe("Financial — Fix 1: Journal reversal on document cancellation", () =>
 
     // Cancel the document
     await cancelDocumentTransactional(doc.id, "test-actor");
+    
+    // Process outbox events (handlers run after response in production)
+    await processOutboxEvents(10);
 
     const entriesAfter = await db.journalEntry.findMany({
       where: { sourceId: doc.id },
@@ -278,6 +287,7 @@ describe("Financial — Fix 1: Journal reversal on document cancellation", () =>
     await postJournalForDocument({ ...doc, totalAmount: 8000 });
 
     await cancelDocumentTransactional(doc.id, "test-actor");
+    await processOutboxEvents(10);
 
     // Get all JournalEntry ids for this document
     const entries = await db.journalEntry.findMany({
@@ -319,11 +329,13 @@ describe("Financial — Fix 1: Journal reversal on document cancellation", () =>
 
     // Cancel once
     await cancelDocumentTransactional(doc.id, "actor");
+    await processOutboxEvents(10);
 
     const countAfterFirst = await db.journalEntry.count({ where: { sourceId: doc.id } });
 
     // Cancel again — should return early (already cancelled)
     await cancelDocumentTransactional(doc.id, "actor");
+    await processOutboxEvents(10);
 
     const countAfterSecond = await db.journalEntry.count({ where: { sourceId: doc.id } });
 

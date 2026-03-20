@@ -4,6 +4,7 @@ import { parseQuery, parseBody, validationError } from "@/lib/shared/validation"
 import { generateDocumentNumber, getDocTypeName, getDocStatusName } from "@/lib/modules/accounting/documents";
 import { queryDocumentsSchema, createDocumentSchema } from "@/lib/modules/accounting/schemas/documents.schema";
 import { DocumentService } from "@/lib/modules/accounting";
+import { rateLimit } from "@/lib/shared/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,6 +35,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await requirePermission("documents:write");
+
+    // Rate limit: 30 requests per minute per user
+    const { success: rateLimited } = rateLimit(`documents:write:${user.id}`, 30, 60 * 1000);
+    if (!rateLimited) {
+      return NextResponse.json(
+        { error: "Слишком много запросов. Попробуйте позже." },
+        { status: 429 }
+      );
+    }
 
     // tenantId ONLY from session — never from request body (security)
     const tenantId = user.tenantId;

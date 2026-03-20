@@ -3,6 +3,7 @@ import { requirePermission, handleAuthError } from "@/lib/shared/authorization";
 import { z } from "zod";
 import { PaymentService } from "@/lib/modules/finance";
 import { revalidatePath } from "next/cache";
+import { rateLimit } from "@/lib/shared/rate-limit";
 
 const updatePaymentSchema = z.object({
   categoryId: z.string().min(1).optional(),
@@ -19,6 +20,16 @@ export async function PATCH(
 ) {
   try {
     const session = await requirePermission("payments:write");
+
+    // Rate limit: 30 requests per minute per user
+    const { success: rateLimited } = rateLimit(`payments:write:${session.id}`, 30, 60 * 1000);
+    if (!rateLimited) {
+      return NextResponse.json(
+        { error: "Слишком много запросов. Попробуйте позже." },
+        { status: 429 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const data = updatePaymentSchema.parse(body);
@@ -43,6 +54,16 @@ export async function DELETE(
 ) {
   try {
     const session = await requirePermission("payments:write");
+
+    // Rate limit: 30 requests per minute per user
+    const { success: rateLimited } = rateLimit(`payments:write:${session.id}`, 30, 60 * 1000);
+    if (!rateLimited) {
+      return NextResponse.json(
+        { error: "Слишком много запросов. Попробуйте позже." },
+        { status: 429 }
+      );
+    }
+
     const { id } = await params;
 
     const result = await PaymentService.deletePayment(id, session.tenantId);

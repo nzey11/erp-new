@@ -64,7 +64,8 @@ async function initReferences() {
   ]
 
   let categoriesCreated = 0
-  let categoriesSkipped = 0
+  // categoriesSkipped reserved for future use
+  // let categoriesSkipped = 0
 
   const allCategories: Array<{ name: string; type: string; id: string }> = [
     ...incomeCategories.map((name, i) => ({ name, type: 'income', id: `ref-income-${i}` })),

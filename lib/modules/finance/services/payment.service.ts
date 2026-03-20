@@ -1,6 +1,6 @@
 import 'server-only'
 import { db, toNumber } from '@/lib/shared/db'
-import { reverseEntry, recalculateBalance } from '@/lib/modules/accounting'
+import { createOutboxEvent } from '@/lib/events/outbox'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -93,32 +93,65 @@ export const PaymentService = {
     return { payments, total, page, limit, incomeTotal, expenseTotal, netCashFlow: incomeTotal - expenseTotal }
   },
 
-  async createPayment(data: CreatePaymentData, tenantId: string) {
+  async createPayment(data: CreatePaymentData, tenantId: string, createdBy?: string | null) {
     const counter = await db.paymentCounter.update({
       where: { prefix: 'PAY' },
       data: { lastNumber: { increment: 1 } },
     })
     const number = `${counter.prefix}-${String(counter.lastNumber).padStart(6, '0')}`
 
-    return db.payment.create({
-      data: {
-        number,
-        type: data.type,
-        categoryId: data.categoryId,
-        counterpartyId: data.counterpartyId ?? null,
-        documentId: data.documentId ?? null,
-        amount: data.amount,
-        paymentMethod: data.paymentMethod,
-        date: data.date ? new Date(data.date) : new Date(),
-        description: data.description ?? null,
-        tenantId,
-      },
-      include: {
-        category: { select: { id: true, name: true, type: true } },
-        counterparty: { select: { id: true, name: true } },
-        document: { select: { id: true, number: true, type: true } },
-      },
+    const createdAt = new Date()
+
+    // Create payment and emit outbox event in a transaction
+    const payment = await db.$transaction(async (tx) => {
+      const created = await tx.payment.create({
+        data: {
+          number,
+          type: data.type,
+          categoryId: data.categoryId,
+          counterpartyId: data.counterpartyId ?? null,
+          documentId: data.documentId ?? null,
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+          date: data.date ? new Date(data.date) : new Date(),
+          description: data.description ?? null,
+          tenantId,
+        },
+        include: {
+          category: { select: { id: true, name: true, type: true } },
+          counterparty: { select: { id: true, name: true } },
+          document: { select: { id: true, number: true, type: true } },
+        },
+      })
+
+      // Emit PaymentCreated event for accounting module to handle
+      await createOutboxEvent(
+        tx,
+        {
+          type: "PaymentCreated",
+          occurredAt: createdAt,
+          payload: {
+            paymentId: created.id,
+            tenantId,
+            amount: data.amount,
+            documentId: data.documentId ?? null,
+            counterpartyId: data.counterpartyId ?? null,
+            type: data.type,
+            paymentMethod: data.paymentMethod,
+            categoryId: data.categoryId,
+            date: created.date,
+            description: data.description ?? null,
+            createdBy: createdBy ?? null,
+          },
+        },
+        "Payment",
+        created.id
+      )
+
+      return created
     })
+
+    return payment
   },
 
   async getPayment(id: string, tenantId: string) {
@@ -143,12 +176,58 @@ export const PaymentService = {
     })
 
     // Reverse the old journal entry and re-post with updated data
+    // TODO: Phase 3.5 - Move this to outbox handler for full decoupling
+    // For now, we keep direct journal manipulation in update to maintain consistency
     try {
       const oldEntry = await db.journalEntry.findFirst({
         where: { sourceId: id, sourceType: 'finance_payment', isReversed: false },
       })
       if (oldEntry) {
-        await reverseEntry(oldEntry.id, { bypassAutoCheck: true })
+        // Reverse the old entry by creating a reversal entry
+        const reversalCounter = await db.journalCounter.upsert({
+          where: { prefix: 'JE' },
+          update: { lastNumber: { increment: 1 } },
+          create: { prefix: 'JE', lastNumber: 1 },
+        })
+        const reversalNumber = `JE-${String(reversalCounter.lastNumber).padStart(6, '0')}`
+        
+        // Get original lines to swap debit/credit
+        const originalLines = await db.ledgerLine.findMany({
+          where: { entryId: oldEntry.id },
+        })
+        
+        if (originalLines.length === 2) {
+          // Create reversal entry
+          await db.journalEntry.create({
+            data: {
+              number: reversalNumber,
+              date: new Date(),
+              description: `Сторно проводки ${oldEntry.number} — обновление платежа`,
+              sourceType: 'finance_payment',
+              sourceId: id,
+              sourceNumber: updated.number,
+              isManual: true,
+              reversedById: oldEntry.id,
+              createdBy: null,
+              lines: {
+                create: originalLines.map((line) => ({
+                  accountId: line.accountId,
+                  debit: line.credit,
+                  credit: line.debit,
+                  counterpartyId: line.counterpartyId ?? updated.counterpartyId ?? null,
+                  currency: line.currency,
+                  amountRub: line.amountRub,
+                })),
+              },
+            },
+          })
+          
+          // Mark original as reversed
+          await db.journalEntry.update({
+            where: { id: oldEntry.id },
+            data: { isReversed: true },
+          })
+        }
       }
       // Re-post: build new journal entry directly (bypass idempotency check)
       const cashAccountCode = updated.paymentMethod === 'cash' ? '50' : '51'
@@ -215,26 +294,30 @@ export const PaymentService = {
     const existing = await db.payment.findFirst({ where: { id, tenantId } })
     if (!existing) return null
 
-    // Reverse journal entry before deleting the payment
-    try {
-      const entry = await db.journalEntry.findFirst({
-        where: { sourceId: id, sourceType: 'finance_payment', isReversed: false },
-      })
-      if (entry) await reverseEntry(entry.id, { bypassAutoCheck: true })
-    } catch {
-      /* non-critical */
-    }
+    const deletedAt = new Date()
 
-    await db.payment.delete({ where: { id } })
+    // Delete payment and emit outbox event in a transaction
+    await db.$transaction(async (tx) => {
+      await tx.payment.delete({ where: { id } })
 
-    // Recalculate counterparty balance so mutual settlements stay accurate
-    if (existing.counterpartyId) {
-      try {
-        await recalculateBalance(existing.counterpartyId)
-      } catch {
-        /* non-critical */
-      }
-    }
+      // Emit PaymentDeleted event for accounting module to handle
+      await createOutboxEvent(
+        tx,
+        {
+          type: "PaymentDeleted",
+          occurredAt: deletedAt,
+          payload: {
+            paymentId: id,
+            tenantId,
+            amount: toNumber(existing.amount),
+            documentId: existing.documentId,
+            counterpartyId: existing.counterpartyId,
+          },
+        },
+        "Payment",
+        id
+      )
+    })
 
     return { success: true, counterpartyId: existing.counterpartyId }
   },

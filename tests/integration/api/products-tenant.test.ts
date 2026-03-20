@@ -13,7 +13,7 @@ vi.mock("@/lib/shared/auth", async (importOriginal) => {
 });
 
 // Import route handlers
-import { GET, POST } from "@/app/api/accounting/products/route";
+import { GET } from "@/app/api/accounting/products/route";
 import { GET as GET_BY_ID, PUT, DELETE } from "@/app/api/accounting/products/[id]/route";
 
 describe("API: Products Tenant Isolation", () => {

@@ -13,7 +13,7 @@ vi.mock("@/lib/shared/auth", async (importOriginal) => {
 });
 
 // Import route handlers
-import { GET, POST } from "@/app/api/accounting/documents/route";
+import { GET } from "@/app/api/accounting/documents/route";
 import { GET as GET_BY_ID, PUT, DELETE } from "@/app/api/accounting/documents/[id]/route";
 import { POST as CONFIRM } from "@/app/api/accounting/documents/[id]/confirm/route";
 import { POST as CANCEL } from "@/app/api/accounting/documents/[id]/cancel/route";

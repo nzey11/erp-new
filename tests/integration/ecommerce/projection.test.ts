@@ -278,6 +278,9 @@ describe("ProductCatalogProjection — auto-update via outbox", () => {
     await db.productCatalogProjection.deleteMany({ where: { productId: product.id } });
     await db.product.delete({ where: { id: product.id } });
 
+    // Get PostgreSQL NOW() to avoid clock skew between JS and DB
+    const [{ now: availableAt }] = await db.$queryRaw<[{ now: Date }]>`SELECT NOW() as now`;
+
     // Insert a stale product.updated event (orphaned)
     await db.outboxEvent.create({
       data: {
@@ -291,7 +294,7 @@ describe("ProductCatalogProjection — auto-update via outbox", () => {
         },
         status: "PENDING",
         attempts: 0,
-        availableAt: new Date(),
+        availableAt,
       },
     });
 

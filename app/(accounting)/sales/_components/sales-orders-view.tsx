@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { csrfFetch } from "@/lib/client/csrf";
-import { Button, Input, Select } from "antd";
+import { Button, Input, Select, Tag } from "antd";
 import { ERPTable } from "@/components/erp/erp-table";
 import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { ERPToolbar } from "@/components/erp/erp-toolbar";
@@ -59,13 +59,13 @@ const PAYMENT_STATUS_COLOR: Record<PaymentStatus, string> = {
   refunded: "bg-gray-100 text-gray-700 border-gray-300",
 };
 
-const ECOM_STATUS_COLOR: Record<EcomStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  paid: "bg-blue-100 text-blue-800 border-blue-300",
-  processing: "bg-orange-100 text-orange-800 border-orange-300",
-  shipped: "bg-purple-100 text-purple-800 border-purple-300",
-  delivered: "bg-green-100 text-green-800 border-green-300",
-  cancelled: "bg-red-100 text-red-800 border-red-300",
+const ECOM_STATUS_CONFIG: Record<EcomStatus, { label: string; color: string }> = {
+  pending: { label: "Ожидает", color: "warning" },
+  paid: { label: "Оплачен", color: "processing" },
+  processing: { label: "В работе", color: "orange" },
+  shipped: { label: "Отправлен", color: "purple" },
+  delivered: { label: "Доставлен", color: "success" },
+  cancelled: { label: "Отменён", color: "error" },
 };
 
 const DELIVERY_LABEL: Record<DeliveryType, string> = {
@@ -248,16 +248,9 @@ export function SalesOrdersView({ onRefresh }: { onRefresh?: () => void }) {
       width: 150,
       render: (_value, row) => {
         const s = row.status as EcomStatus;
-        return (
-          <span
-            className={cn(
-              "inline-block text-xs font-medium border rounded-full px-2.5 py-0.5",
-              ECOM_STATUS_COLOR[s] ?? "bg-gray-100 text-gray-700 border-gray-300"
-            )}
-          >
-            {row.statusName}
-          </span>
-        );
+        const config = ECOM_STATUS_CONFIG[s];
+        if (!config) return <Tag color="default">{row.statusName}</Tag>;
+        return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
     {

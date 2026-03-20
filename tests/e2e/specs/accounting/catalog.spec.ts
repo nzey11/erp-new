@@ -1,7 +1,7 @@
 import { test, expect } from "../../fixtures/test-base";
 import { CatalogPage } from "../../pages/accounting/catalog.page";
 import {
-  cleanDatabase, createUnit, createProduct, createCategory, findCategoryByName,
+  createUnit, createProduct, createCategory, findCategoryByName,
 } from "../../fixtures/database.fixture";
 
 test.describe("Catalog Management", () => {

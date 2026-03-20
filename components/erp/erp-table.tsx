@@ -1,6 +1,8 @@
 "use client";
 
-import { Table } from "antd";
+import { useState } from "react";
+import { Table, Button, Tooltip } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import type { ColumnsType, TableProps } from "antd/es/table";
 import type {
   ERPColumn,
@@ -107,7 +109,19 @@ export function ERPTable<T>({
   rowClassName,
   onChange,
   rowKey = "id",
+  onRefresh,
 }: ERPTableProps<T>) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const antdColumns = mapColumns(columns, rowActions);
   const antdPagination = mapPagination(pagination);
   const antdRowSelection = mapSelection(selection);
@@ -144,22 +158,36 @@ export function ERPTable<T>({
     : undefined;
 
   return (
-    <Table<T>
-      dataSource={data}
-      columns={antdColumns}
-      loading={loading}
-      pagination={antdPagination}
-      rowSelection={antdRowSelection}
-      onChange={handleChange}
-      onRow={handleRow}
-      rowKey={rowKey as string}
-      size={size}
-      sticky={sticky}
-      rowClassName={rowClassName}
-      locale={{
-        emptyText: emptyText || "Нет данных",
-      }}
-      scroll={{ x: "max-content" }}
-    />
+    <>
+      {onRefresh && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <Tooltip title="Обновить">
+            <Button
+              size="small"
+              icon={<ReloadOutlined spin={refreshing} />}
+              onClick={handleRefresh}
+              loading={refreshing}
+            />
+          </Tooltip>
+        </div>
+      )}
+      <Table<T>
+        dataSource={data}
+        columns={antdColumns}
+        loading={loading}
+        pagination={antdPagination}
+        rowSelection={antdRowSelection}
+        onChange={handleChange}
+        onRow={handleRow}
+        rowKey={rowKey as string}
+        size={size}
+        sticky={sticky}
+        rowClassName={rowClassName}
+        locale={{
+          emptyText: emptyText || "Нет данных",
+        }}
+        scroll={{ x: "max-content" }}
+      />
+    </>
   );
 }

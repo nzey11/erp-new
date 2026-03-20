@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "antd";
-import { Table } from "antd";
-import type { TableColumnsType } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { formatRub } from "@/lib/shared/utils";
 import { toast } from "sonner";
 
@@ -28,13 +28,21 @@ export default function BalancesPage() {
   const [balances, setBalances] = useState<BalancesReport | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/finance/reports/balances")
-      .then((res) => res.json())
-      .then((data) => setBalances(data))
-      .catch(() => toast.error("Ошибка загрузки балансов"))
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetch("/api/finance/reports/balances").then((res) => res.json());
+      setBalances(data);
+    } catch {
+      toast.error("Ошибка загрузки балансов");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (loading) {
     return (
@@ -54,25 +62,25 @@ export default function BalancesPage() {
     );
   }
 
-  const receivableColumns: TableColumnsType<Balance> = [
-    { key: "counterparty", dataIndex: ["counterparty", "name"], title: "Контрагент" },
+  const receivableColumns: ERPColumn<Balance>[] = [
+    { key: "counterparty", dataIndex: "counterparty", title: "Контрагент", render: (_, row) => row.counterparty?.name },
     {
       key: "balance",
       dataIndex: "balanceRub",
       title: "Сумма",
       align: "right",
-      render: (balance: number) => <span className="text-green-600">{formatRub(balance)}</span>,
+      render: (value) => <span className="text-green-600">{formatRub(value as number)}</span>,
     },
   ];
 
-  const payableColumns: TableColumnsType<Balance> = [
-    { key: "counterparty", dataIndex: ["counterparty", "name"], title: "Контрагент" },
+  const payableColumns: ERPColumn<Balance>[] = [
+    { key: "counterparty", dataIndex: "counterparty", title: "Контрагент", render: (_, row) => row.counterparty?.name },
     {
       key: "balance",
       dataIndex: "balanceRub",
       title: "Сумма",
       align: "right",
-      render: (balance: number) => <span className="text-red-600">{formatRub(Math.abs(balance))}</span>,
+      render: (value) => <span className="text-red-600">{formatRub(Math.abs(value as number))}</span>,
     },
   ];
 
@@ -98,11 +106,11 @@ export default function BalancesPage() {
       {/* Receivable Table */}
       {balances.receivable.length > 0 && (
         <Card title={<span className="text-lg">Нам должны</span>}>
-          <Table
+          <ERPTable
+            data={balances.receivable}
             columns={receivableColumns}
-            dataSource={balances.receivable}
             rowKey="id"
-            pagination={false}
+            onRefresh={load}
           />
         </Card>
       )}
@@ -110,11 +118,11 @@ export default function BalancesPage() {
       {/* Payable Table */}
       {balances.payable.length > 0 && (
         <Card title={<span className="text-lg">Мы должны</span>}>
-          <Table
+          <ERPTable
+            data={balances.payable}
             columns={payableColumns}
-            dataSource={balances.payable}
             rowKey="id"
-            pagination={false}
+            onRefresh={load}
           />
         </Card>
       )}

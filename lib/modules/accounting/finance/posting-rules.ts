@@ -240,7 +240,8 @@ export async function buildPostingLines(
 
     // ─────────────────────────────────────────
     // WRITE OFF (списание): write_off
-    // Дт 94 Кт 41.1
+    // Дт 94 Кт 41.1 — списание товара
+    // Дт 91.2 Кт 94 — отнесение на прочие расходы
     // ─────────────────────────────────────────
     case "write_off": {
       lines.push({
@@ -249,6 +250,13 @@ export async function buildPostingLines(
         amount: docTotalAmount,
         warehouseId: doc.warehouseId ?? undefined,
         description: "Списание товаров",
+      });
+      lines.push({
+        debitCode: "91.2",
+        creditCode: "94",
+        amount: docTotalAmount,
+        warehouseId: doc.warehouseId ?? undefined,
+        description: "Отнесение списания на прочие расходы",
       });
       break;
     }

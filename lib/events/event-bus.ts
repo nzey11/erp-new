@@ -1,21 +1,18 @@
 /**
  * In-Process Event Bus — Phase 1.5 implementation.
  *
+ * @deprecated This file is retained for unit tests only.
+ * Production code uses the transactional outbox (lib/events/outbox.ts).
+ * Do not use eventBus singleton in production — use createOutboxEvent() instead.
+ *
  * Design contract:
  *   - IEventBus is the stable interface. Handlers are written against it.
  *   - InProcessEventBus is the current backing implementation.
- *   - In Phase 2.1 the backing implementation swaps to OutboxEventBus
- *     without touching any handler code.
  *
  * Handler isolation:
  *   - Each handler runs in its own try/catch inside publish().
  *   - Failure of one handler does NOT prevent others from running.
  *   - Errors are logged but not re-thrown (best-effort delivery).
- *
- * Registration:
- *   - Handlers are registered once at app startup via registerAccountingHandlers().
- *   - Never register inside a request handler — that causes double-registration
- *     in dev hot-reload scenarios.
  */
 
 import type { DomainEvent } from "./types";

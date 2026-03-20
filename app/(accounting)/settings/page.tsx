@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "antd";
-import { Tag, Card, Modal, Select, Input, Typography } from "antd";
+import { Tag, Card, Modal, Select, Input, Typography, App } from "antd";
 import { ERPTable } from "@/components/erp/erp-table";
 import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
 import { useDataGrid } from "@/lib/hooks/use-data-grid";
 import Link from "next/link";
-import { Pencil, UserPlus, Save, Building2, Warehouse } from "lucide-react";
+import { Pencil, UserPlus, Save, Building2, Warehouse, Trash2 } from "lucide-react";
+import { Alert } from "antd";
 
 interface User {
   id: string;
@@ -34,6 +35,48 @@ interface CompanyForm {
   kpp: string;
   ogrn: string;
   fiscalYearStartMonth: string;
+}
+
+function CleanDataButton() {
+  const [loading, setLoading] = useState(false)
+  const { message } = App.useApp()
+  const [modal, modalContextHolder] = Modal.useModal()
+
+  const handleClean = () => {
+    modal.confirm({
+      title: 'Очистить тестовые данные?',
+      content: 'Будут удалены все документы, платежи и движения склада. Справочники останутся. Это действие необратимо.',
+      okText: 'Очистить',
+      okType: 'danger',
+      cancelText: 'Отмена',
+      onOk: async () => {
+        setLoading(true)
+        try {
+          const res = await csrfFetch('/api/dev/clean-data', { method: 'POST' })
+          if (res.ok) {
+            message.success('Данные очищены')
+            window.location.reload()
+          } else {
+            const data = await res.json()
+            message.error(data.error || 'Ошибка')
+          }
+        } catch (e) {
+          message.error('Ошибка запроса')
+        } finally {
+          setLoading(false)
+        }
+      }
+    })
+  }
+
+  return (
+    <>
+      {modalContextHolder}
+      <Button danger loading={loading} onClick={handleClean}>
+        Очистить тестовые данные
+      </Button>
+    </>
+  )
 }
 
 export default function SettingsPage() {
@@ -265,6 +308,26 @@ export default function SettingsPage() {
           size="small"
         />
       </Card>
+
+      {/* Dev Tools - Only visible in development */}
+      {process.env.NODE_ENV !== 'production' && (
+        <Card
+          title={
+            <span className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Dev Tools
+            </span>
+          }
+        >
+          <Alert
+            type="warning"
+            title="Только для разработки"
+            description="Эти инструменты доступны только в development окружении и предназначены для упрощения ручного тестирования."
+            className="mb-4"
+          />
+          <CleanDataButton />
+        </Card>
+      )}
 
       {/* User Dialog */}
       <Modal

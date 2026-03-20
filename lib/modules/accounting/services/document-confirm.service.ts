@@ -20,7 +20,8 @@ import {
   isStockIncrease,
   isInventoryCount,
 } from "@/lib/modules/accounting/inventory/predicates";
-import { affectsBalance } from "@/lib/modules/accounting/finance/predicates";
+// affectsBalance imported but not used - kept for future use
+// import { affectsBalance } from "@/lib/modules/accounting/finance/predicates";
 import { createOutboxEvent } from "@/lib/events";
 import {
   getDocTypeName,
@@ -40,8 +41,6 @@ import {
   createMovementsForDocument,
   reconcileStockRecord,
 } from "@/lib/modules/accounting/inventory/stock-movements";
-import { recalculateBalance } from "./balance.service";
-import { reverseEntryWithTx, autoPostDocument } from "@/lib/modules/accounting/finance/journal";
 
 // Re-export so callers only need one import
 export { DocumentStateError } from "@/lib/modules/accounting/document-states";
@@ -409,8 +408,9 @@ export async function confirmDocumentTransactional(
   // created MANUALLY by the user via buttons on the confirmed document page.
   // Auto-creation has been removed to give users full control over adjustments.
 
-  // Step 6: Mark confirmed + write outbox event — atomic transaction
+  // Step 6: Mark confirmed — atomic transaction with outbox event
   // Only reached if steps 3–5 all succeeded
+  // Outbox event is created INSIDE the transaction for atomicity
   const confirmedAt = new Date();
   
   const confirmed = await db.$transaction(async (tx) => {
@@ -431,7 +431,7 @@ export async function confirmDocumentTransactional(
       },
     });
 
-    // Write outbox event in same transaction
+    // Create outbox event with PENDING status (handlers will process it)
     await createOutboxEvent(
       tx,
       {
@@ -560,18 +560,34 @@ export async function cancelDocumentTransactional(
     throw e;
   }
 
+  // ── Payment documents: auto-delete linked Payment before cancellation ──────
+  // For incoming_payment/outgoing_payment documents, the linked Payment is auto-generated
+  // and should be deleted automatically when the document is cancelled.
+  // PaymentDeleted event will trigger journal reversal.
+  const isPaymentDocument = doc.type === "incoming_payment" || doc.type === "outgoing_payment";
+  const paymentToDelete = isPaymentDocument
+    ? await db.payment.findFirst({
+        where: { documentId, tenantId: doc.tenantId },
+        select: { id: true, number: true, amount: true, counterpartyId: true, documentId: true },
+      })
+    : null;
+
   // ── Fix 3: Block cancellation if a confirmed Finance Payment exists ──────
   // Finance Payments linked via documentId are authoritative proof of settlement.
   // Must cancel the Payment first (1C/MS Dynamics behaviour).
-  const linkedPayment = await db.payment.findFirst({
-    where: { documentId, tenantId: doc.tenantId },
-    select: { id: true, number: true },
-  });
-  if (linkedPayment) {
-    throw new DocumentCancelError(
-      `Невозможно отменить документ: существует связанный платёж ${linkedPayment.number}. Сначала отмените платёж.`,
-      409
-    );
+  // NOTE: This block only applies to NON-payment documents (shipments, orders).
+  // Payment documents (incoming_payment/outgoing_payment) have their Payment auto-deleted above.
+  if (!isPaymentDocument) {
+    const linkedPayment = await db.payment.findFirst({
+      where: { documentId, tenantId: doc.tenantId },
+      select: { id: true, number: true },
+    });
+    if (linkedPayment) {
+      throw new DocumentCancelError(
+        `Невозможно отменить документ: существует связанный платёж ${linkedPayment.number}. Сначала отмените платёж.`,
+        409
+      );
+    }
   }
 
   // ── Guard: Block cancellation if linked child documents exist ───────────
@@ -653,42 +669,15 @@ export async function cancelDocumentTransactional(
     }
   }
 
-  // ── Ensure journal entries exist before cancellation (race-condition guard) ─────────────
-  // autoPostDocument is idempotent: no-op if entries already exist.
-  // Required because DocumentConfirmed outbox processing may not have run yet
-  // when the user cancels immediately after confirmation.
-  console.log("[DEBUG] Cancel handler called for:", { docType: doc.type, docId: documentId });
-  const entriesBefore = await db.journalEntry.findMany({
-    where: { sourceId: documentId, isReversed: false },
-    select: { id: true },
-  });
-  console.log("[DEBUG] Journal entries before cancel:", entriesBefore.length);
-
-  if (entriesBefore.length === 0) {
-    // Outbox hasn't processed DocumentConfirmed yet — force sync posting now
-    await autoPostDocument(
-      documentId,
-      doc.number,
-      doc.date,
-      actor ?? undefined
-    );
-    console.log("[DEBUG] autoPostDocument called synchronously (outbox not yet processed)");
-  }
-
-  const entriesAfterSync = await db.journalEntry.findMany({
-    where: { sourceId: documentId, isReversed: false },
-    select: { id: true },
-  });
-  console.log("[DEBUG] Journal entries after sync ensure:", entriesAfterSync.length);
-
-  // Atomic transaction: status + reversing stock movements + journal reversals
+  // Atomic transaction: status + reversing stock movements + outbox event
+  const cancelledAt = new Date();
   const cancelled = await db.$transaction(async (tx) => {
     // Update document status to cancelled
     const updated = await tx.document.update({
       where: { id: documentId },
       data: {
         status: "cancelled",
-        cancelledAt: new Date(),
+        cancelledAt,
       },
       include: {
         items: { include: { product: { select: { id: true, name: true, sku: true } } } },
@@ -697,6 +686,30 @@ export async function cancelDocumentTransactional(
         counterparty: { select: { id: true, name: true } },
       },
     });
+
+    // ── Auto-delete linked Payment for payment documents ────────────────────
+    // When cancelling incoming_payment/outgoing_payment, delete the auto-generated
+    // Payment and emit PaymentDeleted event for journal reversal.
+    if (paymentToDelete) {
+      await tx.payment.delete({ where: { id: paymentToDelete.id } });
+
+      await createOutboxEvent(
+        tx,
+        {
+          type: "PaymentDeleted",
+          occurredAt: cancelledAt,
+          payload: {
+            paymentId: paymentToDelete.id,
+            tenantId: doc.tenantId,
+            amount: toNumber(paymentToDelete.amount),
+            documentId: paymentToDelete.documentId,
+            counterpartyId: paymentToDelete.counterpartyId,
+          },
+        },
+        "Payment",
+        paymentToDelete.id
+      );
+    }
 
     // ── Reversing stock movements (idempotent) ──────────────────────────────
     if (affectsStock(doc.type)) {
@@ -730,35 +743,31 @@ export async function cancelDocumentTransactional(
       }
     }
 
-    // ── Fix 1: Reverse all journal entries for this document ────────────────
-    // Idempotent: reverseEntryWithTx() is a no-op if entry.isReversed = true.
-    const journalEntries = await tx.journalEntry.findMany({
-      where: {
-        sourceId: documentId,
-        isReversed: false,
+    // Create outbox event with PENDING status (handlers will process it)
+    // Journal reversal and balance recalculation happen via handlers
+    await createOutboxEvent(
+      tx,
+      {
+        type: "DocumentCancelled",
+        occurredAt: cancelledAt,
+        payload: {
+          documentId: updated.id,
+          documentType: updated.type,
+          documentNumber: updated.number,
+          counterpartyId: updated.counterpartyId,
+          warehouseId: updated.warehouseId,
+          totalAmount: toNumber(updated.totalAmount),
+          cancelledAt,
+          cancelledBy: actor,
+          tenantId: updated.tenantId,
+        },
       },
-      select: { id: true, number: true },
-    });
-
-    const cancellationDate = new Date();
-    for (const entry of journalEntries) {
-      await reverseEntryWithTx(tx, entry.id, {
-        date: cancellationDate,
-        description: `Отмена документа ${doc.number} — сторно проводки ${entry.number}`,
-        createdBy: actor ?? undefined,
-      });
-    }
-    console.log("[DEBUG] reverseEntry called:", journalEntries.length > 0);
-    console.log("[DEBUG] Journal entries reversed:", journalEntries.length);
+      "Document",
+      updated.id
+    );
 
     return updated;
   });
-
-  const entriesAfterCancel = await db.journalEntry.findMany({
-    where: { sourceId: documentId },
-    select: { id: true, isReversed: true },
-  });
-  console.log("[DEBUG] Journal entries after cancel:", entriesAfterCancel.length, "(reversed:", entriesAfterCancel.filter(e => e.isReversed).length, ")");
 
   // Reconcile StockRecord projections after reversal movements (brings qty back from sum of movements)
   if (affectsStock(doc.type) && doc.warehouseId) {
@@ -775,11 +784,6 @@ export async function cancelDocumentTransactional(
       const [productId, warehouseId] = key.split(":");
       await reconcileStockRecord(productId, warehouseId);
     }
-  }
-
-  // Recalculate counterparty balance (outside transaction per requirements)
-  if (affectsBalance(doc.type) && doc.counterpartyId) {
-    await recalculateBalance(doc.counterpartyId);
   }
 
   return {

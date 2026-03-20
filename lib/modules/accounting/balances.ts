@@ -25,13 +25,21 @@ export async function getAccountBalance(
   filters?: { counterpartyId?: string; warehouseId?: string }
 ): Promise<{ debit: number; credit: number; balance: number }> {
   const account = await db.account.findUnique({ where: { code: accountCode } });
-  if (!account) return { debit: 0, credit: 0, balance: 0 };
+  if (!account) {
+    console.log(`[BALANCE SHEET DEBUG] Account ${accountCode} NOT FOUND`);
+    return { debit: 0, credit: 0, balance: 0 };
+  }
 
+  // IMPORTANT: Exclude both reversed entries (isReversed=true) AND reversal entries (reversedById != null)
+  // A reversal entry (сторно) has reversedById pointing to the original entry
+  // The original entry has isReversed=true
+  // Both should be excluded from balance calculations
   const where: Record<string, unknown> = {
     accountId: account.id,
     entry: {
       date: { lte: asOfDate },
       isReversed: false,
+      reversedById: null,  // Exclude reversal entries (сторно)
     },
   };
   if (filters?.counterpartyId) where.counterpartyId = filters.counterpartyId;
@@ -44,6 +52,7 @@ export async function getAccountBalance(
 
   const debit = toNumber(agg._sum.debit);
   const credit = toNumber(agg._sum.credit);
+  console.log(`[BALANCE SHEET DEBUG] getAccountBalance(${accountCode}): accountId=${account.id}, debit=${debit}, credit=${credit}, balance=${debit - credit}`);
   return { debit, credit, balance: debit - credit };
 }
 
@@ -62,6 +71,7 @@ export async function getAccountTurnovers(
     entry: {
       date: { gte: dateFrom, lte: dateTo },
       isReversed: false,
+      reversedById: null,  // Exclude reversal entries (сторно)
     },
   };
   if (filters?.counterpartyId) where.counterpartyId = filters.counterpartyId;
@@ -108,7 +118,7 @@ export async function getTrialBalance(
       _sum: { debit: true, credit: true },
       where: {
         accountId: account.id,
-        entry: { date: { lt: dateFrom }, isReversed: false },
+        entry: { date: { lt: dateFrom }, isReversed: false, reversedById: null },
       },
     });
 
@@ -117,7 +127,7 @@ export async function getTrialBalance(
       _sum: { debit: true, credit: true },
       where: {
         accountId: account.id,
-        entry: { date: { gte: dateFrom, lte: dateTo }, isReversed: false },
+        entry: { date: { gte: dateFrom, lte: dateTo }, isReversed: false, reversedById: null },
       },
     });
 
@@ -172,9 +182,13 @@ export async function sumAccountBalances(
   accountCodes: string[],
   asOfDate: Date
 ): Promise<number> {
+  console.log(`[BALANCE SHEET DEBUG] sumAccountBalances called for codes: ${accountCodes.join(', ')} as of ${asOfDate.toISOString()}`);
   let total = 0;
   for (const code of accountCodes) {
-    total += await getNetBalance(code, asOfDate);
+    const balance = await getNetBalance(code, asOfDate);
+    console.log(`[BALANCE SHEET DEBUG]   Account ${code}: balance=${balance}`);
+    total += balance;
   }
+  console.log(`[BALANCE SHEET DEBUG] sumAccountBalances total: ${total}`);
   return total;
 }

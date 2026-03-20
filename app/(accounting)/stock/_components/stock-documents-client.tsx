@@ -174,6 +174,7 @@ export function StockDocumentsClient({
           sticky
           emptyText="Нет документов"
           onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+          onRefresh={() => router.refresh()}
         />
       )}
     </div>

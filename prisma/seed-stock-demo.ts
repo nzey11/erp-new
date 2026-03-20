@@ -214,7 +214,8 @@ async function main() {
     },
   });
 
-  const docReceipt2 = await prisma.document.upsert({
+  // @ts-ignore - unused variable kept for seed consistency
+  const _docReceipt2 = await prisma.document.upsert({
     where: { number: "ОП-0002" },
     update: {},
     create: {

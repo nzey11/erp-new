@@ -64,6 +64,7 @@ export async function generateBalanceSheet(asOfDate: Date) {
   const reserveCapital = Math.abs((await getAccountBalance("82", asOfDate)).balance);
   // 1370 — Нераспределенная прибыль = сальдо 84 + сальдо 99 (могут быть и дебетовые — убыток)
   // + незакрытый результат текущего периода по счёту 90.x
+  // + незакрытый результат по счёту 91.x (прочие доходы/расходы)
   // (до реформации баланса счёт 99 пуст — прибыль «живёт» в 90)
   const { balance: bal84 } = await getAccountBalance("84", asOfDate);
   const { balance: bal99 } = await getAccountBalance("99", asOfDate);
@@ -77,7 +78,14 @@ export async function generateBalanceSheet(asOfDate: Date) {
   // 90.2 и 90.3 — активные субсчёты (Дт = расход), balance > 0
   const interimPnl = -bal90_1 - bal90_2 - bal90_3;
 
-  const retainedEarnings = -(bal84) - (bal99) + interimPnl; // passive accounts: credit = profit
+  // Текущий финансовый результат из счётов 91 (до закрытия)
+  // 91.1 — прочие доходы (пассивный, Кт = доход), balance < 0
+  // 91.2 — прочие расходы (активный, Дт = расход), balance > 0
+  const { balance: bal91_1 } = await getAccountBalance("91.1", asOfDate);
+  const { balance: bal91_2 } = await getAccountBalance("91.2", asOfDate);
+  const otherIncomeExpenses = -bal91_1 - bal91_2;
+
+  const retainedEarnings = -(bal84) - (bal99) + interimPnl + otherIncomeExpenses; // passive accounts: credit = profit
   const totalEquity = shareCapital + additionalCapital + reserveCapital + retainedEarnings;
 
   // IV. Long-term liabilities (Долгосрочные обязательства)

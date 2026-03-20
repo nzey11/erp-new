@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createProduct, createCategory, createWarehouse } from "../../helpers/factories";
+import { createProduct, createCategory } from "../../helpers/factories";
 import { getTestDb } from "../../helpers/test-db";
 import { findVariantSuggestions } from "@/lib/modules/accounting/variant-matcher";
 

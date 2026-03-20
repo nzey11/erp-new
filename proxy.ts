@@ -23,10 +23,10 @@ function generateUUID(): string {
 }
 
 // Routes that require NO authentication at all
-const PUBLIC_ROUTES = ["/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/auth/csrf", "/api/integrations", "/api/version"];
+const PUBLIC_ROUTES = ["/", "/login", "/setup", "/api/auth/login", "/api/auth/setup", "/api/auth/csrf", "/api/integrations", "/api/version"];
 
 // Storefront routes accessible without any session (public pages)
-const STOREFRONT_PUBLIC = ["/store/catalog", "/store/auth", "/api/ecommerce/products", "/api/ecommerce/categories", "/api/ecommerce/promo-blocks", "/api/ecommerce/delivery"];
+const STOREFRONT_PUBLIC = ["/store/catalog", "/store/auth", "/store/login", "/store/register", "/api/ecommerce/products", "/api/ecommerce/categories", "/api/ecommerce/promo-blocks", "/api/ecommerce/delivery"];
 
 // Storefront routes that require customer_session cookie
 const STOREFRONT_CUSTOMER = ["/store/cart", "/store/checkout", "/store/account"];
@@ -72,6 +72,14 @@ export async function proxy(request: NextRequest) {
 
   // Public routes - no auth required
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+    // If user is logged in and tries to access root landing page, redirect to dashboard
+    if (pathname === "/" || pathname === "") {
+      const session = request.cookies.get("session")?.value;
+      const isValidSession = session ? (await verifySessionTokenEdge(session)) !== null : false;
+      if (isValidSession) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    }
     return withRequestId(NextResponse.next(), requestId);
   }
 
@@ -102,7 +110,7 @@ export async function proxy(request: NextRequest) {
       if (pathname.startsWith("/api/")) {
         return withRequestId(NextResponse.json({ error: "Unauthorized" }, { status: 401 }), requestId);
       }
-      return NextResponse.redirect(new URL("/store/auth/telegram", request.url));
+      return NextResponse.redirect(new URL("/store/login", request.url));
     }
     return withRequestId(NextResponse.next(), requestId);
   }

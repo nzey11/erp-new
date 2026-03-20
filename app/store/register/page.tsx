@@ -167,7 +167,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Уже есть аккаунт?{" "}
-          <Link href="/store/account" className="text-primary hover:underline">
+          <Link href="/store/login" className="text-primary hover:underline">
             Войти
           </Link>
         </p>

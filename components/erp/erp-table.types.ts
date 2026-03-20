@@ -130,6 +130,9 @@ export interface ERPTableProps<T> {
 
   /** Unique key for row identification */
   rowKey?: string | ((row: T) => React.Key);
+
+  /** Refresh callback — shows refresh button when provided */
+  onRefresh?: () => void | Promise<void>;
 }
 
 /**

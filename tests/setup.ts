@@ -1,5 +1,10 @@
 import { beforeAll, afterAll, beforeEach } from "vitest";
 import { cleanDatabase, disconnectTestDb } from "./helpers/test-db";
+import { registerOutboxHandlers } from "@/lib/events/handlers/register-outbox-handlers";
+
+// Register outbox handlers once before all tests
+// This ensures handlers are available when tests call confirmDocumentTransactional()
+registerOutboxHandlers();
 
 beforeAll(async () => {
   // Global setup before all tests

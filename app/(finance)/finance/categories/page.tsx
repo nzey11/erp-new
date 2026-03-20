@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Tag, Table, type TableColumnsType, Modal, Select, Input, Typography, Button } from "antd";
+import { Tag, Modal, Select, Input, Typography, Button } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -40,7 +42,7 @@ export default function CategoriesPage() {
   const [deleteTarget, setDeleteTarget] = useState<FinanceCategory | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [catRes, accRes] = await Promise.all([
@@ -48,7 +50,6 @@ export default function CategoriesPage() {
         fetch("/api/accounting/accounts"),
       ]);
       const catData = await catRes.json();
-      // API returns a flat array directly
       const accList: Account[] = accRes.ok ? await accRes.json() : [];
       setCategories(catData.categories ?? []);
       setAccounts(Array.isArray(accList) ? accList : []);
@@ -57,9 +58,9 @@ export default function CategoriesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
     if (!form.name.trim()) { toast.error("Введите название"); return; }
@@ -154,7 +155,7 @@ export default function CategoriesPage() {
   const expense = categories.filter((c) => c.type === "expense");
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const getCategoryColumns = (_colorClass: string): TableColumnsType<FinanceCategory> => [
+  const getCategoryColumns = (_colorClass: string): ERPColumn<FinanceCategory>[] => [
     { key: "name", dataIndex: "name", title: "Название" },
     {
       key: "account",
@@ -208,12 +209,12 @@ export default function CategoriesPage() {
   const CategoryTable = ({ items, title, colorClass }: { items: FinanceCategory[]; title: string; colorClass: string }) => (
     <div>
       <h2 className={`text-base font-semibold mb-3 ${colorClass}`}>{title}</h2>
-      <Table
+      <ERPTable
+        data={items}
         columns={getCategoryColumns(colorClass)}
-        dataSource={items}
         rowKey="id"
-        pagination={false}
-        locale={{ emptyText: "Нет статей" }}
+        emptyText="Нет статей"
+        onRefresh={load}
       />
     </div>
   );

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button, Tag, Card, Select, Table } from "antd";
-import type { TableColumnsType } from "antd";
+import { Button, Tag, Card, Select } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { Star, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -135,7 +136,7 @@ export default function ReviewsPage() {
     );
   };
 
-  const columns: TableColumnsType<Review> = [
+  const columns: ERPColumn<Review>[] = [
     {
       key: "product",
       title: "Товар",
@@ -166,7 +167,7 @@ export default function ReviewsPage() {
       key: "rating",
       dataIndex: "rating",
       title: "Оценка",
-      render: (rating: number) => renderStars(rating),
+      render: (value) => renderStars(value as number),
     },
     {
       key: "review",
@@ -187,9 +188,9 @@ export default function ReviewsPage() {
       key: "status",
       dataIndex: "isPublished",
       title: "Статус",
-      render: (isPublished: boolean) => (
-        <Tag color={isPublished ? "blue" : "default"}>
-          {isPublished ? "Опубликован" : "Не опубликован"}
+      render: (value) => (
+        <Tag color={value ? "blue" : "default"}>
+          {value ? "Опубликован" : "Не опубликован"}
         </Tag>
       ),
     },
@@ -197,8 +198,8 @@ export default function ReviewsPage() {
       key: "createdAt",
       dataIndex: "createdAt",
       title: "Дата",
-      render: (createdAt: string) => (
-        <span className="text-sm text-muted-foreground">{formatDateTime(createdAt)}</span>
+      render: (value) => (
+        <span className="text-sm text-muted-foreground">{formatDateTime(value as string)}</span>
       ),
     },
     {
@@ -260,13 +261,13 @@ export default function ReviewsPage() {
 
       {/* Reviews table */}
       <Card>
-        <Table
+        <ERPTable
+          data={filteredReviews}
           columns={columns}
-          dataSource={filteredReviews}
           rowKey="id"
-          pagination={false}
           loading={loading}
-          locale={{ emptyText: "Отзывы не найдены" }}
+          emptyText="Отзывы не найдены"
+          onRefresh={loadReviews}
         />
       </Card>
     </div>

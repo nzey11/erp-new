@@ -417,6 +417,7 @@ export function PurchasesPageClient({
             emptyText="Нет документов"
             sticky
             onChange={({ sortField, sortOrder }) => handleSortChange({ sortField, sortOrder })}
+            onRefresh={() => router.refresh()}
           />
         </div>
       )}
@@ -478,6 +479,7 @@ export function PurchasesPageClient({
               loading={analyticsLoading}
               emptyText="Нет данных за выбранный период"
               rowKey="supplierId"
+              onRefresh={loadAnalytics}
             />
           </div>
 
@@ -492,6 +494,7 @@ export function PurchasesPageClient({
               loading={analyticsLoading}
               emptyText="Нет данных за выбранный период"
               rowKey="month"
+              onRefresh={loadAnalytics}
             />
           </div>
         </div>

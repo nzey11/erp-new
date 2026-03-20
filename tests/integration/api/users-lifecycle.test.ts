@@ -58,9 +58,10 @@ function mockAuthUser(user: {
   });
 }
 
-function mockAuthNone() {
-  vi.mocked(authModule.getAuthSession).mockResolvedValue(null);
-}
+// mockAuthNone reserved for future unauthenticated tests
+// function mockAuthNone() {
+//   vi.mocked(authModule.getAuthSession).mockResolvedValue(null);
+// }
 
 // Helper to create tenant and membership for login tests
 async function createTenantAndMembership(userId: string, role: ErpRole = "viewer") {

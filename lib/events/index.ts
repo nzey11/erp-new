@@ -6,7 +6,7 @@
 
 export { eventBus, createEventBus } from "./event-bus";
 export type { IEventBus, EventHandler } from "./event-bus";
-export type { DomainEvent, DocumentConfirmedEvent, ProductUpdatedEvent, SalePriceUpdatedEvent, DiscountUpdatedEvent } from "./types";
+export type { DomainEvent, DocumentConfirmedEvent, DocumentCancelledEvent, PaymentCreatedEvent, PaymentDeletedEvent, ProductUpdatedEvent, SalePriceUpdatedEvent, DiscountUpdatedEvent, OrderPaymentConfirmedEvent, OrderCancelledEvent, CustomerCreatedEvent, StockAdjustedEvent, CounterpartyCreatedEvent } from "./types";
 
 // Outbox (Phase 2.1)
 export {

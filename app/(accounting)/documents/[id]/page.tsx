@@ -774,11 +774,11 @@ export default function DocumentDetailPage() {
           title={`${doc.typeName} ${doc.number}`}
           actions={
             <div className="flex gap-2">
-              <Button variant="outlined" size="small">
-                <Link href={`/documents/${id}/print`} target="_blank" rel="noopener noreferrer">
-                  <Printer className="h-4 w-4 mr-1" />Печать
-                </Link>
-              </Button>
+              <Link href={`/documents/${id}/print`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outlined" size="small" icon={<Printer className="h-4 w-4" />}>
+                  Печать
+                </Button>
+              </Link>
               {doc.status === "draft" && (
                 <>
                   {doc.type === "inventory_count" && (

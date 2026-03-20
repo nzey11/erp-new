@@ -23,12 +23,12 @@
 
 import { db } from "@/lib/shared/db";
 
-// Document type categories
-const STOCK_DOCS = ["stock_receipt", "write_off", "stock_transfer", "inventory_count"] as const;
-const SHIPMENT_DOCS = ["incoming_shipment", "outgoing_shipment"] as const;
-const SALES_DOCS = ["sales_order", "customer_return"] as const;
-const PURCHASE_DOCS = ["purchase_order", "supplier_return"] as const;
-const FINANCIAL_DOCS = ["incoming_payment", "outgoing_payment"] as const;
+// Document type categories (defined for reference but not used in current implementation)
+// const STOCK_DOCS = ["stock_receipt", "write_off", "stock_transfer", "inventory_count"] as const;
+// const SHIPMENT_DOCS = ["incoming_shipment", "outgoing_shipment"] as const;
+// const SALES_DOCS = ["sales_order", "customer_return"] as const;
+// const PURCHASE_DOCS = ["purchase_order", "supplier_return"] as const;
+// const FINANCIAL_DOCS = ["incoming_payment", "outgoing_payment"] as const;
 
 interface BackfillStats {
   warehouseUpdated: number;
@@ -151,7 +151,8 @@ async function backfillDocumentTenantId(dryRun: boolean = false): Promise<Backfi
 // CLI entry point
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
-const verbose = args.includes("--verbose");
+// verbose flag reserved for future use
+// const verbose = args.includes("--verbose");
 
 backfillDocumentTenantId(dryRun)
   .then((stats) => {

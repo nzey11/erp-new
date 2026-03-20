@@ -67,8 +67,8 @@ const STRICT_FIELDS = [
   "childVariantCount",
 ] as const;
 
-// Fields to ignore
-const IGNORE_FIELDS = ["seoTitle", "seoDescription", "imageUrl"];
+// Fields to ignore (defined for reference but not used in current strict comparison)
+// const IGNORE_FIELDS = ["seoTitle", "seoDescription", "imageUrl"];
 
 async function fetchProducts(endpoint: string): Promise<{ data: Product[]; total: number }> {
   const response = await fetch(`${BASE_URL}${endpoint}`);

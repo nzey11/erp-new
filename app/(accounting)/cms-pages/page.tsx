@@ -191,6 +191,7 @@ export default function CmsPagesListPage() {
         columns={columns}
         loading={grid.loading}
         emptyText={grid.search ? "Страницы не найдены" : "Нет созданных страниц"}
+        onRefresh={() => grid.mutate.refresh()}
       />
     </div>
   );

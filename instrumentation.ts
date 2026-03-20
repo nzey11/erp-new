@@ -20,3 +20,25 @@ export async function register() {
     registerOutboxHandlers();
   }
 }
+
+/**
+ * Global error handler for uncaught request errors.
+ * Logs errors in production for observability.
+ *
+ * TODO: Replace with Sentry/alerting when ready.
+ */
+export async function onRequestError(
+  error: Error & { digest?: string },
+  request: { path: string; method: string },
+  context: { routeType: string }
+) {
+  if (process.env.NODE_ENV === "production") {
+    console.error("[ERROR]", {
+      message: error.message,
+      digest: error.digest,
+      path: request.path,
+      method: request.method,
+      routeType: context.routeType,
+    });
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Space } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ export function StockBalancesClient({
   initialFilters,
   warehouses,
 }: StockBalancesClientProps) {
+  const router = useRouter();
   // Selection state (rows can be selected for potential future bulk ops)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
@@ -186,6 +188,7 @@ export function StockBalancesClient({
           rowKey="id"
           emptyText="Нет остатков"
           sticky
+          onRefresh={() => router.refresh()}
         />
       )}
 

@@ -135,6 +135,7 @@ const localRegistry = new Map<string, EventHandler[]>();
 /**
  * Drive pending outbox events through locally-registered handlers.
  * Mirrors the logic of processOutboxEvents() but uses Prisma-based claiming.
+ * Uses PostgreSQL NOW() for availableAt comparison to avoid clock skew.
  */
 async function driveHandlers(limit = 10): Promise<{
   claimed: number;
@@ -142,11 +143,14 @@ async function driveHandlers(limit = 10): Promise<{
   failed: number;
   errors: Array<{ eventId: string; error: string }>;
 }> {
+  // Get PostgreSQL NOW() to avoid clock skew between JS and DB
+  const [{ now }] = await db.$queryRaw<[{ now: Date }]>`SELECT NOW() as now`;
+
   // Claim PENDING events (Prisma-based, no $queryRaw)
   const pendingRows = await db.outboxEvent.findMany({
     where: {
       status: "PENDING",
-      availableAt: { lte: new Date() },
+      availableAt: { lte: now },
     },
     orderBy: { createdAt: "asc" },
     take: limit,
@@ -244,6 +248,9 @@ async function createDocumentConfirmedOutboxEvent(opts: {
     },
   };
 
+  // Use PostgreSQL NOW() for availableAt to avoid clock skew
+  const [{ now }] = await db.$queryRaw<[{ now: Date }]>`SELECT NOW() as now`;
+
   const row = await db.outboxEvent.create({
     data: {
       eventType: "DocumentConfirmed",
@@ -252,7 +259,7 @@ async function createDocumentConfirmedOutboxEvent(opts: {
       payload: event as unknown as Prisma.JsonObject,
       status: "PENDING",
       attempts: 0,
-      availableAt: new Date(),
+      availableAt: now,
     },
   });
 
@@ -759,6 +766,9 @@ describe("Outbox — Processing is idempotent (no duplicate entries)", () => {
     // Temporarily clear the local registry so no handler is registered
     localRegistry.clear();
 
+    // Get PostgreSQL NOW() to avoid clock skew between JS and DB
+    const [{ now: availableAt }] = await db.$queryRaw<[{ now: Date }]>`SELECT NOW() as now`;
+
     const row = await db.outboxEvent.create({
       data: {
         eventType: "UnknownEventType.ForTesting",
@@ -770,7 +780,7 @@ describe("Outbox — Processing is idempotent (no duplicate entries)", () => {
         } as unknown as Prisma.JsonObject,
         status: "PENDING",
         attempts: 0,
-        availableAt: new Date(),
+        availableAt,
       },
     });
 

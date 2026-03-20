@@ -589,7 +589,7 @@ model Customer {
   updatedAt        DateTime          @updatedAt
   counterpartyId   String?           @unique
   cartItems        CartItem[]
-  counterparty     Counterparty?     @relation(fields: [counterpartyId], references: [id])
+  counterparty     Counterparty?     @relation(fields: [counterpartyId], references: [id], onDelete: SetNull)
   addresses        CustomerAddress[]
   documents        Document[]        @relation("CustomerOrders")
   favorites        Favorite[]

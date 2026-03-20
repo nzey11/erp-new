@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button, Tag, Card, Modal, Table, Input, Typography } from "antd";
-import type { TableColumnsType } from "antd";
+import { Button, Tag, Card, Modal, Input, Typography } from "antd";
+import { ERPTable } from "@/components/erp/erp-table";
+import type { ERPColumn } from "@/components/erp/erp-table.types";
 import { Plus, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { csrfFetch } from "@/lib/client/csrf";
@@ -161,14 +162,15 @@ export default function PromoBlocksPage() {
     }
   };
 
-  const columns: TableColumnsType<PromoBlock> = [
+  const columns: ERPColumn<PromoBlock>[] = [
     {
       key: "image",
       dataIndex: "imageUrl",
       title: "Изображение",
       width: 100,
-      render: (imageUrl: string, block) =>
-        imageUrl ? (
+      render: (value, block) => {
+        const imageUrl = value as string;
+        return imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
@@ -179,28 +181,30 @@ export default function PromoBlocksPage() {
           <div className="w-16 h-16 flex items-center justify-center bg-muted rounded border">
             <ImageIcon className="h-6 w-6 text-muted-foreground" />
           </div>
-        ),
+        );
+      },
     },
     {
       key: "title",
       dataIndex: "title",
       title: "Заголовок",
-      render: (title: string) => <span className="font-medium">{title}</span>,
+      render: (value) => <span className="font-medium">{value as string}</span>,
     },
     {
       key: "subtitle",
       dataIndex: "subtitle",
       title: "Подзаголовок",
-      render: (subtitle: string | null) => (
-        <span className="text-sm text-muted-foreground">{subtitle || "—"}</span>
+      render: (value) => (
+        <span className="text-sm text-muted-foreground">{(value as string | null) || "—"}</span>
       ),
     },
     {
       key: "linkUrl",
       dataIndex: "linkUrl",
       title: "Ссылка",
-      render: (linkUrl: string | null) =>
-        linkUrl ? (
+      render: (value) => {
+        const linkUrl = value as string | null;
+        return linkUrl ? (
           <a
             href={linkUrl}
             target="_blank"
@@ -211,7 +215,8 @@ export default function PromoBlocksPage() {
           </a>
         ) : (
           "—"
-        ),
+        );
+      },
     },
     {
       key: "order",
@@ -225,15 +230,18 @@ export default function PromoBlocksPage() {
       dataIndex: "isActive",
       title: "Статус",
       width: 100,
-      render: (isActive: boolean, block) => (
-        <Tag
-          color={isActive ? "blue" : "default"}
-          className="cursor-pointer"
-          onClick={() => toggleActive(block)}
-        >
-          {isActive ? "Активен" : "Неактивен"}
-        </Tag>
-      ),
+      render: (value, block) => {
+        const isActive = value as boolean;
+        return (
+          <Tag
+            color={isActive ? "blue" : "default"}
+            className="cursor-pointer"
+            onClick={() => toggleActive(block)}
+          >
+            {isActive ? "Активен" : "Неактивен"}
+          </Tag>
+        );
+      },
     },
     {
       key: "actions",
@@ -269,13 +277,13 @@ export default function PromoBlocksPage() {
       />
 
       <Card>
-        <Table
+        <ERPTable
+          data={promoBlocks}
           columns={columns}
-          dataSource={promoBlocks}
           rowKey="id"
-          pagination={false}
           loading={loading}
-          locale={{ emptyText: "Промо-блоки не найдены" }}
+          emptyText="Промо-блоки не найдены"
+          onRefresh={loadPromoBlocks}
         />
       </Card>
 
