@@ -53,6 +53,7 @@ dev.db
 
 # playwright
 /test-results/
+tests/config/test-results/
 /playwright-report/
 /playwright/.auth/
 
